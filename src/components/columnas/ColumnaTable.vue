@@ -33,6 +33,7 @@ interface Props {
 	canNextPage: boolean
 	isLoading: boolean
 	getLineaLabel: (id?: number) => string
+	getColumnaLabel: (id?: number) => string
 }
 
 interface Emits {
@@ -333,7 +334,9 @@ const getMapeoId = (item: ColumnaRow) =>
 							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', c)">
 								{{ 'idABCCatCampana' in c ? c.idABCCatCampana : '-' }}
 							</td>
-							<td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', c)">Columna {{ c.idABCCatColumna }}</td>
+							<td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', c)">
+								{{ props.getColumnaLabel(c.idABCCatColumna) }}
+							</td>
 
 							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
 								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolCarga" disabled>

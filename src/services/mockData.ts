@@ -403,6 +403,32 @@ export const mockColumnasApi = {
     )
   },
 
+  async createColumnaCampanaGlobal(payload: any): Promise<any> {
+    await delay()
+    logRequest('POST', '/campanas/mapeos/0/columnas', payload)
+
+    const nextId = (mockColumnasCampana.length
+      ? Math.max(...mockColumnasCampana.map(c => c.idABCConfigMapeoCampana)) + 1
+      : 201)
+
+    const item: ColumnaCampanaData = {
+      idABCConfigMapeoCampana: Number(payload.idABCConfigMapeoCampana ?? nextId),
+      idABCCatCampana: Number(payload.idABCCatCampana ?? 1),
+      bolActivo: payload.bolActivo ?? true,
+      idABCCatColumna: Number(payload.idABCCatColumna ?? payload.idABCCatColumna ?? 1),
+      bolCarga: payload.bolCarga ?? false,
+      bolValidacion: payload.bolValidacion ?? false,
+      bolEnvio: payload.bolEnvio ?? false,
+      regex: payload.regex ?? '',
+      fecCreacion: new Date().toISOString(),
+      idABCUsuarioUltModificacion: payload.idUsuario ?? payload.idABCUsuarioUltModificacion ?? 1,
+      fecUltModificacion: new Date().toISOString()
+    }
+
+    mockColumnasCampana.push(item)
+    return item
+  },
+
   async createColumnaLinea(
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload

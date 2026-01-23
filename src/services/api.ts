@@ -110,6 +110,8 @@ export const api = {
   getColumnasCampana: () => http.get('/campanas/mapeos/0/columnas'),
   getColumnasCampanaByMapeo: (mapeoId: string | number) =>
     http.get(`/campanas/mapeos/${mapeoId}/columnas`),
+  // Public endpoint for campaign columnas without mapeo id in path
+  createColumnaCampanaGlobal: (payload: any) => http.post('/campanas/mapeos/0/columnas', payload),
   createColumnaCampana: (
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload

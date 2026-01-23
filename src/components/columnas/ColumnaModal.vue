@@ -21,6 +21,7 @@ interface Props {
 	mode: 'add' | 'edit'
 	activeTab: 'linea' | 'campana'
 	mapeosDisponibles: Option[]
+	columnasDisponibles: Option[]
 	initialData?: (ColumnaData | ColumnaCampanaData) | null
 	isLoading?: boolean
 }
@@ -37,11 +38,13 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const formData = ref<FormData>(initializeFormData())
+const columnaSearch = ref('')
 
 const isEditing = computed(() => props.mode === 'edit')
 
+
 watch(
-	() => [props.initialData, props.activeTab, props.mapeosDisponibles],
+	() => [props.initialData, props.activeTab, props.mapeosDisponibles, props.columnasDisponibles],
 	() => {
 		formData.value = initializeFormData()
 	}
@@ -67,9 +70,10 @@ function initializeFormData(): FormData {
 	}
 
 	const defaultMapeo = props.mapeosDisponibles[0]?.value ?? ''
+	const defaultColumna = props.columnasDisponibles[0]?.value ?? ''
 	return {
 		mapeoId: defaultMapeo,
-		idABCCatColumna: '',
+		idABCCatColumna: defaultColumna,
 		regex: '',
 		bolCarga: false,
 		bolValidacion: false,
@@ -80,6 +84,14 @@ function initializeFormData(): FormData {
 function handleSave() {
 	emit('save', formData.value)
 }
+
+const filteredColumnas = computed(() => {
+	const query = columnaSearch.value.trim().toLowerCase()
+	if (!query) return props.columnasDisponibles
+	return props.columnasDisponibles.filter(opt =>
+		opt.label.toLowerCase().includes(query)
+	)
+})
 </script>
 
 <template>
@@ -124,15 +136,25 @@ function handleSave() {
 							Columna <span class="text-red-500 ml-1">*</span>
 						</label>
 						<input
-							id="field-columna"
-							v-model.number="formData.idABCCatColumna"
-							type="number"
-							min="1"
-							class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400"
-							:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50'"
-							required
+							v-model="columnaSearch"
+							type="text"
+							placeholder="Buscar columna..."
+							class="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none"
 							:disabled="isEditing"
 						/>
+						<select
+							id="field-columna"
+							v-model="formData.idABCCatColumna"
+							class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
+							:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
+							required
+							:disabled="isEditing"
+						>
+							<option value="" disabled class="text-gray-400">Seleccione una opción</option>
+							<option v-for="opt in filteredColumnas" :key="opt.value" :value="opt.value">
+								{{ opt.label }}
+							</option>
+						</select>
 					</div>
 
 					<div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { catalogosService } from '../services/catalogosService'
 import { mapeoService } from '../services/mapeoService'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 import MapeoModal from '@/components/MapeoModal.vue'
@@ -14,17 +15,13 @@ const tabs = [
 type TabKey = typeof tabs[number]['key']
 const activeTab = ref<TabKey>('linea')
 
-const lineasDisponibles = [
-  { label: 'Afore', value: 1 },
-  { label: 'Sofom', value: 2 },
-  { label: 'Pensiones', value: 3 }
-]
+interface Option {
+  label: string
+  value: number
+}
 
-const campanasBase = [
-  { label: 'Campaña 1', value: 1 },
-  { label: 'Campaña 2', value: 2 },
-  { label: 'Campaña 3', value: 3 }
-]
+const lineasDisponibles = ref<Option[]>([])
+const campanasCatalogo = ref<Option[]>([])
 
 type MapeoRow = MapeoData | MapeoCampanaData
 const allMapeos = ref<MapeoRow[]>([])
@@ -51,13 +48,7 @@ async function fetchMapeos() {
       : await mapeoService.getMapeosCampana()
     allMapeos.value = data
     
-    if (selectedFilters.lineas.length === 0) {
-      selectedFilters.lineas = lineasDisponibles.map(x => x.value)
-      selectedFilters.status = [true, false]
-    }
-    if (activeTab.value === 'campana' && selectedFilters.campanas.length === 0) {
-      selectedFilters.campanas = campanasDisponibles.value.map(x => x.value)
-    }
+    // keep filters empty on init; only filter when user selects
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -75,7 +66,9 @@ const filteredMapeos = computed(() => {
       : true
 
     const matchStatus = item.bolActivo !== undefined
-      ? selectedFilters.status.includes(item.bolActivo)
+      ? (selectedFilters.status.length
+        ? selectedFilters.status.includes(item.bolActivo)
+        : true)
       : true
     const matchCampana = activeTab.value === 'campana'
       ? (isCampanaRow(item)
@@ -111,20 +104,12 @@ function nextPage() {
   currentPage.value += 1
 }
 
-const getLineaLabel = (id?: number) => lineasDisponibles.find(x => x.value === id)?.label || 'N/A'
+const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
 const isCampanaRow = (item: MapeoRow): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
 const campanasDisponibles = computed(() => {
   if (activeTab.value !== 'campana') return [] as { label: string; value: number }[]
-  const ids = new Set<number>()
-  allMapeos.value.forEach(item => {
-    if (isCampanaRow(item)) ids.add(item.idABCCatCampana)
-  })
-  const fromData = Array.from(ids).sort((a, b) => a - b).map(id => ({
-    label: `Campaña ${id}`,
-    value: id
-  }))
-  return fromData.length ? fromData : campanasBase
+  return campanasCatalogo.value
 })
 
 const showModal = ref(false)
@@ -226,7 +211,31 @@ function handleTabChange(tab: TabKey) {
   fetchMapeos()
 }
 
-onMounted(fetchMapeos)
+function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: boolean }[]) {
+  return items
+    .filter(item => item.bolActivo !== false)
+    .map(item => ({ label: item.nombre, value: item.id }))
+}
+
+async function fetchCatalogosBase() {
+  try {
+    const [lineas, campanas] = await Promise.all([
+      catalogosService.getCatalogos('LNN'),
+      catalogosService.getCatalogos('CMP')
+    ])
+    lineasDisponibles.value = mapCatalogosToOptions(lineas)
+    campanasCatalogo.value = mapCatalogosToOptions(campanas)
+
+    // keep filters empty on init; only filter when user selects
+  } catch (e: any) {
+    error.value = e.message
+  }
+}
+
+onMounted(() => {
+  fetchCatalogosBase()
+  fetchMapeos()
+})
 
 watch(filteredMapeos, () => {
   if (currentPage.value > totalPages.value) {

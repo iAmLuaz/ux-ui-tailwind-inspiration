@@ -45,6 +45,9 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const getCampanaLabel = (id?: number) =>
+  props.campanasDisponibles.find(x => x.value === id)?.label || (id ?? '-')
 </script>
 
 <template>
@@ -244,7 +247,7 @@ const emit = defineEmits<Emits>()
               </td>
 
               <td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', m)">
-                {{ props.isCampanaRow(m) ? m.idABCCatCampana : '-' }}
+                {{ props.isCampanaRow(m) ? getCampanaLabel(m.idABCCatCampana) : '-' }}
               </td>
 
               <td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', m)">{{ m.nombre }}</td>

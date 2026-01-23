@@ -25,6 +25,7 @@ interface ApiClient {
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload
   ): Promise<any>
+  createColumnaCampanaGlobal(payload: any): Promise<any>
   updateColumnaCampana(payload: UpdateColumnaCampanaPayload): Promise<any>
   patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
   patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
@@ -47,6 +48,7 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
     api.patchDesactivarColumnaLinea(payload),
   createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaLineaPayload) =>
     api.createColumnaCampana(mapeoId, payload),
+  createColumnaCampanaGlobal: (payload: any) => api.createColumnaCampanaGlobal(payload),
   updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
     api.updateColumnaCampana(payload),
   patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
@@ -86,6 +88,10 @@ export const columnaService = {
 
   createColumnaCampana(mapeoId: string | number, payload: CreateColumnaLineaPayload) {
     return apiClient.createColumnaCampana(mapeoId, payload)
+  },
+
+  createColumnaCampanaGlobal(payload: any) {
+    return apiClient.createColumnaCampanaGlobal(payload)
   },
 
   updateColumnaCampana(payload: UpdateColumnaCampanaPayload) {
