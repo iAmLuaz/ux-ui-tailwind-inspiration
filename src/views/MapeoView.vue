@@ -176,14 +176,16 @@ async function handleSave(formData: any) {
 async function toggleStatus(item: MapeoRow) {
   isLoading.value = true
   try {
+    const wasActive = item.bolActivo
+    item.bolActivo = !item.bolActivo
     if (activeTab.value === 'campana') {
-      if (item.bolActivo) {
+      if (wasActive) {
         await mapeoService.patchDesactivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
       } else {
         await mapeoService.patchActivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
       }
     } else {
-      if (item.bolActivo) {
+      if (wasActive) {
         await mapeoService.patchDesactivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
       } else {
         await mapeoService.patchActivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)

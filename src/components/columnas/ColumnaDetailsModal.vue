@@ -16,6 +16,8 @@ interface NormalizedColumna {
 interface Props {
   show: boolean
   item?: NormalizedColumna | null
+  getMapeoLabel: (id?: number) => string
+  getColumnaLabel: (id?: number) => string
 }
 
 interface Emits {
@@ -25,10 +27,16 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const mapeoId = computed(() => {
+const mapeoLabel = computed(() => {
   const item = props.item
-  if (!item) return null
-  return item.mapeoId
+  if (!item) return ''
+  return props.getMapeoLabel(item.mapeoId)
+})
+
+const columnaLabel = computed(() => {
+  const item = props.item
+  if (!item) return ''
+  return props.getColumnaLabel(item.columnaId)
 })
 </script>
 
@@ -56,15 +64,11 @@ const mapeoId = computed(() => {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
-              <p class="mt-1 font-semibold text-slate-700">#{{ mapeoId }}</p>
-            </div>
-            <div v-if="item.tipo === 'campana'" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.campanaId }}</p>
+              <p class="mt-1 font-semibold text-slate-700">{{ mapeoLabel }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Columna</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.columnaId }}</p>
+              <p class="mt-1 font-semibold text-slate-700">{{ columnaLabel }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>
@@ -81,15 +85,15 @@ const mapeoId = computed(() => {
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Carga</span>
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cargar</span>
               <p class="mt-1 font-semibold text-slate-700">{{ item.bolCarga ? 'Sí' : 'No' }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Validación</span>
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Validar</span>
               <p class="mt-1 font-semibold text-slate-700">{{ item.bolValidacion ? 'Sí' : 'No' }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Envío</span>
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Enviar</span>
               <p class="mt-1 font-semibold text-slate-700">{{ item.bolEnvio ? 'Sí' : 'No' }}</p>
             </div>
           </div>

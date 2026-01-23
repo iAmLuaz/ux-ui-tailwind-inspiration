@@ -13,12 +13,6 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
-  try {
-    const method = (options.method || 'GET').toUpperCase()
-    console.log('[API Request]', method, url)
-    if (options.body) console.log('[API Request] BODY:', options.body)
-  } catch (e) {
-  }
   const headers = {
     'Content-Type': 'application/json',
     'ngrok-skip-browser-warning': 'true',

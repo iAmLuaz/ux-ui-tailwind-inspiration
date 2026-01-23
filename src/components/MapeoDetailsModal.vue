@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 
 interface Props {
@@ -14,11 +13,6 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
-
-const campanaId = computed(() => {
-  const item = props.item
-  return item && 'idABCCatCampana' in item ? item.idABCCatCampana : null
-})
 
 function formatTimestamp(value?: string) {
   if (!value) return ''
@@ -54,16 +48,12 @@ function formatTimestamp(value?: string) {
         <div v-else class="space-y-4 text-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">ID</span>
-              <p class="mt-1 font-semibold text-slate-700">#{{ item.idABCConfigMapeoLinea }}</p>
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
+              <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Línea</span>
               <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
-            </div>
-            <div v-if="campanaId !== null" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ campanaId }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>
@@ -71,11 +61,6 @@ function formatTimestamp(value?: string) {
                 {{ item.bolActivo ? 'Activo' : 'Inactivo' }}
               </p>
             </div>
-          </div>
-
-          <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
-            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Nombre</span>
-            <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
           </div>
 
           <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">

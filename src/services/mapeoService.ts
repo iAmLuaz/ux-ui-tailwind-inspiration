@@ -79,18 +79,11 @@ export const mapeoService = {
   },
 
   getAllMapeos() {
-    return apiClient.getAllMapeos().then(res => {
-      console.log('[mapeoService] getAllMapeos raw:', res)
-      return normalizeMapeos(res)
-    })
+    return apiClient.getAllMapeos().then(res => normalizeMapeos(res))
   },
 
   getMapeosCampana() {
-    console.log('[mapeoService] calling getMapeosCampana on apiClient')
-    return apiClient.getMapeosCampana().then(res => {
-      console.log('[mapeoService] getMapeosCampana raw:', res)
-      return res.map(normalizeMapeoCampana)
-    })
+    return apiClient.getMapeosCampana().then(res => res.map(normalizeMapeoCampana))
   },
 
   createMapeo(lineaId: string | number, payload: any) {
@@ -98,7 +91,6 @@ export const mapeoService = {
       mapeo: payload.mapeo ?? payload.mapeos ?? {},
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1
     }
-    console.log('[mapeoService] createMapeoLinea payload:', normalized)
     return apiClient.createMapeoLinea(lineaId, normalized)
   },
 
@@ -107,7 +99,6 @@ export const mapeoService = {
       mapeo: payload.mapeo ?? payload.mapeos ?? {},
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1
     }
-    console.log('[mapeoService] createMapeoCampana payload:', { lineaId, campanaId, ...normalized })
     return apiClient.createMapeoCampana(lineaId, campanaId, normalized)
   },
 
@@ -126,7 +117,6 @@ export const mapeoService = {
       mapeo: mapeoData,
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1
     }
-    console.log('[mapeoService] updateMapeoCampana payload:', normalized)
     return apiClient.updateMapeoCampana(normalized)
   },
 
@@ -150,13 +140,11 @@ export const mapeoService = {
 
   patchActivarMapeoCampana(mapeoId: number, idUsuario: number) {
     const payload = { mapeo: { id: mapeoId }, idUsuario }
-    console.log('[mapeoService] patchActivarMapeoCampana payload:', payload)
     return apiClient.patchActivarMapeoCampana(payload)
   },
 
   patchDesactivarMapeoCampana(mapeoId: number, idUsuario: number) {
     const payload = { mapeo: { id: mapeoId }, idUsuario }
-    console.log('[mapeoService] patchDesactivarMapeoCampana payload:', payload)
     return apiClient.patchDesactivarMapeoCampana(payload)
   }
 }

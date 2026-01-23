@@ -15,10 +15,6 @@ export function delay(ms: number = 500): Promise<void> {
 }
 
 function logRequest(method: string, endpoint: string, payload?: any) {
-  console.log(`[${method}] ${endpoint}`)
-  if (payload) {
-    console.log('PAYLOAD:', JSON.stringify(payload, null, 2))
-  }
 }
 
 const mockCatalogos: Record<CatalogoCodigo, CatalogoItem[]> = {

@@ -178,6 +178,12 @@ async function fetchColumnas() {
 const getColumnaLabel = (id?: number | string) =>
 	columnasCatalogo.value.find(x => Number(x.value) === Number(id))?.label || (id ? `Columna ${id}` : 'N/A')
 
+const getMapeoLabel = (id?: number) =>
+	mapeosDisponibles.value.find(x => Number(x.value) === Number(id))?.label || (id ? `Mapeo ${id}` : 'N/A')
+
+const getLineaLabel = (id?: number) =>
+	lineasDisponibles.value.find(x => Number(x.value) === Number(id))?.label || (id ? `Línea ${id}` : 'N/A')
+
 const mapeosDisponibles = computed(() =>
 	activeTab.value === 'campana' ? mapeosCampanaDisponibles.value : mapeosLineaDisponibles.value
 )
@@ -313,6 +319,8 @@ async function handleSave(formData: any) {
 async function handleToggleStatus(item: NormalizedColumna) {
 	isLoading.value = true
 	try {
+		const wasActive = item.bolActivo
+		item.bolActivo = !item.bolActivo
 		const payload = {
 			idUsuario: 1,
 			idABCCatColumna: item.columnaId
@@ -320,14 +328,14 @@ async function handleToggleStatus(item: NormalizedColumna) {
 
 		if (item.tipo === 'campana') {
 			await columnaService[
-				item.bolActivo ? 'patchDesactivarColumnaCampana' : 'patchActivarColumnaCampana'
+				wasActive ? 'patchDesactivarColumnaCampana' : 'patchActivarColumnaCampana'
 			]({
 				idABCConfigMapeoCampana: item.mapeoId,
 				...payload
 			})
 		} else {
 			await columnaService[
-				item.bolActivo ? 'patchDesactivarColumnaLinea' : 'patchActivarColumnaLinea'
+				wasActive ? 'patchDesactivarColumnaLinea' : 'patchActivarColumnaLinea'
 			]({
 				idABCConfigMapeoLinea: item.mapeoId,
 				...payload
@@ -421,6 +429,7 @@ watch(filteredColumnas, () => {
 				:can-prev-page="canPrevPage"
 				:can-next-page="canNextPage"
 				:is-loading="isLoading"
+				:get-linea-label="getLineaLabel"
 				:get-columna-label="getColumnaLabel"
 				@toggle-filter="toggleFilterMenu"
 				@view-details="openDetails"
@@ -453,6 +462,8 @@ watch(filteredColumnas, () => {
 	<ColumnaDetailsModal
 		:show="showDetailsModal"
 		:item="detailsItem"
+		:get-mapeo-label="getMapeoLabel"
+		:get-columna-label="getColumnaLabel"
 		@close="showDetailsModal = false"
 	/>
 </template>
