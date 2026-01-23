@@ -64,6 +64,16 @@ const logoUrl = 'src/assets/img/logo.webp'
               <span>Tareas</span>
             </RouterLink>
           </li>
+           <li>
+            <RouterLink 
+              to="/catalogos" 
+              class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group text-blue-100 hover:text-white hover:bg-white/10"
+              active-class="!bg-[#FFD100] !text-[#00357F] font-bold shadow-md"
+            >
+              <Activity class="w-4 h-4" />
+              <span>Catalogos</span>
+            </RouterLink>
+          </li>
         </ul>
       </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Filter, Edit3, Search, ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { Filter, Edit3, Search, Eye } from 'lucide-vue-next'
 import type { ColumnaData, ColumnaCampanaData } from '../../types/columna.ts'
 
 type ColumnaRow = ColumnaData | ColumnaCampanaData
@@ -26,9 +26,13 @@ interface Props {
 	selectedFilters: SelectedFilters
 	openFilter: string | null
 	filteredColumnas: ColumnaRow[]
+	totalColumnas: number
+	currentPage: number
+	totalPages: number
+	canPrevPage: boolean
+	canNextPage: boolean
 	isLoading: boolean
 	getLineaLabel: (id?: number) => string
-	isDetailsOpen: (key: string) => boolean
 }
 
 interface Emits {
@@ -37,21 +41,26 @@ interface Emits {
 	(e: 'selectAllMapeos'): void
 	(e: 'selectAllNombres'): void
 	(e: 'selectAllCampanas'): void
-	(e: 'toggleDetails', key: string): void
-	(e: 'toggleStatus', item: ColumnaData): void
+	(e: 'viewDetails', item: ColumnaRow): void
+	(e: 'toggleStatus', item: ColumnaRow): void
 	(e: 'edit', item: ColumnaRow): void
+	(e: 'prevPage'): void
+	(e: 'nextPage'): void
 }
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const getMapeoId = (item: ColumnaRow) =>
+	'idABCConfigMapeoCampana' in item ? item.idABCConfigMapeoCampana : item.idABCConfigMapeoLinea
 </script>
 
 <template>
-	<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible">
-		<div class="overflow-x-auto min-h-[400px]">
+	<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
+		<div class="overflow-x-auto flex-1"  style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
 			<table class="w-full text-left border-collapse">
 				<thead>
-					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs uppercase text-slate-500 font-semibold tracking-wider">
+					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
 						<th class="px-4 py-3 relative w-48">
 							<button
 								type="button"
@@ -313,30 +322,30 @@ const emit = defineEmits<Emits>()
 						</td>
 					</tr>
 
-					<template v-else v-for="c in props.filteredColumnas" :key="`${c.idABCConfigMapeoLinea}-${c.idABCCatColumna}`">
+					<template v-else v-for="c in props.filteredColumnas" :key="`${getMapeoId(c)}-${c.idABCCatColumna}`">
 						<tr class="hover:bg-blue-50/30 transition-colors text-sm">
-							<td class="px-4 py-2.5">
+							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
 								<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
 									{{ props.getLineaLabel(undefined) }}
 								</span>
 							</td>
-							<td class="px-4 py-2.5 text-slate-600">Mapeo #{{ c.idABCConfigMapeoLinea }}</td>
-							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600">
+							<td class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', c)">Mapeo #{{ getMapeoId(c) }}</td>
+							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', c)">
 								{{ 'idABCCatCampana' in c ? c.idABCCatCampana : '-' }}
 							</td>
-							<td class="px-4 py-2.5 font-semibold text-slate-700">Columna {{ c.idABCCatColumna }}</td>
+							<td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', c)">Columna {{ c.idABCCatColumna }}</td>
 
-							<td class="px-4 py-2.5 text-center">
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
 								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolCarga" disabled>
 							</td>
-							<td class="px-4 py-2.5 text-center">
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
 								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolValidacion" disabled>
 							</td>
-							<td class="px-4 py-2.5 text-center">
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
 								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolEnvio" disabled>
 							</td>
 
-							<td class="px-4 py-2.5">
+							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
 								<label
 									class="inline-flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-200 cursor-pointer group select-none"
 									:class="c.bolActivo ? 'bg-blue-50 border-blue-200 hover:border-blue-300' : 'bg-slate-50 border-slate-200 hover:border-slate-300'"
@@ -366,16 +375,18 @@ const emit = defineEmits<Emits>()
 							<td class="px-4 py-2.5 text-right">
 								<div class="inline-flex items-center justify-end gap-2">
 									<button
-										@click="emit('toggleDetails', `${c.idABCConfigMapeoLinea}-${c.idABCCatColumna}`)"
+										@click.stop="emit('viewDetails', c)"
+										@dblclick.stop
 										class="relative p-1.5 text-slate-400 hover:text-[#00357F] hover:bg-blue-50 rounded-md transition-colors cursor-pointer group"
 										aria-label="Ver detalles"
 									>
-										<component :is="props.isDetailsOpen(`${c.idABCConfigMapeoLinea}-${c.idABCCatColumna}`) ? ChevronUp : ChevronDown" class="w-4 h-4" />
+										<Eye class="w-4 h-4" />
 										<span class="absolute whitespace-nowrap -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Ver detalles</span>
 									</button>
 
 									<button
-										@click="emit('edit', c)"
+										@click.stop="emit('edit', c)"
+										@dblclick.stop
 										class="relative p-1.5 text-slate-400 hover:text-[#00357F] hover:bg-blue-50 rounded-md transition-colors cursor-pointer group"
 										aria-label="Modificar"
 									>
@@ -385,29 +396,30 @@ const emit = defineEmits<Emits>()
 								</div>
 							</td>
 						</tr>
-						<tr v-show="props.isDetailsOpen(`${c.idABCConfigMapeoLinea}-${c.idABCCatColumna}`)" class="bg-slate-50/80 shadow-inner">
-							<td colspan="100%" class="px-4 py-3">
-								<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600 pl-12 border-l-2 border-[#FFD100]">
-									<div class="col-span-2">
-										<span class="block font-bold text-slate-800 mb-1">Regex</span>
-										<p class="leading-relaxed">{{ c.regex }}</p>
-									</div>
-									<div class="space-y-1">
-										<div class="flex justify-between">
-											<span class="font-medium">Creado:</span>
-											<span>{{ c.fecCreacion }}</span>
-										</div>
-										<div class="flex justify-between">
-											<span class="font-medium">Modificado:</span>
-											<span>{{ c.fecUltModificacion }}</span>
-										</div>
-									</div>
-								</div>
-							</td>
-						</tr>
 					</template>
 				</tbody>
 			</table>
+
+			<div class="px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex justify-between items-center rounded-b-xl">
+				<span>Mostrando {{ props.filteredColumnas.length }} de {{ props.totalColumnas }} registros</span>
+				<div class="flex gap-2 items-center">
+					<button
+						class="hover:text-[#00357F] disabled:opacity-50"
+						:disabled="!props.canPrevPage"
+						@click="emit('prevPage')"
+					>
+						Anterior
+					</button>
+					<span class="text-[11px] text-slate-400">{{ props.currentPage }} / {{ props.totalPages }}</span>
+					<button
+						class="hover:text-[#00357F] disabled:opacity-50"
+						:disabled="!props.canNextPage"
+						@click="emit('nextPage')"
+					>
+						Siguiente
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 </template>

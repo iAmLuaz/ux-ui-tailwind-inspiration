@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { mapeoService } from '../services/mapeoService'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 import MapeoModal from '@/components/MapeoModal.vue'
 import MapeoTable from '@/components/MapeoTable.vue'
+import MapeoDetailsModal from '@/components/MapeoDetailsModal.vue'
 import { Plus, Layers, Megaphone } from 'lucide-vue-next'
 
 const tabs = [
@@ -31,6 +32,9 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 
 const openFilter = ref<string | null>(null)
+
+const pageSize = 10
+const currentPage = ref(1)
 
 const selectedFilters = reactive({
   lineas: [] as number[],
@@ -85,6 +89,28 @@ const filteredMapeos = computed(() => {
   })
 })
 
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(filteredMapeos.value.length / pageSize))
+)
+
+const paginatedMapeos = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredMapeos.value.slice(start, start + pageSize)
+})
+
+const canPrevPage = computed(() => currentPage.value > 1)
+const canNextPage = computed(() => currentPage.value < totalPages.value)
+
+function prevPage() {
+  if (!canPrevPage.value) return
+  currentPage.value -= 1
+}
+
+function nextPage() {
+  if (!canNextPage.value) return
+  currentPage.value += 1
+}
+
 const getLineaLabel = (id?: number) => lineasDisponibles.find(x => x.value === id)?.label || 'N/A'
 const isCampanaRow = (item: MapeoRow): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
@@ -104,7 +130,8 @@ const campanasDisponibles = computed(() => {
 const showModal = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
 const selectedItem = ref<MapeoRow | null>(null)
-const openDetails = ref(new Set<number>())
+const showDetailsModal = ref(false)
+const detailsItem = ref<MapeoRow | null>(null)
 
 function openAddModal() {
   modalMode.value = 'add'
@@ -118,15 +145,9 @@ function openEditModal(item: MapeoRow) {
   showModal.value = true
 }
 
-function toggleDetails(id: number) {
-  const next = new Set(openDetails.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  openDetails.value = next
-}
-
-function isDetailsOpen(id: number) {
-  return openDetails.value.has(id)
+function openDetails(item: MapeoRow) {
+  detailsItem.value = item
+  showDetailsModal.value = true
 }
 
 async function handleSave(formData: any) {
@@ -201,10 +222,17 @@ function handleTabChange(tab: TabKey) {
   if (activeTab.value === 'campana') {
     selectedFilters.campanas = []
   }
+  currentPage.value = 1
   fetchMapeos()
 }
 
 onMounted(fetchMapeos)
+
+watch(filteredMapeos, () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
+  }
+})
 </script>
 
 <template>
@@ -253,17 +281,23 @@ onMounted(fetchMapeos)
         :campanas-disponibles="campanasDisponibles"
         :selected-filters="selectedFilters"
         :open-filter="openFilter"
-        :filtered-mapeos="filteredMapeos"
+        :filtered-mapeos="paginatedMapeos"
+        :total-mapeos="filteredMapeos.length"
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :can-prev-page="canPrevPage"
+        :can-next-page="canNextPage"
         :is-loading="isLoading"
         :get-linea-label="getLineaLabel"
         :is-campana-row="isCampanaRow"
-        :is-details-open="isDetailsOpen"
         @toggle-filter="toggleFilterMenu"
-        @toggle-details="toggleDetails"
+        @view-details="openDetails"
         @toggle-status="toggleStatus"
         @edit="openEditModal"
         @select-all-lineas="selectedFilters.lineas = lineasDisponibles.map(x => x.value)"
         @select-all-campanas="selectedFilters.campanas = campanasDisponibles.map(x => x.value)"
+        @prev-page="prevPage"
+        @next-page="nextPage"
       />
     </div>
     
@@ -277,6 +311,13 @@ onMounted(fetchMapeos)
       :is-loading="isLoading"
       @save="handleSave"
       @close="showModal = false"
+    />
+
+    <MapeoDetailsModal
+      :show="showDetailsModal"
+      :item="detailsItem"
+      :get-linea-label="getLineaLabel"
+      @close="showDetailsModal = false"
     />
   </div>
 </template>

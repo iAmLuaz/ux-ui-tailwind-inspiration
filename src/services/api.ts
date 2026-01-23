@@ -1,7 +1,9 @@
 import type {
   CreateColumnaLineaPayload,
   PatchColumnaLineaPayload,
-  UpdateColumnaLineaPayload
+  UpdateColumnaLineaPayload,
+  PatchColumnaCampanaPayload,
+  UpdateColumnaCampanaPayload
 } from '../types/columna'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
@@ -11,13 +13,11 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
-  // Log outgoing requests to help debug GET-with-body situations
   try {
     const method = (options.method || 'GET').toUpperCase()
     console.log('[API Request]', method, url)
     if (options.body) console.log('[API Request] BODY:', options.body)
   } catch (e) {
-    /* ignore logging errors */
   }
   const headers = {
     'Content-Type': 'application/json',
@@ -61,6 +61,9 @@ export const http = {
 }
 
 export const api = {
+  // Catálogos
+  getCatalogos: (codigo: string) => http.get(`/catalogos?codigo=${encodeURIComponent(codigo)}`),
+
   // Mapeo línea
   getAllMapeos: () => http.get('/lineas/0/mapeos'),
   getMapeosByLinea: (lineaId: string | number) =>
@@ -104,5 +107,17 @@ export const api = {
     http.patch('/lineas/mapeos/columnas/desactivar', payload),
 
   // Columna mapeo campaña
-  getColumnasCampana: () => http.get('/campanas/mapeos/0/columnas')
+  getColumnasCampana: () => http.get('/campanas/mapeos/0/columnas'),
+  getColumnasCampanaByMapeo: (mapeoId: string | number) =>
+    http.get(`/campanas/mapeos/${mapeoId}/columnas`),
+  createColumnaCampana: (
+    mapeoId: string | number,
+    payload: CreateColumnaLineaPayload
+  ) => http.post(`/campanas/mapeos/${mapeoId}/columnas`, payload),
+  updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
+    http.put('/campanas/mapeos/columnas', payload),
+  patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
+    http.patch('/campanas/mapeos/columnas/activar', payload),
+  patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
+    http.patch('/campanas/mapeos/columnas/desactivar', payload)
 }

@@ -4,8 +4,11 @@ import type {
   ColumnaCampanaData,
   CreateColumnaLineaPayload,
   UpdateColumnaLineaPayload,
-  PatchColumnaLineaPayload
+  PatchColumnaLineaPayload,
+  UpdateColumnaCampanaPayload,
+  PatchColumnaCampanaPayload
 } from '../types/columna'
+import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos'
 
 export function delay(ms: number = 500): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -15,6 +18,58 @@ function logRequest(method: string, endpoint: string, payload?: any) {
   console.log(`[${method}] ${endpoint}`)
   if (payload) {
     console.log('PAYLOAD:', JSON.stringify(payload, null, 2))
+  }
+}
+
+const mockCatalogos: Record<CatalogoCodigo, CatalogoItem[]> = {
+  ROL: [
+    {
+      id: 1,
+      bolActivo: true,
+      codigo: 'ABC_CAT_ROL',
+      nombre: 'Administrador',
+      fecCreacion: '2026-01-01T00:00:00Z',
+      fecUltModificacion: '2026-01-10T00:00:00Z'
+    }
+  ],
+  LNN: [
+    {
+      id: 1,
+      bolActivo: true,
+      codigo: 'ABC_CAT_LINEA_NEGOCIO',
+      nombre: 'Afore',
+      fecCreacion: '2026-01-01T00:00:00Z',
+      fecUltModificacion: '2026-01-10T00:00:00Z'
+    }
+  ],
+  CMP: [
+    {
+      id: 1,
+      bolActivo: true,
+      codigo: 'ABC_CAT_CAMPANA',
+      nombre: 'Campaña 1',
+      fecCreacion: '2026-01-01T00:00:00Z',
+      fecUltModificacion: '2026-01-10T00:00:00Z'
+    }
+  ],
+  CLM: [
+    {
+      id: 1,
+      bolActivo: true,
+      codigo: 'ABC_CAT_COLUMNA',
+      nombre: 'Columna 1',
+      fecCreacion: '2026-01-01T00:00:00Z',
+      fecUltModificacion: '2026-01-10T00:00:00Z'
+    }
+  ]
+}
+
+export const mockCatalogosApi = {
+  async getCatalogos(codigo: CatalogoCodigo | string): Promise<CatalogoItem[]> {
+    await delay()
+    logRequest('GET', `/catalogos?codigo=${codigo}`)
+    const key = (String(codigo).toUpperCase() as CatalogoCodigo)
+    return mockCatalogos[key] ?? []
   }
 }
 
@@ -298,7 +353,7 @@ const mockColumnasByMapeo: Record<number, ColumnaData[]> = {
 
 const mockColumnasCampana: ColumnaCampanaData[] = [
   {
-    idABCConfigMapeoLinea: 101,
+    idABCConfigMapeoCampana: 101,
     idABCCatCampana: 1,
     bolActivo: true,
     idABCCatColumna: 1,
@@ -311,7 +366,7 @@ const mockColumnasCampana: ColumnaCampanaData[] = [
     fecUltModificacion: '2026-01-03T00:00:00Z'
   },
   {
-    idABCConfigMapeoLinea: 102,
+    idABCConfigMapeoCampana: 102,
     idABCCatCampana: 2,
     bolActivo: false,
     idABCCatColumna: 2,
@@ -336,6 +391,16 @@ export const mockColumnasApi = {
     await delay()
     logRequest('GET', '/campanas/mapeos/0/columnas')
     return mockColumnasCampana
+  },
+
+  async getColumnasCampanaByMapeo(
+    mapeoId: string | number
+  ): Promise<ColumnaCampanaData[]> {
+    await delay()
+    logRequest('GET', `/campanas/mapeos/${mapeoId}/columnas`)
+    return mockColumnasCampana.filter(
+      c => c.idABCConfigMapeoCampana === Number(mapeoId)
+    )
   },
 
   async createColumnaLinea(
@@ -367,12 +432,85 @@ export const mockColumnasApi = {
   async patchActivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any> {
     await delay()
     logRequest('PATCH', '/lineas/mapeos/columnas/activar', payload)
+    const list = mockColumnasByMapeo[Number(payload.idABCConfigMapeoLinea)]
+    const item = list?.find(c => c.idABCCatColumna === payload.idABCCatColumna)
+    if (item) {
+      item.bolActivo = true
+      item.idABCUsuarioUltModificacion = payload.idUsuario
+      item.fecUltModificacion = new Date().toISOString()
+      return item
+    }
     return payload
   },
 
   async patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any> {
     await delay()
     logRequest('PATCH', '/lineas/mapeos/columnas/desactivar', payload)
+    const list = mockColumnasByMapeo[Number(payload.idABCConfigMapeoLinea)]
+    const item = list?.find(c => c.idABCCatColumna === payload.idABCCatColumna)
+    if (item) {
+      item.bolActivo = false
+      item.idABCUsuarioUltModificacion = payload.idUsuario
+      item.fecUltModificacion = new Date().toISOString()
+      return item
+    }
+    return payload
+  },
+
+  async createColumnaCampana(
+    mapeoId: string | number,
+    payload: CreateColumnaLineaPayload
+  ): Promise<any> {
+    await delay()
+    logRequest('POST', `/campanas/mapeos/${mapeoId}/columnas`, payload)
+    return {
+      idABCConfigMapeoCampana: Number(mapeoId),
+      idABCCatCampana: 1,
+      idABCCatColumna: payload.idABCCatColumna,
+      bolActivo: true,
+      bolCarga: true,
+      bolValidacion: false,
+      bolEnvio: false,
+      regex: payload.regex,
+      fecCreacion: new Date().toISOString(),
+      idABCUsuarioUltModificacion: payload.idUsuario,
+      fecUltModificacion: new Date().toISOString()
+    }
+  },
+
+  async updateColumnaCampana(payload: UpdateColumnaCampanaPayload): Promise<any> {
+    await delay()
+    logRequest('PUT', '/campanas/mapeos/columnas', payload)
+    return payload
+  },
+
+  async patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any> {
+    await delay()
+    logRequest('PATCH', '/campanas/mapeos/columnas/activar', payload)
+    const item = mockColumnasCampana.find(
+      c => c.idABCConfigMapeoCampana === payload.idABCConfigMapeoCampana && c.idABCCatColumna === payload.idABCCatColumna
+    )
+    if (item) {
+      item.bolActivo = true
+      item.idABCUsuarioUltModificacion = payload.idUsuario
+      item.fecUltModificacion = new Date().toISOString()
+      return item
+    }
+    return payload
+  },
+
+  async patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any> {
+    await delay()
+    logRequest('PATCH', '/campanas/mapeos/columnas/desactivar', payload)
+    const item = mockColumnasCampana.find(
+      c => c.idABCConfigMapeoCampana === payload.idABCConfigMapeoCampana && c.idABCCatColumna === payload.idABCCatColumna
+    )
+    if (item) {
+      item.bolActivo = false
+      item.idABCUsuarioUltModificacion = payload.idUsuario
+      item.fecUltModificacion = new Date().toISOString()
+      return item
+    }
     return payload
   }
 }

@@ -132,10 +132,8 @@ function handleSave() {
               id="field-nombre"
               v-model="formData.nombre"
               type="text"
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400"
-              :class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50'"
               required
-              :disabled="isEditing"
+              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 bg-gray-50"
             />
           </div>
 

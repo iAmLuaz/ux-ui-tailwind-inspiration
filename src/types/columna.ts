@@ -11,7 +11,8 @@ export interface ColumnaData {
   fecUltModificacion: string
 }
 
-export interface ColumnaCampanaData extends ColumnaData {
+export type ColumnaCampanaData = Omit<ColumnaData, 'idABCConfigMapeoLinea'> & {
+  idABCConfigMapeoCampana: number
   idABCCatCampana: number
 }
 
@@ -38,3 +39,30 @@ export interface PatchColumnaLineaPayload {
   idABCCatColumna: number
   idUsuario: number
 }
+
+export interface UpdateColumnaCampanaPayload {
+  idABCConfigMapeoCampana: number
+  idABCCatColumna: number
+  bolCarga: boolean
+  bolValidacion: boolean
+  bolEnvio: boolean
+  regex: string
+  idUsuario: number
+}
+
+export interface PatchColumnaCampanaPayload {
+  idABCConfigMapeoCampana: number
+  idABCCatColumna: number
+  idUsuario: number
+}
+
+export interface FieldConfig {
+  type: 'text' | 'textarea' | 'select' | 'number' | 'email' | 'date' | 'toggle'
+  options?: { label: string; value: any }[] | string[]
+  required?: boolean
+  placeholder?: string
+  rows?: number
+  label?: string
+}
+
+export type FieldsConfig = Record<string, FieldConfig>

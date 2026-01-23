@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import MapeoView from '../views/MapeoView.vue'
 import ColumnasView from '../views/ColumnasView.vue'
-
+import CatalogosView from '../views/CatalogosView.vue'
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -18,6 +18,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/columnas',
     name: 'columnas',
     component: ColumnasView
+  },
+  {
+    path: '/catalogos',
+    name: 'catalogos',
+    component: CatalogosView
   }
 ]
 

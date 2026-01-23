@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Filter, ChevronDown, ChevronUp, Edit3, Search } from 'lucide-vue-next'
+import { Filter, Edit3, Search, Eye } from 'lucide-vue-next'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 
 type MapeoRow = MapeoData | MapeoCampanaData
@@ -22,19 +22,25 @@ interface Props {
   selectedFilters: SelectedFilters
   openFilter: string | null
   filteredMapeos: MapeoRow[]
+  totalMapeos: number
+  currentPage: number
+  totalPages: number
+  canPrevPage: boolean
+  canNextPage: boolean
   isLoading: boolean
   getLineaLabel: (id?: number) => string
   isCampanaRow: (item: MapeoRow) => item is MapeoCampanaData
-  isDetailsOpen: (id: number) => boolean
 }
 
 interface Emits {
   (e: 'toggleFilter', column: string): void
-  (e: 'toggleDetails', id: number): void
+  (e: 'viewDetails', item: MapeoRow): void
   (e: 'toggleStatus', item: MapeoRow): void
   (e: 'edit', item: MapeoRow): void
   (e: 'selectAllLineas'): void
   (e: 'selectAllCampanas'): void
+  (e: 'prevPage'): void
+  (e: 'nextPage'): void
 }
 
 const props = defineProps<Props>()
@@ -42,7 +48,7 @@ const emit = defineEmits<Emits>()
 </script>
 
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col min-h-[300px]">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
     <div class="overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse">
         <thead>
@@ -97,7 +103,6 @@ const emit = defineEmits<Emits>()
               </div>
             </th>
 
-            <th class="px-4 py-3 text-left">Nombre</th>
             <th v-if="props.activeTab === 'campana'" class="px-4 py-3 relative w-48">
               <button
                 type="button"
@@ -152,6 +157,8 @@ const emit = defineEmits<Emits>()
                 </div>
               </div>
             </th>
+
+            <th class="px-4 py-3 text-left">Nombre</th>
             <!-- <th class="px-4 py-3 text-left">Información</th> -->
             
             <th class="px-4 py-3 relative w-36">
@@ -228,25 +235,25 @@ const emit = defineEmits<Emits>()
 
           <template v-else v-for="m in props.filteredMapeos" :key="m.idABCConfigMapeoLinea">
             <tr class="hover:bg-blue-50/30 transition-colors text-sm">
-              <td class="px-4 py-2.5 font-mono text-xs text-slate-400">#{{ m.idABCConfigMapeoLinea }}</td>
+              <td class="px-4 py-2.5 font-mono text-xs text-slate-400" @dblclick="emit('viewDetails', m)">#{{ m.idABCConfigMapeoLinea }}</td>
               
-              <td class="px-4 py-2.5">
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                   {{ props.getLineaLabel(m.idABCCatLineaNegocio) }}
                 </span>
               </td>
 
-              <td class="px-4 py-2.5 font-semibold text-slate-700">{{ m.nombre }}</td>
-              
-              <td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600">
+              <td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', m)">
                 {{ props.isCampanaRow(m) ? m.idABCCatCampana : '-' }}
               </td>
+
+              <td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', m)">{{ m.nombre }}</td>
 
               <!-- <td class="px-4 py-2.5">
                 <span class="text-sm text-slate-500">{{ props.isDetailsOpen(m.idABCConfigMapeoLinea) ? 'Abierto' : 'Cerrado' }}</span>
               </td> -->
               
-              <td class="px-4 py-2.5">
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <label 
                   class="inline-flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-200 cursor-pointer group select-none"
                   :class="m.bolActivo 
@@ -276,16 +283,18 @@ const emit = defineEmits<Emits>()
               <td class="px-4 py-2.5 text-right">
                 <div class="inline-flex items-center justify-end gap-2">
                   <button
-                    @click="emit('toggleDetails', m.idABCConfigMapeoLinea)"
+                    @click.stop="emit('viewDetails', m)"
+                    @dblclick.stop
                     class="relative p-1.5 text-slate-400 hover:text-[#00357F] hover:bg-blue-50 rounded-md transition-colors cursor-pointer group"
                     aria-label="Ver detalles"
                   >
-                    <component :is="props.isDetailsOpen(m.idABCConfigMapeoLinea) ? ChevronUp : ChevronDown" class="w-4 h-4" />
+                    <Eye class="w-4 h-4" />
                     <span class="absolute whitespace-nowrap -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">Ver detalles</span>
                   </button>
 
                   <button
-                    @click="emit('edit', m)"
+                    @click.stop="emit('edit', m)"
+                    @dblclick.stop
                     class="relative p-1.5 text-slate-400 hover:text-[#00357F] hover:bg-blue-50 rounded-md transition-colors cursor-pointer group"
                     aria-label="Editar registro"
                   >
@@ -296,35 +305,28 @@ const emit = defineEmits<Emits>()
               </td>
             </tr>
             
-            <tr v-show="props.isDetailsOpen(m.idABCConfigMapeoLinea)" class="bg-slate-50/80 shadow-inner">
-              <td colspan="100%" class="px-4 py-3">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600 pl-12 border-l-2 border-[#FFD100]">
-                  <div class="col-span-2">
-                    <span class="block font-bold text-slate-800 mb-1">Descripción</span>
-                    <p class="leading-relaxed">{{ m.descripcion }}</p>
-                  </div>
-                  <div class="space-y-1">
-                    <div class="flex justify-between">
-                      <span class="font-medium">Creado:</span>
-                      <span>{{ m.fecCreacion }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                      <span class="font-medium">Modificado:</span>
-                      <span>{{ m.fecUltModificacion }}</span>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
           </template>
         </tbody>
       </table>
 
       <div class="px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex justify-between items-center rounded-b-xl">
-        <span>Mostrando {{ props.filteredMapeos.length }} registros</span>
-        <div class="flex gap-2">
-          <button class="hover:text-[#00357F] disabled:opacity-50" disabled>Anterior</button>
-          <button class="hover:text-[#00357F]">Siguiente</button>
+        <span>Mostrando {{ props.filteredMapeos.length }} de {{ props.totalMapeos }} registros</span>
+        <div class="flex gap-2 items-center">
+          <button
+            class="hover:text-[#00357F] disabled:opacity-50"
+            :disabled="!props.canPrevPage"
+            @click="emit('prevPage')"
+          >
+            Anterior
+          </button>
+          <span class="text-[11px] text-slate-400">{{ props.currentPage }} / {{ props.totalPages }}</span>
+          <button
+            class="hover:text-[#00357F] disabled:opacity-50"
+            :disabled="!props.canNextPage"
+            @click="emit('nextPage')"
+          >
+            Siguiente
+          </button>
         </div>
       </div>
     </div>

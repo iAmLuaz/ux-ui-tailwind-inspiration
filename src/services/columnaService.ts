@@ -5,12 +5,15 @@ import type {
   ColumnaCampanaData,
   CreateColumnaLineaPayload,
   UpdateColumnaLineaPayload,
-  PatchColumnaLineaPayload
+  PatchColumnaLineaPayload,
+  UpdateColumnaCampanaPayload,
+  PatchColumnaCampanaPayload
 } from '../types/columna'
 
 interface ApiClient {
   getColumnasByMapeo(mapeoId: string | number): Promise<ColumnaData[]>
   getColumnasCampana(): Promise<ColumnaCampanaData[]>
+  getColumnasCampanaByMapeo(mapeoId: string | number): Promise<ColumnaCampanaData[]>
   createColumnaLinea(
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload
@@ -18,6 +21,13 @@ interface ApiClient {
   updateColumnaLinea(payload: UpdateColumnaLineaPayload): Promise<any>
   patchActivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
   patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
+  createColumnaCampana(
+    mapeoId: string | number,
+    payload: CreateColumnaLineaPayload
+  ): Promise<any>
+  updateColumnaCampana(payload: UpdateColumnaCampanaPayload): Promise<any>
+  patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
+  patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
 }
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
@@ -25,6 +35,8 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
   getColumnasByMapeo: (mapeoId: string | number) =>
     api.getColumnasByMapeo(mapeoId),
   getColumnasCampana: () => api.getColumnasCampana(),
+  getColumnasCampanaByMapeo: (mapeoId: string | number) =>
+    api.getColumnasCampanaByMapeo(mapeoId),
   createColumnaLinea: (mapeoId: string | number, payload: CreateColumnaLineaPayload) =>
     api.createColumnaLinea(mapeoId, payload),
   updateColumnaLinea: (payload: UpdateColumnaLineaPayload) =>
@@ -32,7 +44,15 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
   patchActivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
     api.patchActivarColumnaLinea(payload),
   patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
-    api.patchDesactivarColumnaLinea(payload)
+    api.patchDesactivarColumnaLinea(payload),
+  createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaLineaPayload) =>
+    api.createColumnaCampana(mapeoId, payload),
+  updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
+    api.updateColumnaCampana(payload),
+  patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
+    api.patchActivarColumnaCampana(payload),
+  patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
+    api.patchDesactivarColumnaCampana(payload)
 }) as ApiClient
 
 export const columnaService = {
@@ -42,6 +62,10 @@ export const columnaService = {
 
   getColumnasCampana() {
     return apiClient.getColumnasCampana()
+  },
+
+  getColumnasCampanaByMapeo(mapeoId: string | number) {
+    return apiClient.getColumnasCampanaByMapeo(mapeoId)
   },
 
   createColumnaLinea(mapeoId: string | number, payload: CreateColumnaLineaPayload) {
@@ -58,5 +82,21 @@ export const columnaService = {
 
   patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload) {
     return apiClient.patchDesactivarColumnaLinea(payload)
+  },
+
+  createColumnaCampana(mapeoId: string | number, payload: CreateColumnaLineaPayload) {
+    return apiClient.createColumnaCampana(mapeoId, payload)
+  },
+
+  updateColumnaCampana(payload: UpdateColumnaCampanaPayload) {
+    return apiClient.updateColumnaCampana(payload)
+  },
+
+  patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload) {
+    return apiClient.patchActivarColumnaCampana(payload)
+  },
+
+  patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload) {
+    return apiClient.patchDesactivarColumnaCampana(payload)
   }
 }
