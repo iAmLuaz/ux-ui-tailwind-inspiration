@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import { catalogosService } from '../services/catalogosService'
+import { mapeoService } from '../services/mapeoService'
 import { columnaService } from '../services/columnaService'
 import type { ColumnaData, ColumnaCampanaData } from '../types/columna'
 import ColumnaTable from '@/components/columnas/ColumnaTable.vue'
@@ -23,6 +24,7 @@ interface Option {
 const lineasDisponibles = ref<Option[]>([])
 const campanasCatalogo = ref<Option[]>([])
 const columnasCatalogo = ref<Option[]>([])
+const campanaByMapeoId = ref(new Map<number, number>())
 
 type ColumnaRow = ColumnaData | ColumnaCampanaData
 const columnas = ref<ColumnaRow[]>([])
@@ -65,6 +67,21 @@ async function fetchCatalogosBase() {
 	}
 }
 
+async function fetchMapeoCampanaCatalogMap() {
+	try {
+		const list = await mapeoService.getMapeosCampana()
+		const map = new Map<number, number>()
+		list.forEach(item => {
+			if (item.idABCConfigMapeoLinea && item.idABCCatCampana) {
+				map.set(Number(item.idABCConfigMapeoLinea), Number(item.idABCCatCampana))
+			}
+		})
+		campanaByMapeoId.value = map
+	} catch (e: any) {
+		console.warn('[fetchMapeoCampanaCatalogMap] error', e)
+	}
+}
+
 async function fetchColumnas() {
 	isLoading.value = true
 	error.value = null
@@ -96,6 +113,13 @@ const getColumnaNombre = (item: ColumnaRow) => {
 
 const getColumnaLabel = (id?: number) =>
 	columnasCatalogo.value.find(x => x.value === id)?.label || (id ? `Columna ${id}` : 'N/A')
+
+const getCampanaLabelByMapeoId = (mapeoId?: number) => {
+	if (!mapeoId) return 'N/A'
+	const campanaId = campanaByMapeoId.value.get(mapeoId)
+	const label = campanasCatalogo.value.find(x => x.value === campanaId)?.label
+	return label ? label : `Campaña ${mapeoId}`
+}
 
 const getMapeoId = (item: ColumnaRow) =>
 	'idABCConfigMapeoCampana' in item ? item.idABCConfigMapeoCampana : item.idABCConfigMapeoLinea
@@ -302,10 +326,10 @@ async function handleToggleStatus(item: ColumnaRow) {
 				await columnaService.patchActivarColumnaLinea(payload)
 			}
 		}
-		await fetchColumnas()
 	} catch (e: any) {
 		error.value = e.message
 	} finally {
+		await fetchColumnas()
 		isLoading.value = false
 	}
 }
@@ -319,11 +343,15 @@ function handleTabChange(tab: TabKey) {
 	selectedFilters.nombres = []
 	selectedFilters.status = []
 	currentPage.value = 1
+	if (activeTab.value === 'campana') {
+		fetchMapeoCampanaCatalogMap()
+	}
 	fetchColumnas()
 }
 
 onMounted(() => {
 	fetchCatalogosBase()
+	fetchMapeoCampanaCatalogMap()
 	fetchColumnas()
 })
 
@@ -385,6 +413,7 @@ watch(filteredColumnas, () => {
 				:is-loading="isLoading"
 				:get-linea-label="getLineaLabel"
 				:get-columna-label="getColumnaLabel"
+				:get-campana-label-by-mapeo-id="getCampanaLabelByMapeoId"
 				@toggle-filter="toggleFilterMenu"
 				@view-details="openDetails"
 				@select-all-lineas="selectedFilters.lineas = lineasDisponibles.map(x => x.value)"

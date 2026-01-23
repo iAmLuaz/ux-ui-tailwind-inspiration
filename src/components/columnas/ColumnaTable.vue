@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Filter, Edit3, Search, Eye } from 'lucide-vue-next'
+import { Edit3, Search, Eye } from 'lucide-vue-next'
 import type { ColumnaData, ColumnaCampanaData } from '../../types/columna.ts'
 
 type ColumnaRow = ColumnaData | ColumnaCampanaData
@@ -34,6 +34,7 @@ interface Props {
 	isLoading: boolean
 	getLineaLabel: (id?: number) => string
 	getColumnaLabel: (id?: number) => string
+	getCampanaLabelByMapeoId: (mapeoId?: number) => string
 }
 
 interface Emits {
@@ -54,6 +55,10 @@ const emit = defineEmits<Emits>()
 
 const getMapeoId = (item: ColumnaRow) =>
 	'idABCConfigMapeoCampana' in item ? item.idABCConfigMapeoCampana : item.idABCConfigMapeoLinea
+
+const getLineaCatalogLabel = (id?: number) =>
+	props.lineasDisponibles.find(x => Number(x.value) === id)?.label || (id ? `Línea ${id}` : 'N/A')
+
 </script>
 
 <template>
@@ -62,244 +67,14 @@ const getMapeoId = (item: ColumnaRow) =>
 			<table class="w-full text-left border-collapse">
 				<thead>
 					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-						<th class="px-4 py-3 relative w-48">
-							<button
-								type="button"
-								class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-								:class="props.openFilter === 'linea' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-								@click.stop="emit('toggleFilter', 'linea')"
-							>
-								<span>Línea</span>
-								<Filter
-									class="w-3.5 h-3.5 transition-colors"
-									:class="[
-										props.selectedFilters.lineas.length < props.lineasDisponibles.length ? 'text-[#00357F] fill-blue-100' : 'text-slate-400',
-										props.openFilter === 'linea' ? 'text-[#00357F]' : ''
-									]"
-								/>
-							</button>
-
-							<div
-								v-if="props.openFilter === 'linea'"
-								class="absolute top-full left-0 mt-2 w-60 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-							>
-								<div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-									<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por línea</span>
-									<span class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline" @click="emit('selectAllLineas')">Ver todas</span>
-								</div>
-								<div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-									<label
-										v-for="l in props.lineasDisponibles"
-										:key="l.value"
-										class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-									>
-										<input
-											type="checkbox"
-											:value="l.value"
-											v-model="props.selectedFilters.lineas"
-											class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-											{{ l.label }}
-										</span>
-									</label>
-								</div>
-							</div>
-						</th>
-
-						<th class="px-4 py-3 relative w-40">
-							<button
-								type="button"
-								class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-								:class="props.openFilter === 'mapeo' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-								@click.stop="emit('toggleFilter', 'mapeo')"
-							>
-								<span>Mapeo</span>
-								<Filter
-									class="w-3.5 h-3.5 transition-colors"
-									:class="[
-										props.selectedFilters.mapeos.length && props.selectedFilters.mapeos.length < props.mapeosDisponibles.length
-											? 'text-[#00357F] fill-blue-100'
-											: 'text-slate-400',
-										props.openFilter === 'mapeo' ? 'text-[#00357F]' : ''
-									]"
-								/>
-							</button>
-
-							<div
-								v-if="props.openFilter === 'mapeo'"
-								class="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-							>
-								<div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-									<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por mapeo</span>
-									<span class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline" @click="emit('selectAllMapeos')">Ver todos</span>
-								</div>
-								<div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-									<label
-										v-for="m in props.mapeosDisponibles"
-										:key="m.value"
-										class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-									>
-										<input
-											type="checkbox"
-											:value="m.value"
-											v-model="props.selectedFilters.mapeos"
-											class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-											{{ m.label }}
-										</span>
-									</label>
-								</div>
-							</div>
-						</th>
-
-						<th v-if="props.activeTab === 'campana'" class="px-4 py-3 relative w-40">
-							<button
-								type="button"
-								class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-								:class="props.openFilter === 'campana' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-								@click.stop="emit('toggleFilter', 'campana')"
-							>
-								<span>Campaña</span>
-								<Filter
-									class="w-3.5 h-3.5 transition-colors"
-									:class="[
-										props.selectedFilters.campanas.length && props.selectedFilters.campanas.length < props.campanasDisponibles.length
-											? 'text-[#00357F] fill-blue-100'
-											: 'text-slate-400',
-										props.openFilter === 'campana' ? 'text-[#00357F]' : ''
-									]"
-								/>
-							</button>
-
-							<div
-								v-if="props.openFilter === 'campana'"
-								class="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-							>
-								<div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-									<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por campaña</span>
-									<span class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline" @click="emit('selectAllCampanas')">Ver todas</span>
-								</div>
-								<div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-									<label
-										v-for="c in props.campanasDisponibles"
-										:key="c.value"
-										class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-									>
-										<input
-											type="checkbox"
-											:value="c.value"
-											v-model="props.selectedFilters.campanas"
-											class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-											{{ c.label }}
-										</span>
-									</label>
-								</div>
-							</div>
-						</th>
-
-						<th class="px-4 py-3 relative">
-							<button
-								type="button"
-								class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-								:class="props.openFilter === 'nombre' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-								@click.stop="emit('toggleFilter', 'nombre')"
-							>
-								<span>Nombre</span>
-								<Filter
-									class="w-3.5 h-3.5 transition-colors"
-									:class="[
-										props.selectedFilters.nombres.length && props.selectedFilters.nombres.length < props.nombresDisponibles.length
-											? 'text-[#00357F] fill-blue-100'
-											: 'text-slate-400',
-										props.openFilter === 'nombre' ? 'text-[#00357F]' : ''
-									]"
-								/>
-							</button>
-
-							<div
-								v-if="props.openFilter === 'nombre'"
-								class="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-							>
-								<div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-									<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por nombre</span>
-									<span class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline" @click="emit('selectAllNombres')">Ver todos</span>
-								</div>
-								<div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-									<label
-										v-for="n in props.nombresDisponibles"
-										:key="n.value"
-										class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-									>
-										<input
-											type="checkbox"
-											:value="n.value"
-											v-model="props.selectedFilters.nombres"
-											class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-											{{ n.label }}
-										</span>
-									</label>
-								</div>
-							</div>
-						</th>
-
-						<th class="px-4 py-3 text-center w-24">Carga</th>
-						<th class="px-4 py-3 text-center w-24">Validación</th>
-						<th class="px-4 py-3 text-center w-24">Envío</th>
-
-						<th class="px-4 py-3 relative w-36">
-							<button
-								type="button"
-								class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-								:class="props.openFilter === 'status' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-								@click.stop="emit('toggleFilter', 'status')"
-							>
-								<span>Estatus</span>
-								<Filter
-									class="w-3.5 h-3.5 transition-colors"
-									:class="[
-										props.selectedFilters.status.length < 2 ? 'text-[#00357F] fill-blue-100' : 'text-slate-400',
-										props.openFilter === 'status' ? 'text-[#00357F]' : ''
-									]"
-								/>
-							</button>
-
-							<div
-								v-if="props.openFilter === 'status'"
-								class="absolute top-full right-0 md:left-0 mt-2 w-48 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-							>
-								<div class="px-3 py-2 bg-slate-50 border-b border-slate-100">
-									<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estatus</span>
-								</div>
-								<div class="p-1.5 space-y-0.5">
-									<label class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none">
-										<input
-											type="checkbox"
-											:value="true"
-											v-model="props.selectedFilters.status"
-											class="h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">Activos</span>
-									</label>
-									<label class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none">
-										<input
-											type="checkbox"
-											:value="false"
-											v-model="props.selectedFilters.status"
-											class="h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer"
-										>
-										<span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">Inactivos</span>
-									</label>
-								</div>
-							</div>
-						</th>
-
-						<!-- <th class="px-4 py-3 text-left">Detalle</th> -->
+						<th v-if="props.activeTab === 'linea'" class="px-4 py-3">idABCConfigMapeoLinea</th>
+						<th v-if="props.activeTab === 'campana'" class="px-4 py-3">idABCConfigMapeoCampana</th>
+						<th class="px-4 py-3">idABCCatColumna</th>
+						<th class="px-4 py-3">bolActivo</th>
+						<th class="px-4 py-3">bolCarga</th>
+						<th class="px-4 py-3">bolValidacion</th>
+						<th class="px-4 py-3">bolEnvio</th>
+						<th class="px-4 py-3">regex</th>
 						<th class="px-4 py-3 text-right w-20">Acciones</th>
 					</tr>
 				</thead>
@@ -325,29 +100,15 @@ const getMapeoId = (item: ColumnaRow) =>
 
 					<template v-else v-for="c in props.filteredColumnas" :key="`${getMapeoId(c)}-${c.idABCCatColumna}`">
 						<tr class="hover:bg-blue-50/30 transition-colors text-sm">
+							<td v-if="props.activeTab === 'linea'" class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
+								{{ getLineaCatalogLabel('idABCConfigMapeoLinea' in c ? c.idABCConfigMapeoLinea : undefined) }}
+							</td>
+							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
+								{{ props.getCampanaLabelByMapeoId('idABCConfigMapeoCampana' in c ? c.idABCConfigMapeoCampana : undefined) }}
+							</td>
 							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
-								<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-									{{ props.getLineaLabel(undefined) }}
-								</span>
-							</td>
-							<td class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', c)">Mapeo #{{ getMapeoId(c) }}</td>
-							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', c)">
-								{{ 'idABCCatCampana' in c ? c.idABCCatCampana : '-' }}
-							</td>
-							<td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', c)">
 								{{ props.getColumnaLabel(c.idABCCatColumna) }}
 							</td>
-
-							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
-								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolCarga" disabled>
-							</td>
-							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
-								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolValidacion" disabled>
-							</td>
-							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
-								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolEnvio" disabled>
-							</td>
-
 							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
 								<label
 									class="inline-flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-200 cursor-pointer group select-none"
@@ -371,10 +132,17 @@ const getMapeoId = (item: ColumnaRow) =>
 									</span>
 								</label>
 							</td>
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
+								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolCarga" disabled>
+							</td>
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
+								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolValidacion" disabled>
+							</td>
+							<td class="px-4 py-2.5 text-center" @dblclick="emit('viewDetails', c)">
+								<input type="checkbox" class="h-4 w-4 rounded border-slate-300 text-[#00357F]" :checked="c.bolEnvio" disabled>
+							</td>
+							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">{{ c.regex }}</td>
 
-							<!-- <td class="px-4 py-2.5">
-								<span class="text-sm text-slate-500">{{ props.isDetailsOpen(`${c.idABCConfigMapeoLinea}-${c.nombre}`) ? 'Abierto' : 'Cerrado' }}</span>
-							</td> -->
 							<td class="px-4 py-2.5 text-right">
 								<div class="inline-flex items-center justify-end gap-2">
 									<button

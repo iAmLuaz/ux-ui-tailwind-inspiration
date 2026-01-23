@@ -165,10 +165,10 @@ async function handleSave(formData: any) {
       }
     }
     showModal.value = false
-    await fetchMapeos()
   } catch (e: any) {
     error.value = e.message
   } finally {
+    await fetchMapeos()
     isLoading.value = false
   }
 }

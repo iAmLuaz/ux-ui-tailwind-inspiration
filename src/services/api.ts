@@ -85,7 +85,14 @@ export const api = {
     campanaId: string | number,
     payload: any
   ) => http.post(`/lineas/${lineaId}/campanas/${campanaId}/mapeos`, payload),
-  updateMapeoCampana: (payload: any) => http.put('/lineas/campanas/mapeos', payload),
+  updateMapeoCampana: (payload: any) => {
+    const mapeoId = payload?.mapeo?.id ?? payload?.mapeo?.idABCConfigMapeoLinea ?? payload?.mapeo?.idABCConfigMapeoCampana
+    const endpoint = mapeoId
+      ? `/lineas/campanas/mapeos`
+      : '/lineas/campanas/mapeos'
+    return http.put(endpoint, payload)
+  },
+  
   patchActivarMapeoCampana: (payload: any) =>
     http.patch('/lineas/campanas/mapeos/activar', payload),
   patchDesactivarMapeoCampana: (payload: any) =>

@@ -70,7 +70,7 @@ function initializeFormData(): FormData {
 	}
 
 	const defaultMapeo = props.mapeosDisponibles[0]?.value ?? ''
-	const defaultColumna = props.columnasDisponibles[0]?.value ?? ''
+	const defaultColumna = ''
 	return {
 		mapeoId: defaultMapeo,
 		idABCCatColumna: defaultColumna,
