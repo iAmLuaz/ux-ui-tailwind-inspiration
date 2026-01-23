@@ -1,3 +1,4 @@
+// src/types/mapeo.ts
 export interface MapeoData {
   idABCConfigMapeoLinea: number
   idABCCatLineaNegocio: number

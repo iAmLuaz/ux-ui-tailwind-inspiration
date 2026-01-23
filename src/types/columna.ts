@@ -1,3 +1,4 @@
+// src/types/columna.ts
 export interface ColumnaData {
   idABCConfigMapeoLinea: number
   bolActivo: boolean

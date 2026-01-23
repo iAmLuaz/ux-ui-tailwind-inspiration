@@ -1,3 +1,4 @@
+<!-- // src/components/columnas/ColumnaForm.vue -->
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { FieldsConfig } from '../../types/columna'

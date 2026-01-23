@@ -1,8 +1,18 @@
+<!-- // src/components/columnas/ColumnaTable.vue -->
 <script setup lang="ts">
 import { Edit3, Search, Eye } from 'lucide-vue-next'
-import type { ColumnaData, ColumnaCampanaData } from '../../types/columna.ts'
 
-type ColumnaRow = ColumnaData | ColumnaCampanaData
+interface NormalizedColumna {
+	tipo: 'linea' | 'campana'
+	mapeoId: number
+	columnaId: number
+	bolActivo: boolean
+	bolCarga: boolean
+	bolValidacion: boolean
+	bolEnvio: boolean
+	regex: string
+	campanaId?: number
+}
 
 interface Option {
 	label: string
@@ -25,7 +35,7 @@ interface Props {
 	nombresDisponibles: Option[]
 	selectedFilters: SelectedFilters
 	openFilter: string | null
-	filteredColumnas: ColumnaRow[]
+	filteredColumnas: NormalizedColumna[]
 	totalColumnas: number
 	currentPage: number
 	totalPages: number
@@ -33,8 +43,7 @@ interface Props {
 	canNextPage: boolean
 	isLoading: boolean
 	getLineaLabel: (id?: number) => string
-	getColumnaLabel: (id?: number) => string
-	getCampanaLabelByMapeoId: (mapeoId?: number) => string
+	getColumnaLabel: (id?: number | string) => string
 }
 
 interface Emits {
@@ -43,9 +52,9 @@ interface Emits {
 	(e: 'selectAllMapeos'): void
 	(e: 'selectAllNombres'): void
 	(e: 'selectAllCampanas'): void
-	(e: 'viewDetails', item: ColumnaRow): void
-	(e: 'toggleStatus', item: ColumnaRow): void
-	(e: 'edit', item: ColumnaRow): void
+	(e: 'viewDetails', item: NormalizedColumna): void
+	(e: 'toggleStatus', item: NormalizedColumna): void
+	(e: 'edit', item: NormalizedColumna): void
 	(e: 'prevPage'): void
 	(e: 'nextPage'): void
 }
@@ -53,11 +62,8 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const getMapeoId = (item: ColumnaRow) =>
-	'idABCConfigMapeoCampana' in item ? item.idABCConfigMapeoCampana : item.idABCConfigMapeoLinea
-
-const getLineaCatalogLabel = (id?: number) =>
-	props.lineasDisponibles.find(x => Number(x.value) === id)?.label || (id ? `Línea ${id}` : 'N/A')
+const getMapeoLabel = (id?: number) =>
+	props.mapeosDisponibles.find(x => Number(x.value) === id)?.label || (id ? `Mapeo ${id}` : 'N/A')
 
 </script>
 
@@ -67,14 +73,13 @@ const getLineaCatalogLabel = (id?: number) =>
 			<table class="w-full text-left border-collapse">
 				<thead>
 					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-						<th v-if="props.activeTab === 'linea'" class="px-4 py-3">idABCConfigMapeoLinea</th>
-						<th v-if="props.activeTab === 'campana'" class="px-4 py-3">idABCConfigMapeoCampana</th>
-						<th class="px-4 py-3">idABCCatColumna</th>
-						<th class="px-4 py-3">bolActivo</th>
-						<th class="px-4 py-3">bolCarga</th>
-						<th class="px-4 py-3">bolValidacion</th>
-						<th class="px-4 py-3">bolEnvio</th>
-						<th class="px-4 py-3">regex</th>
+						<th class="px-4 py-3">Mapeo</th>
+						<th class="px-4 py-3">Columna</th>
+						<th class="px-4 py-3">Activar</th>
+						<th class="px-4 py-3">Cargar</th>
+						<th class="px-4 py-3">Validar</th>
+						<th class="px-4 py-3">Enviar</th>
+						<th class="px-4 py-3">Regex</th>
 						<th class="px-4 py-3 text-right w-20">Acciones</th>
 					</tr>
 				</thead>
@@ -98,16 +103,13 @@ const getLineaCatalogLabel = (id?: number) =>
 						</td>
 					</tr>
 
-					<template v-else v-for="c in props.filteredColumnas" :key="`${getMapeoId(c)}-${c.idABCCatColumna}`">
+					<template v-else v-for="c in props.filteredColumnas" :key="`${c.mapeoId}-${c.columnaId}`">
 						<tr class="hover:bg-blue-50/30 transition-colors text-sm">
-							<td v-if="props.activeTab === 'linea'" class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
-								{{ getLineaCatalogLabel('idABCConfigMapeoLinea' in c ? c.idABCConfigMapeoLinea : undefined) }}
-							</td>
-							<td v-if="props.activeTab === 'campana'" class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
-								{{ props.getCampanaLabelByMapeoId('idABCConfigMapeoCampana' in c ? c.idABCConfigMapeoCampana : undefined) }}
+							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
+								{{ getMapeoLabel(c.mapeoId) }}
 							</td>
 							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
-								{{ props.getColumnaLabel(c.idABCCatColumna) }}
+								{{ props.getColumnaLabel(c.columnaId) }}
 							</td>
 							<td class="px-4 py-2.5" @dblclick="emit('viewDetails', c)">
 								<label

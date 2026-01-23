@@ -1,10 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ColumnaData, ColumnaCampanaData } from '../../types/columna'
+
+interface NormalizedColumna {
+  tipo: 'linea' | 'campana'
+  mapeoId: number
+  columnaId: number
+  bolActivo: boolean
+  bolCarga: boolean
+  bolValidacion: boolean
+  bolEnvio: boolean
+  regex: string
+  campanaId?: number
+}
 
 interface Props {
   show: boolean
-  item?: ColumnaData | ColumnaCampanaData | null
+  item?: NormalizedColumna | null
 }
 
 interface Emits {
@@ -17,20 +28,8 @@ const emit = defineEmits<Emits>()
 const mapeoId = computed(() => {
   const item = props.item
   if (!item) return null
-  return 'idABCConfigMapeoCampana' in item
-    ? item.idABCConfigMapeoCampana
-    : item.idABCConfigMapeoLinea
+  return item.mapeoId
 })
-
-function formatTimestamp(value?: string) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return new Intl.DateTimeFormat('es-MX', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(date)
-}
 </script>
 
 <template>
@@ -59,13 +58,13 @@ function formatTimestamp(value?: string) {
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
               <p class="mt-1 font-semibold text-slate-700">#{{ mapeoId }}</p>
             </div>
-            <div v-if="'idABCCatCampana' in item" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+            <div v-if="item.tipo === 'campana'" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.idABCCatCampana }}</p>
+              <p class="mt-1 font-semibold text-slate-700">{{ item.campanaId }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Columna</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.idABCCatColumna }}</p>
+              <p class="mt-1 font-semibold text-slate-700">{{ item.columnaId }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>
@@ -95,16 +94,6 @@ function formatTimestamp(value?: string) {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Creado</span>
-              <p class="mt-1 text-slate-600">{{ formatTimestamp(item.fecCreacion) }}</p>
-            </div>
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Modificado</span>
-              <p class="mt-1 text-slate-600">{{ formatTimestamp(item.fecUltModificacion) }}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

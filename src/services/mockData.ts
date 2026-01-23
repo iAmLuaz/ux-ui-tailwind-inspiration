@@ -389,6 +389,12 @@ export const mockColumnasApi = {
     return mockColumnasByMapeo[Number(mapeoId)] ?? []
   },
 
+  async getColumnasLinea(): Promise<ColumnaData[]> {
+    await delay()
+    logRequest('GET', '/lineas/mapeos/0/columnas')
+    return Object.values(mockColumnasByMapeo).flat()
+  },
+
   async getColumnasCampana(): Promise<ColumnaCampanaData[]> {
     await delay()
     logRequest('GET', '/campanas/mapeos/0/columnas')

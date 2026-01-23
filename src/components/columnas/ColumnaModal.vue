@@ -1,6 +1,17 @@
+<!-- // src/components/columnas/ColumnaModal.vue -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import type { ColumnaData, ColumnaCampanaData } from '../../types/columna'
+interface NormalizedColumna {
+	tipo: 'linea' | 'campana'
+	mapeoId: number
+	columnaId: number
+	bolActivo: boolean
+	bolCarga: boolean
+	bolValidacion: boolean
+	bolEnvio: boolean
+	regex: string
+	campanaId?: number
+}
 
 interface Option {
 	label: string
@@ -8,7 +19,7 @@ interface Option {
 }
 
 interface FormData {
-	mapeoId?: number | ''
+	mapeoId?: number
 	idABCCatColumna: number | ''
 	regex: string
 	bolCarga: boolean
@@ -22,7 +33,7 @@ interface Props {
 	activeTab: 'linea' | 'campana'
 	mapeosDisponibles: Option[]
 	columnasDisponibles: Option[]
-	initialData?: (ColumnaData | ColumnaCampanaData) | null
+	initialData?: NormalizedColumna | null
 	isLoading?: boolean
 }
 
@@ -39,29 +50,31 @@ const emit = defineEmits<Emits>()
 
 const formData = ref<FormData>(initializeFormData())
 const columnaSearch = ref('')
-
-const isEditing = computed(() => props.mode === 'edit')
-
+const showColumnaDropdown = ref(false)
 
 watch(
-	() => [props.initialData, props.activeTab, props.mapeosDisponibles, props.columnasDisponibles],
+	() => [props.initialData, props.mode],
 	() => {
 		formData.value = initializeFormData()
+		columnaSearch.value = getColumnaLabel(formData.value.idABCCatColumna)
 	}
 )
 
-function getMapeoId(item: ColumnaData | ColumnaCampanaData | null | undefined) {
-	if (!item) return ''
-	return 'idABCConfigMapeoCampana' in item
-		? item.idABCConfigMapeoCampana
-		: item.idABCConfigMapeoLinea
-}
+watch(
+	() => props.show,
+	(show) => {
+		if (show) {
+			columnaSearch.value = getColumnaLabel(formData.value.idABCCatColumna)
+			showColumnaDropdown.value = false
+		}
+	}
+)
 
 function initializeFormData(): FormData {
 	if (props.initialData) {
 		return {
-			mapeoId: getMapeoId(props.initialData) as number,
-			idABCCatColumna: props.initialData.idABCCatColumna ?? '',
+			mapeoId: props.initialData.mapeoId,
+			idABCCatColumna: props.initialData.columnaId ?? '',
 			regex: props.initialData.regex ?? '',
 			bolCarga: Boolean(props.initialData.bolCarga),
 			bolValidacion: Boolean(props.initialData.bolValidacion),
@@ -69,7 +82,7 @@ function initializeFormData(): FormData {
 		}
 	}
 
-	const defaultMapeo = props.mapeosDisponibles[0]?.value ?? ''
+	const defaultMapeo = undefined
 	const defaultColumna = ''
 	return {
 		mapeoId: defaultMapeo,
@@ -82,7 +95,20 @@ function initializeFormData(): FormData {
 }
 
 function handleSave() {
+	if (!formData.value.mapeoId) return
+	if (!formData.value.idABCCatColumna) return
 	emit('save', formData.value)
+}
+
+function getColumnaLabel(id?: number | '') {
+	if (!id) return ''
+	return props.columnasDisponibles.find(opt => opt.value === id)?.label ?? ''
+}
+
+function selectColumna(opt: Option) {
+	formData.value.idABCCatColumna = opt.value
+	columnaSearch.value = opt.label
+	showColumnaDropdown.value = false
 }
 
 const filteredColumnas = computed(() => {
@@ -118,11 +144,9 @@ const filteredColumnas = computed(() => {
 						</label>
 						<select
 							id="field-mapeo"
-							v-model="formData.mapeoId"
+							v-model.number="formData.mapeoId"
 							class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
-							:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
 							required
-							:disabled="isEditing"
 						>
 							<option value="" disabled class="text-gray-400">Seleccione una opción</option>
 							<option v-for="opt in mapeosDisponibles" :key="opt.value" :value="opt.value">
@@ -135,41 +159,50 @@ const filteredColumnas = computed(() => {
 						<label for="field-columna" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
 							Columna <span class="text-red-500 ml-1">*</span>
 						</label>
-						<input
-							v-model="columnaSearch"
-							type="text"
-							placeholder="Buscar columna..."
-							class="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none"
-							:disabled="isEditing"
-						/>
-						<select
-							id="field-columna"
-							v-model="formData.idABCCatColumna"
-							class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
-							:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
-							required
-							:disabled="isEditing"
-						>
-							<option value="" disabled class="text-gray-400">Seleccione una opción</option>
-							<option v-for="opt in filteredColumnas" :key="opt.value" :value="opt.value">
-								{{ opt.label }}
-							</option>
-						</select>
+						<div class="relative">
+							<button
+								id="field-columna"
+								type="button"
+								class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none text-left bg-white"
+								@click="showColumnaDropdown = !showColumnaDropdown"
+							>
+								<span class="truncate" :class="formData.idABCCatColumna ? 'text-gray-700' : 'text-gray-400'">
+									{{ formData.idABCCatColumna ? getColumnaLabel(formData.idABCCatColumna) : 'Seleccione una opción' }}
+								</span>
+								<span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</span>
+							</button>
+
+							<div
+								v-if="showColumnaDropdown"
+								class="absolute z-20 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden"
+							>
+								<div class="p-2 border-b border-slate-100">
+									<input
+										v-model="columnaSearch"
+										type="text"
+										placeholder="Buscar columna..."
+										class="w-full px-3 py-2 border border-gray-200 rounded-md text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] outline-none"
+										@keydown.esc="showColumnaDropdown = false"
+									/>
+								</div>
+								<ul class="max-h-56 overflow-y-auto">
+									<li
+										v-for="opt in filteredColumnas"
+										:key="opt.value"
+										class="px-4 py-2 text-sm text-gray-700 hover:bg-slate-50 cursor-pointer"
+										@mousedown.prevent="selectColumna(opt)"
+									>
+										{{ opt.label }}
+									</li>
+									<li v-if="filteredColumnas.length === 0" class="px-4 py-3 text-sm text-gray-400">
+										Sin resultados
+									</li>
+								</ul>
+							</div>
+						</div>
 					</div>
 
-					<div>
-						<label for="field-regex" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
-							Regex <span class="text-red-500 ml-1">*</span>
-						</label>
-						<textarea
-							id="field-regex"
-							v-model="formData.regex"
-							class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 resize-none"
-							required
-							rows="3"
-							placeholder="Ej. ^[A-Z]+$"
-						/>
-					</div>
+					
 
 					<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
 						<label class="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm">
@@ -196,6 +229,20 @@ const filteredColumnas = computed(() => {
 							/>
 							<span class="font-semibold text-slate-600">Envío</span>
 						</label>
+					</div>
+
+					<div>
+						<label for="field-regex" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
+							Regex <span class="text-red-500 ml-1">*</span>
+						</label>
+						<textarea
+							id="field-regex"
+							v-model="formData.regex"
+							class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 resize-none"
+							required
+							rows="3"
+							placeholder="Ej. ^[A-Z]+$"
+						/>
 					</div>
 
 					<div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">

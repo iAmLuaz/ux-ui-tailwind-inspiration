@@ -1,3 +1,4 @@
+// src/services/mapeoService.ts
 import { api } from './api'
 import { mockApi } from './mockData'
 import type { MapeoData } from '../types/mapeo'

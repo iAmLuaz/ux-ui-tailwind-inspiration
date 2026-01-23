@@ -1,3 +1,4 @@
+// src/services/columnaService.ts
 import { api } from './api'
 import { mockColumnasApi } from './mockData'
 import type {
@@ -12,6 +13,7 @@ import type {
 
 interface ApiClient {
   getColumnasByMapeo(mapeoId: string | number): Promise<ColumnaData[]>
+  getColumnasLinea(): Promise<ColumnaData[]>
   getColumnasCampana(): Promise<ColumnaCampanaData[]>
   getColumnasCampanaByMapeo(mapeoId: string | number): Promise<ColumnaCampanaData[]>
   createColumnaLinea(
@@ -35,6 +37,7 @@ const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
 const apiClient = (USE_MOCK ? mockColumnasApi : {
   getColumnasByMapeo: (mapeoId: string | number) =>
     api.getColumnasByMapeo(mapeoId),
+  getColumnasLinea: () => api.getColumnasLinea(),
   getColumnasCampana: () => api.getColumnasCampana(),
   getColumnasCampanaByMapeo: (mapeoId: string | number) =>
     api.getColumnasCampanaByMapeo(mapeoId),
@@ -60,6 +63,10 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
 export const columnaService = {
   getColumnasByMapeo(mapeoId: string | number) {
     return apiClient.getColumnasByMapeo(mapeoId)
+  },
+
+  getColumnasLinea() {
+    return apiClient.getColumnasLinea()
   },
 
   getColumnasCampana() {
