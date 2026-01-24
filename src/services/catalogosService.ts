@@ -1,3 +1,5 @@
+// src/services/catalogosService.ts
+
 import { api } from './api'
 import { mockCatalogosApi } from './mockData'
 import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos'

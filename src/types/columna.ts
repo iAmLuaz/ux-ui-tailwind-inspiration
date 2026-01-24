@@ -26,13 +26,13 @@ export interface CreateColumnaLineaPayload {
 }
 
 export interface UpdateColumnaLineaPayload {
-  idABCConfigMapeoLinea: number
-  idABCCatColumna: number
-  bolCarga: boolean
-  bolValidacion: boolean
-  bolEnvio: boolean
-  regex: string
-  idUsuario: number
+	idABCConfigMapeoLinea: number
+	idABCCatColumna: number
+	bolCarga: boolean
+	bolValidacion: boolean
+	bolEnvio: boolean
+	regex: string
+	idUsuario: number
 }
 
 export interface PatchColumnaLineaPayload {
