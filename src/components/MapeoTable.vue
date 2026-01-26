@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { Filter, Edit3, Search, Eye } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { Edit3, Search, Eye } from 'lucide-vue-next'
+import FilterDropdown from './FilterDropdown.vue'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 
 type MapeoRow = MapeoData | MapeoCampanaData
@@ -48,172 +50,90 @@ const emit = defineEmits<Emits>()
 
 const getCampanaLabel = (id?: number) =>
   props.campanasDisponibles.find(x => x.value === id)?.label || (id ?? '-')
+
+const selectedLineas = computed({
+  get: () => props.selectedFilters.lineas,
+  set: value => {
+    props.selectedFilters.lineas = value
+  }
+})
+
+const selectedCampanas = computed({
+  get: () => props.selectedFilters.campanas,
+  set: value => {
+    props.selectedFilters.campanas = value
+  }
+})
+
+const selectedStatus = computed({
+  get: () => props.selectedFilters.status,
+  set: value => {
+    props.selectedFilters.status = value
+  }
+})
+
+const statusOptions = [
+  { label: 'Activos', value: true },
+  { label: 'Inactivos', value: false }
+]
+
+const thClass = 'px-4 py-3 w-[18%]'
+const thSmallClass = 'px-4 py-3 w-[8%]'
 </script>
 
 <template>
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
-    <div class="overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
-      <table class="w-full text-left border-collapse">
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col  min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
+    <div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
+      <table class="w-full text-left border-collapse table-fixed">
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-            <th class="px-4 py-3 w-16">ID</th>
+            <th :class="thSmallClass">ID</th>
             
-            <th class="px-4 py-3 relative w-48">
-              <button 
-                type="button"
-                class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-                :class="props.openFilter === 'linea' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-                @click.stop="emit('toggleFilter', 'linea')"
-              >
-                <span>Línea</span>
-                <Filter 
-                  class="w-3.5 h-3.5 transition-colors" 
-                  :class="[
-                    props.selectedFilters.lineas.length < props.lineasDisponibles.length ? 'text-[#00357F] fill-blue-100' : 'text-slate-400',
-                    props.openFilter === 'linea' ? 'text-[#00357F]' : ''
-                  ]" 
-                />
-              </button>
-
-              <div 
-                v-if="props.openFilter === 'linea'" 
-                class="absolute top-full left-0 mt-2 w-60 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden transform origin-top-left transition-all"
-              >
-                <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por línea</span>
-                  <span class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline" @click="emit('selectAllLineas')">Ver todas</span>
-                </div>
-
-                <div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-                  <label 
-                    v-for="l in props.lineasDisponibles" 
-                    :key="l.value" 
-                    class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-                  >
-                    <div class="relative flex items-center">
-                      <input 
-                        type="checkbox" 
-                        :value="l.value" 
-                        v-model="props.selectedFilters.lineas" 
-                        class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-                      >
-                    </div>
-                    <span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-                      {{ l.label }}
-                    </span>
-                  </label>
-                </div>
-              </div>
+            <th :class="thClass + ' relative'">
+              <FilterDropdown
+                label="Línea"
+                header-label="Filtrar por línea"
+                :options="props.lineasDisponibles"
+                v-model="selectedLineas"
+                :open="props.openFilter === 'linea'"
+                :is-filtered="selectedLineas.length < props.lineasDisponibles.length"
+                @toggle="emit('toggleFilter', 'linea')"
+                @select-all="emit('selectAllLineas')"
+              />
             </th>
 
-            <th v-if="props.activeTab === 'campana'" class="px-4 py-3 relative w-48">
-              <button
-                type="button"
-                class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-                :class="props.openFilter === 'campana' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-                @click.stop="emit('toggleFilter', 'campana')"
-              >
-                <span>Campaña</span>
-                <Filter
-                  class="w-3.5 h-3.5 transition-colors"
-                  :class="[
-                    props.selectedFilters.campanas.length && props.selectedFilters.campanas.length < props.campanasDisponibles.length
-                      ? 'text-[#00357F] fill-blue-100'
-                      : 'text-slate-400',
-                    props.openFilter === 'campana' ? 'text-[#00357F]' : ''
-                  ]"
-                />
-              </button>
-
-              <div
-                v-if="props.openFilter === 'campana'"
-                class="absolute top-full left-0 mt-2 w-60 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden transform origin-top-left transition-all"
-              >
-                <div class="px-3 py-2 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Filtrar por campaña</span>
-                  <span
-                    class="text-[10px] text-blue-600 font-medium cursor-pointer hover:underline"
-                    @click="emit('selectAllCampanas')"
-                  >
-                    Ver todas
-                  </span>
-                </div>
-
-                <div class="p-1.5 space-y-0.5 max-h-60 overflow-y-auto">
-                  <label
-                    v-for="c in props.campanasDisponibles"
-                    :key="c.value"
-                    class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none"
-                  >
-                    <div class="relative flex items-center">
-                      <input
-                        type="checkbox"
-                        :value="c.value"
-                        v-model="props.selectedFilters.campanas"
-                        class="peer h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer transition-all"
-                      >
-                    </div>
-                    <span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">
-                      {{ c.label }}
-                    </span>
-                  </label>
-                </div>
-              </div>
+            <th v-if="props.activeTab === 'campana'" :class="thClass + ' relative'">
+              <FilterDropdown
+                label="Campaña"
+                header-label="Filtrar por campaña"
+                :options="props.campanasDisponibles"
+                v-model="selectedCampanas"
+                :open="props.openFilter === 'campana'"
+                :is-filtered="!!selectedCampanas.length && selectedCampanas.length < props.campanasDisponibles.length"
+                @toggle="emit('toggleFilter', 'campana')"
+                @select-all="emit('selectAllCampanas')"
+              />
             </th>
 
-            <th class="px-4 py-3 text-left">Nombre</th>
+            <th :class="thClass + ' text-left'">Nombre</th>
             <!-- <th class="px-4 py-3 text-left">Información</th> -->
             
-            <th class="px-4 py-3 relative w-36">
-              <button 
-                type="button"
-                class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-                :class="props.openFilter === 'status' ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
-                @click.stop="emit('toggleFilter', 'status')"
-              >
-                <span>Estado</span>
-                <Filter 
-                  class="w-3.5 h-3.5 transition-colors" 
-                  :class="[
-                    props.selectedFilters.status.length < 2 ? 'text-[#00357F] fill-blue-100' : 'text-slate-400',
-                    props.openFilter === 'status' ? 'text-[#00357F]' : ''
-                  ]" 
-                />
-              </button>
-
-              <div 
-                v-if="props.openFilter === 'status'" 
-                class="absolute top-full right-0 md:left-0 mt-2 w-48 bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
-              >
-                <div class="px-3 py-2 bg-slate-50 border-b border-slate-100">
-                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estado</span>
-                </div>
-                
-                <div class="p-1.5 space-y-0.5">
-                  <label class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none">
-                    <input 
-                      type="checkbox" 
-                      :value="true" 
-                      v-model="props.selectedFilters.status" 
-                      class="h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer"
-                    >
-                    <span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">Activos</span>
-                  </label>
-                  
-                  <label class="flex items-center w-full px-3 py-2 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group select-none">
-                    <input 
-                      type="checkbox" 
-                      :value="false" 
-                      v-model="props.selectedFilters.status" 
-                      class="h-4 w-4 rounded border-slate-300 text-[#00357F] focus:ring-[#00357F]/20 cursor-pointer"
-                    >
-                    <span class="ml-3 text-sm text-slate-600 group-hover:text-[#00357F] font-medium normal-case">Inactivos</span>
-                  </label>
-                </div>
-              </div>
+            <th :class="thSmallClass + ' relative'">
+              <FilterDropdown
+                label="Estado"
+                header-label="Estado"
+                :options="statusOptions"
+                v-model="selectedStatus"
+                :open="props.openFilter === 'status'"
+                :is-filtered="selectedStatus.length < 2"
+                :show-select-all="false"
+                menu-width="w-48"
+                align="right"
+                @toggle="emit('toggleFilter', 'status')"
+              />
             </th>
             
-            <th class="px-4 py-3 text-right w-24">Acciones</th>
+            <th :class="thClass + ' text-right'">Acciones</th>
           </tr>
         </thead>
       

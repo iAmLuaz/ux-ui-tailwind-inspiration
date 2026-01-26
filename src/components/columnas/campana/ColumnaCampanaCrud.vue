@@ -1,6 +1,6 @@
 <!-- // src/components/columnas/campana/ColumnaCampanaCrud.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useColumnasCampana } from '@/composables/useColumnasCampana'
 import { useMapeosCampana } from '@/composables/useMapeosCampana'
 import { catalogosService } from '@/services/catalogosService'
@@ -11,7 +11,6 @@ import { columnaService } from '@/services/columnaService'
 import ColumnaCampanaTable from './ColumnaCampanaTable.vue'
 import ColumnaCampanaModal from './ColumnaCampanaModal.vue'
 import ColumnaDetailsModal from '../ColumnaDetailsModal.vue'
-import { Megaphone, Plus } from 'lucide-vue-next'
 
 interface Option {
 	label: string
@@ -22,16 +21,39 @@ const columnasCatalogo = ref<Option[]>([])
 const { mapeos, fetchAll: fetchMapeos } = useMapeosCampana()
 const { items, loading, error, fetchAll, toggle } = useColumnasCampana()
 
-const pageSize = 10
+const openFilter = ref<string | null>(null)
+const selectedFilters = reactive({
+	mapeos: [] as number[],
+	columnas: [] as number[],
+	status: [] as boolean[]
+})
+
+const pageSize = ref(10)
 const currentPage = ref(1)
 
+const filtered = computed(() =>
+	items.value.filter(item => {
+		const matchMapeo = selectedFilters.mapeos.length
+			? selectedFilters.mapeos.includes(item.mapeoId)
+			: true
+		const matchColumna = selectedFilters.columnas.length
+			? selectedFilters.columnas.includes(item.columnaId)
+			: true
+		const matchStatus = selectedFilters.status.length
+			? selectedFilters.status.includes(item.bolActivo)
+			: true
+
+		return matchMapeo && matchColumna && matchStatus
+	})
+)
+
 const totalPages = computed(() =>
-	Math.max(1, Math.ceil(items.value.length / pageSize))
+	Math.max(1, Math.ceil(filtered.value.length / pageSize.value))
 )
 
 const paginated = computed(() => {
-	const start = (currentPage.value - 1) * pageSize
-	return items.value.slice(start, start + pageSize)
+	const start = (currentPage.value - 1) * pageSize.value
+	return filtered.value.slice(start, start + pageSize.value)
 })
 
 const showModal = ref(false)
@@ -103,46 +125,64 @@ function openDetails(item: ColumnaCampanaModel) {
 	showDetails.value = true
 }
 
+function toggleFilterMenu(column: string) {
+	openFilter.value = openFilter.value === column ? null : column
+}
+
 onMounted(() => {
 	fetchAll()
 	fetchCatalogos()
 	fetchMapeos()
+	updatePageSize()
+	window.addEventListener('resize', updatePageSize)
 })
+
+onUnmounted(() => {
+	window.removeEventListener('resize', updatePageSize)
+})
+
+watch(filtered, () => {
+	if (currentPage.value > totalPages.value) {
+		currentPage.value = totalPages.value
+	}
+})
+
+watch(
+	selectedFilters,
+	() => {
+		currentPage.value = 1
+	},
+	{ deep: true }
+)
+
+function updatePageSize() {
+	const available = window.innerHeight * 0.87 - 240
+	const rows = Math.floor(available / 44)
+	pageSize.value = Math.max(8, rows || 8)
+}
+
+defineExpose({ openAdd })
 </script>
 <template>
-	<div>
-		<div class="p-6 bg-slate-50 min-h-screen font-sans text-slate-800">
-			<div class="max-w-7xl mx-auto space-y-4">
-				<div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
-					<div>
-						<h1 class="text-2xl font-bold text-[#00357F] tracking-tight flex items-center gap-2">
-							<Megaphone class="w-6 h-6" />
-							Columnas de mapeo de campañas
-						</h1>
-						<p class="text-sm text-slate-500 mt-1">
-							Administración de columnas asociadas a mapeos de campañas.
-						</p>
-					</div>
-
-					<button
-						@click="openAdd"
-						class="flex items-center gap-2 bg-[#FFD100] hover:bg-yellow-400 text-[#00357F] text-sm font-bold py-2 px-4 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
-					>
-						<Plus class="w-4 h-4" />
-						Nuevo
-					</button>
-				</div>
-
+	<div @click.self="openFilter = null">
+		<div class="">
+			<div class="">
 				<ColumnaCampanaTable
 					:columnas="paginated"
 					:mapeos="mapeos"
 					:columnas-catalogo="columnasCatalogo"
+					:selected-filters="selectedFilters"
+					:open-filter="openFilter"
+					:total-columnas="filtered.length"
 					:is-loading="loading"
 					:current-page="currentPage"
 					:total-pages="totalPages"
 					@toggle="toggle"
 					@edit="openEdit"
 					@details="openDetails"
+					@toggle-filter="toggleFilterMenu"
+					@select-all-mapeos="selectedFilters.mapeos = mapeos.map(x => x.value)"
+					@select-all-columnas="selectedFilters.columnas = columnasCatalogo.map(x => x.value)"
 					@prev="currentPage--"
 					@next="currentPage++"
 				/>
@@ -162,6 +202,7 @@ onMounted(() => {
 			:mapeos="mapeos"
 			:columnas="columnasCatalogo"
 			:initial-data="selected"
+			:existing-items="items"
 			:is-loading="loading"
 			@close="showModal = false"
 			@saved="handleSave"

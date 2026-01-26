@@ -16,6 +16,7 @@ const props = defineProps<{
 	isLoading: boolean
 	mapeos: Option[]
 	columnas: Option[]
+	existingItems: ColumnaLineaModel[]
 }>()
 
 const emit = defineEmits(['close', 'saved'])
@@ -30,6 +31,22 @@ const form = ref({
 })
 
 const isEditing = computed(() => props.mode === 'edit')
+
+const availableColumnas = computed(() => {
+	const selectedMapeo = form.value.idABCConfigMapeoLinea
+	if (!selectedMapeo) return props.columnas
+
+	const taken = new Set(
+		props.existingItems
+			.filter(item => item.mapeoId === selectedMapeo)
+			.map(item => item.columnaId)
+	)
+
+	return props.columnas.filter(option => {
+		if (isEditing.value && option.value === form.value.idABCCatColumna) return true
+		return !taken.has(option.value)
+	})
+})
 
 function resetForm() {
 	form.value = {
@@ -74,6 +91,19 @@ watch(
 		}
 	},
 	{ immediate: true }
+)
+
+watch(
+	() => form.value.idABCConfigMapeoLinea,
+	() => {
+		if (!form.value.idABCCatColumna) return
+		const stillAvailable = availableColumnas.value.some(
+			c => c.value === form.value.idABCCatColumna
+		)
+		if (!stillAvailable) {
+			form.value.idABCCatColumna = 0
+		}
+	}
 )
 
 async function save() {
@@ -163,7 +193,7 @@ async function save() {
 							>
 								<option disabled value="0">Seleccione una opción</option>
 								<option
-									v-for="c in columnas"
+									v-for="c in availableColumnas"
 									:key="c.value"
 									:value="c.value"
 								>

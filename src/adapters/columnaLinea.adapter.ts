@@ -7,8 +7,8 @@ export function adaptColumnasLinea(raw: any[]): ColumnaLineaModel[] {
     .filter(item => item && typeof item === 'object')
     .map(item => ({
         tipo: 'linea',
-        mapeoId: Number(item.idABCConfigMapeoLinea),
-        columnaId: Number(item.idABCCatColumna),
+        mapeoId: Number(item.llaveMapeoLineaColumna?.idABCConfigMapeoLinea ?? item.idABCConfigMapeoLinea),
+        columnaId: Number(item.llaveMapeoLineaColumna?.idABCCatColumna ?? item.idABCCatColumna),
         bolActivo: !!item.bolActivo,
         bolCarga: !!item.bolCarga,
         bolValidacion: !!item.bolValidacion,

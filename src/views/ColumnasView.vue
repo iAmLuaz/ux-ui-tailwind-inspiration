@@ -1,47 +1,36 @@
+<!-- // src/views/ColumnasView.vue -->
 <script setup lang="ts">
 import { ref } from 'vue'
+import ColumnasHeader from '@/components/columnas/ColumnasHeader.vue'
 import ColumnaLineaCrud from '@/components/columnas/linea/ColumnaLineaCrud.vue'
 import ColumnaCampanaCrud from '@/components/columnas/campana/ColumnaCampanaCrud.vue'
-import { Layers, Megaphone } from 'lucide-vue-next'
 
 type TabKey = 'linea' | 'campana'
 
-const tabs: {
-  key: TabKey
-  label: string
-  icon: any
-}[] = [
-  { key: 'linea', label: 'Líneas de negocio', icon: Layers },
-  { key: 'campana', label: 'Campañas', icon: Megaphone }
-]
-
 const activeTab = ref<TabKey>('linea')
+
+const lineaRef = ref<InstanceType<typeof ColumnaLineaCrud> | null>(null)
+const campanaRef = ref<InstanceType<typeof ColumnaCampanaCrud> | null>(null)
+
+function handleAdd() {
+	if (activeTab.value === 'linea') {
+		lineaRef.value?.openAdd()
+	} else {
+		campanaRef.value?.openAdd()
+	}
+}
 </script>
 
 <template>
   <div class="p-6 bg-slate-50 min-h-screen font-sans text-slate-800">
-    <div class="max-w-7xl mx-auto space-y-10">
+    <div class="max-w-7xl mx-auto space-y-4">
+		<ColumnasHeader
+			v-model:activeTab="activeTab"
+			@add="handleAdd"
+		/>
 
-      <header class="flex justify-end">
-        <div class="bg-white p-1 rounded-lg border border-slate-200 shadow-sm inline-flex">
-          <button
-            v-for="t in tabs"
-            :key="t.key"
-            @click="activeTab = t.key"
-            class="flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-md transition-all"
-            :class="activeTab === t.key
-              ? 'bg-[#00357F] text-white shadow-sm cursor-pointer'
-              : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer'"
-          >
-            <component :is="t.icon" class="w-4 h-4" />
-            {{ t.label }}
-          </button>
-        </div>
-      </header>
-
-      <ColumnaLineaCrud v-show="activeTab === 'linea'" />
-      <ColumnaCampanaCrud v-show="activeTab === 'campana'" />
-
+		<ColumnaLineaCrud ref="lineaRef" v-show="activeTab === 'linea'" />
+		<ColumnaCampanaCrud ref="campanaRef" v-show="activeTab === 'campana'" />
     </div>
   </div>
 </template>

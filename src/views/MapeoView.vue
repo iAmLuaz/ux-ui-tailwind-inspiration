@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { catalogosService } from '../services/catalogosService'
 import { mapeoService } from '../services/mapeoService'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
@@ -30,7 +30,7 @@ const error = ref<string | null>(null)
 
 const openFilter = ref<string | null>(null)
 
-const pageSize = 10
+const pageSize = ref(10)
 const currentPage = ref(1)
 
 const selectedFilters = reactive({
@@ -83,12 +83,12 @@ const filteredMapeos = computed(() => {
 })
 
 const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredMapeos.value.length / pageSize))
+  Math.max(1, Math.ceil(filteredMapeos.value.length / pageSize.value))
 )
 
 const paginatedMapeos = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredMapeos.value.slice(start, start + pageSize)
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredMapeos.value.slice(start, start + pageSize.value)
 })
 
 const canPrevPage = computed(() => currentPage.value > 1)
@@ -228,7 +228,6 @@ async function fetchCatalogosBase() {
     lineasDisponibles.value = mapCatalogosToOptions(lineas)
     campanasCatalogo.value = mapCatalogosToOptions(campanas)
 
-    // keep filters empty on init; only filter when user selects
   } catch (e: any) {
     error.value = e.message
   }
@@ -237,6 +236,12 @@ async function fetchCatalogosBase() {
 onMounted(() => {
   fetchCatalogosBase()
   fetchMapeos()
+  updatePageSize()
+  window.addEventListener('resize', updatePageSize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updatePageSize)
 })
 
 watch(filteredMapeos, () => {
@@ -244,6 +249,20 @@ watch(filteredMapeos, () => {
     currentPage.value = totalPages.value
   }
 })
+
+watch(
+  selectedFilters,
+  () => {
+    currentPage.value = 1
+  },
+  { deep: true }
+)
+
+function updatePageSize() {
+  const available = window.innerHeight * 0.87 - 260
+  const rows = Math.floor(available / 44)
+  pageSize.value = Math.max(8, rows || 8)
+}
 </script>
 
 <template>
@@ -253,6 +272,7 @@ watch(filteredMapeos, () => {
       <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
         <div>
           <h1 class="text-2xl font-bold text-[#00357F] tracking-tight flex items-center gap-2">
+            <Layers class="w-6 h-6"/>
             Gestión de Mapeos
           </h1>
           <p class="text-sm text-slate-500 mt-1">

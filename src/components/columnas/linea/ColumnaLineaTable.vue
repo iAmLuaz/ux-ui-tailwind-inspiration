@@ -1,6 +1,8 @@
 <!-- // src/components/columnas/ColumnaLineaTable.vue -->
 <script setup lang="ts">
+import { computed } from 'vue'
 import { Eye, Edit3, Search } from 'lucide-vue-next'
+import FilterDropdown from '@/components/FilterDropdown.vue'
 import type { ColumnaLineaModel } from '@/models/columnaLinea.model'
 
 interface Option {
@@ -8,19 +10,31 @@ interface Option {
 	value: number
 }
 
+interface SelectedFilters {
+	mapeos: number[]
+	columnas: number[]
+	status: boolean[]
+}
+
 const props = defineProps<{
 	columnas: ColumnaLineaModel[]
 	mapeos: Option[]
 	columnasCatalogo: Option[]
+	selectedFilters: SelectedFilters
+	openFilter: string | null
 	isLoading: boolean
 	currentPage: number
 	totalPages: number
+	totalColumnas: number
 }>()
 
 const emit = defineEmits<{
 	(e: 'toggle', item: ColumnaLineaModel): void
 	(e: 'edit', item: ColumnaLineaModel): void
 	(e: 'details', item: ColumnaLineaModel): void
+	(e: 'toggleFilter', column: string): void
+	(e: 'selectAllMapeos'): void
+	(e: 'selectAllColumnas'): void
 	(e: 'prev'): void
 	(e: 'next'): void
 }>()
@@ -32,22 +46,83 @@ function getMapeoLabel(id: number) {
 function getColumnaLabel(id: number) {
 	return props.columnasCatalogo.find(c => c.value === id)?.label ?? `Columna ${id}`
 }
+
+const selectedMapeos = computed({
+	get: () => props.selectedFilters.mapeos,
+	set: value => {
+		props.selectedFilters.mapeos = value
+	}
+})
+
+const selectedColumnas = computed({
+	get: () => props.selectedFilters.columnas,
+	set: value => {
+		props.selectedFilters.columnas = value
+	}
+})
+
+const selectedStatus = computed({
+	get: () => props.selectedFilters.status,
+	set: value => {
+		props.selectedFilters.status = value
+	}
+})
+
+const statusOptions = [
+	{ label: 'Activos', value: true },
+	{ label: 'Inactivos', value: false }
+]
+
 </script>
 
 <template>
-	<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
-		<div class="overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
-			<table class="w-full text-left border-collapse">
+	<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col  min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
+		<div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
+			<table class="w-full text-left border-collapse table-fixed">
 				<thead>
 					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-						<th class="px-4 py-3 text-left">Mapeo</th>
-						<th class="px-4 py-3 text-left">Columna</th>
-						<th class="px-4 py-3 text-center w-24">Activo</th>
-						<th class="px-4 py-3 text-center w-20">Cargar</th>
-						<th class="px-4 py-3 text-center w-20">Validar</th>
-						<th class="px-4 py-3 text-center w-20">Enviar</th>
-						<th class="px-4 py-3 text-left">Regex</th>
-						<th class="px-4 py-3 text-right w-24">Acciones</th>
+						<th class="px-4 py-3 w-[20%] relative">
+							<FilterDropdown
+								label="Mapeo"
+								header-label="Filtrar por mapeo"
+								:options="props.mapeos"
+								v-model="selectedMapeos"
+								:open="props.openFilter === 'mapeo'"
+								:is-filtered="selectedMapeos.length < props.mapeos.length"
+								@toggle="emit('toggleFilter', 'mapeo')"
+								@select-all="emit('selectAllMapeos')"
+							/>
+						</th>
+						<th class="px-4 py-3 w-[20%] relative">
+							<FilterDropdown
+								label="Columna"
+								header-label="Filtrar por columna"
+								:options="props.columnasCatalogo"
+								v-model="selectedColumnas"
+								:open="props.openFilter === 'columna'"
+								:is-filtered="selectedColumnas.length < props.columnasCatalogo.length"
+								@toggle="emit('toggleFilter', 'columna')"
+								@select-all="emit('selectAllColumnas')"
+							/>
+						</th>
+						<th class="px-4 py-3 w-[10%] relative text-center">
+							<FilterDropdown
+								label="Activo"
+								header-label="Estado"
+								:options="statusOptions"
+								v-model="selectedStatus"
+								:open="props.openFilter === 'status'"
+								:is-filtered="selectedStatus.length < 2"
+								:show-select-all="false"
+								menu-width="w-48"
+								@toggle="emit('toggleFilter', 'status')"
+							/>
+						</th>
+						<th class="px-4 py-3 w-[8%] text-center">Cargar</th>
+						<th class="px-4 py-3 w-[8%] text-center">Validar</th>
+						<th class="px-4 py-3 w-[8%] text-center">Enviar</th>
+						<th class="px-4 py-3 w-[14%] text-left">Regex</th>
+						<th class="px-4 py-3 w-[12%] text-right">Acciones</th>
 					</tr>
 				</thead>
 
@@ -177,7 +252,7 @@ function getColumnaLabel(id: number) {
 			</table>
 
 			<div class="px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs text-slate-500 flex justify-between items-center rounded-b-xl">
-				<span>Mostrando {{ props.columnas.length }} registros</span>
+				<span>Mostrando {{ props.columnas.length }} de {{ props.totalColumnas }} registros</span>
 				<div class="flex gap-2 items-center">
 					<button
 						class="hover:text-[#00357F] disabled:opacity-50"

@@ -26,7 +26,11 @@ function formatTimestamp(value?: string) {
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
+  <div
+    v-if="show"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity"
+    @click.self="emit('close')"
+  >
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
       <div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">

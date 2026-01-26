@@ -72,7 +72,12 @@ export function useColumnasCampana() {
         loading.value = true
         try {
             await columnaService.updateColumnaCampana({
-            ...payload,
+                idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
+                idABCCatColumna: payload.idABCCatColumna,
+                bolCarga: payload.bolCarga,
+                bolValidacion: payload.bolValidacion,
+                bolEnvio: payload.bolEnvio,
+                regex: payload.regex,
             idUsuario: 1
             })
             await fetchAll()

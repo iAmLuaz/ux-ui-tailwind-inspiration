@@ -1,8 +1,19 @@
 // src/types/columna.ts
-export interface ColumnaData {
+export interface ColumnaLineaKey {
   idABCConfigMapeoLinea: number
-  bolActivo: boolean
   idABCCatColumna: number
+}
+
+export interface ColumnaCampanaKey {
+  idABCConfigMapeoCampana: number
+  idABCCatColumna: number
+}
+
+export interface ColumnaData {
+  llaveMapeoLineaColumna?: ColumnaLineaKey
+  idABCConfigMapeoLinea?: number
+  idABCCatColumna?: number
+  bolActivo: boolean
   bolCarga: boolean
   bolValidacion: boolean
   bolEnvio: boolean
@@ -12,8 +23,9 @@ export interface ColumnaData {
   fecUltModificacion: string
 }
 
-export type ColumnaCampanaData = Omit<ColumnaData, 'idABCConfigMapeoLinea'> & {
-  idABCConfigMapeoCampana: number
+export type ColumnaCampanaData = Omit<ColumnaData, 'llaveMapeoLineaColumna' | 'idABCConfigMapeoLinea'> & {
+  llaveMapeoCampanaColumna?: ColumnaCampanaKey
+  idABCConfigMapeoCampana?: number
   idABCCatCampana: number
 }
 
@@ -26,13 +38,14 @@ export interface CreateColumnaLineaPayload {
 }
 
 export interface UpdateColumnaLineaPayload {
-	idABCConfigMapeoLinea: number
-	idABCCatColumna: number
-	bolCarga: boolean
-	bolValidacion: boolean
-	bolEnvio: boolean
-	regex: string
-	idUsuario: number
+  llaveMapeoLineaColumna?: ColumnaLineaKey
+  idABCConfigMapeoLinea?: number
+  idABCCatColumna?: number
+  bolCarga: boolean
+  bolValidacion: boolean
+  bolEnvio: boolean
+  regex: string
+  idUsuario: number
 }
 
 export interface PatchColumnaLineaPayload {
@@ -42,8 +55,9 @@ export interface PatchColumnaLineaPayload {
 }
 
 export interface UpdateColumnaCampanaPayload {
-  idABCConfigMapeoCampana: number
-  idABCCatColumna: number
+  llaveMapeoCampanaColumna?: ColumnaCampanaKey
+  idABCConfigMapeoCampana?: number
+  idABCCatColumna?: number
   bolCarga: boolean
   bolValidacion: boolean
   bolEnvio: boolean

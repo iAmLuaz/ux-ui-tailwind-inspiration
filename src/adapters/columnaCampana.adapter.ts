@@ -5,8 +5,8 @@ export function adaptColumnaCampana(
   raw: ColumnaCampanaData
 ): ColumnaCampanaModel {
   return {
-    mapeoId: raw.idABCConfigMapeoCampana,
-    columnaId: raw.idABCCatColumna,
+    mapeoId: Number(raw.llaveMapeoCampanaColumna?.idABCConfigMapeoCampana ?? raw.idABCConfigMapeoCampana),
+    columnaId: Number(raw.llaveMapeoCampanaColumna?.idABCCatColumna ?? raw.idABCCatColumna),
     bolActivo: raw.bolActivo,
     bolCarga: raw.bolCarga,
     bolValidacion: raw.bolValidacion,
