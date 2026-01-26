@@ -2,6 +2,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { columnaService } from '@/services/columnaService'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import type { ColumnaLineaModel } from '@/models/columnaLinea.model'
 
 interface Option {
@@ -157,25 +158,12 @@ async function save() {
 							Mapeo <span class="text-red-500 ml-1">*</span>
 						</label>
 						<div class="relative">
-							<select
-								v-model.number="form.idABCConfigMapeoLinea"
-								required
-								class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
-								:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
+							<SearchableSelect
+								v-model="form.idABCConfigMapeoLinea"
+								:options="mapeos"
 								:disabled="isEditing"
-							>
-								<option disabled value="0">Seleccione una opción</option>
-								<option
-									v-for="m in mapeos"
-									:key="m.value"
-									:value="m.value"
-								>
-									{{ m.label }}
-								</option>
-							</select>
-							<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-							</div>
+								placeholder="Seleccione una opción"
+							/>
 						</div>
 					</div>
 
@@ -184,25 +172,12 @@ async function save() {
 							Columna <span class="text-red-500 ml-1">*</span>
 						</label>
 						<div class="relative">
-							<select
-								v-model.number="form.idABCCatColumna"
-								required
-								class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
-								:class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
+							<SearchableSelect
+								v-model="form.idABCCatColumna"
+								:options="availableColumnas"
 								:disabled="isEditing"
-							>
-								<option disabled value="0">Seleccione una opción</option>
-								<option
-									v-for="c in availableColumnas"
-									:key="c.value"
-									:value="c.value"
-								>
-									{{ c.label }}
-								</option>
-							</select>
-							<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-gray-500">
-								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-							</div>
+								placeholder="Seleccione una opción"
+							/>
 						</div>
 					</div>
 

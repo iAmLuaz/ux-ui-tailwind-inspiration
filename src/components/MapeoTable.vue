@@ -77,19 +77,27 @@ const statusOptions = [
   { label: 'Inactivos', value: false }
 ]
 
-const thClass = 'px-4 py-3 w-[18%]'
-const thSmallClass = 'px-4 py-3 w-[8%]'
+const thClass = 'px-4 py-3'
+const thSmallClass = 'px-4 py-3'
 </script>
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col  min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
     <div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
+        <colgroup>
+          <col class="w-[8%]" />
+          <col class="w-[18%]" />
+          <col v-if="props.activeTab === 'campana'" class="w-[18%]" />
+          <col class="w-[26%]" />
+          <col class="w-[8%]" />
+          <col class="w-[22%]" />
+        </colgroup>
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
             <th :class="thSmallClass">ID</th>
             
-            <th :class="thClass + ' relative'">
+            <th :class="thClass + ' relative'"> 
               <FilterDropdown
                 label="Línea"
                 header-label="Filtrar por línea"
