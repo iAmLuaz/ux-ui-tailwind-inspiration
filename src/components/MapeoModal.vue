@@ -11,6 +11,9 @@ interface FormData {
   idABCCatCampana?: number | ''
   nombre: string
   descripcion: string
+  validar?: boolean
+  envio?: boolean
+  idUsuario?: number | ''
 }
 
 interface Props {
@@ -52,6 +55,9 @@ function initializeFormData(): FormData {
       idABCCatCampana: props.initialData.idABCCatCampana ?? '',
       nombre: props.initialData.nombre ?? '',
       descripcion: props.initialData.descripcion ?? ''
+      ,validar: props.initialData.validar ?? false
+      ,envio: props.initialData.envio ?? false
+      ,idUsuario: props.initialData.idUsuario ?? props.initialData.idABCUsuario ?? 1
     }
   }
 
@@ -60,6 +66,9 @@ function initializeFormData(): FormData {
     idABCCatCampana: '',
     nombre: '',
     descripcion: ''
+    ,validar: false
+    ,envio: false
+    ,idUsuario: 1
   }
 }
 
@@ -148,6 +157,18 @@ function handleSave() {
               required
               rows="3"
             />
+          </div>
+
+          <div class="flex gap-4 items-center">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" v-model="formData.validar" class="w-4 h-4" />
+              <span class="text-sm font-medium text-gray-700">Validar</span>
+            </label>
+
+            <label class="flex items-center gap-2">
+              <input type="checkbox" v-model="formData.envio" class="w-4 h-4" />
+              <span class="text-sm font-medium text-gray-700">Envio</span>
+            </label>
           </div>
 
           <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">

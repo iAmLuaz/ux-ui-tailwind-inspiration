@@ -1,4 +1,3 @@
-// src/types/catalogos.ts
 export type CatalogoCodigo = 'ROL' | 'LNN' | 'CMP' | 'CLM'
 
 export interface CatalogoItem {
@@ -6,8 +5,8 @@ export interface CatalogoItem {
 	bolActivo: boolean
 	codigo: string
 	nombre: string
-	fecCreacion: string
-	fecUltModificacion: string
+	fechaCreacion: string
+	fechaUltimaModificacion: string
 }
 
 export type CatalogosResponse = CatalogoItem[]

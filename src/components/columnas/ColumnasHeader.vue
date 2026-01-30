@@ -1,4 +1,3 @@
-<!-- // src/components/columnas/ColumnasHeader.vue -->
 <script setup lang="ts">
 import { Layers, Megaphone, Plus } from 'lucide-vue-next'
 

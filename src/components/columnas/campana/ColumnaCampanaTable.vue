@@ -1,4 +1,3 @@
-<!-- // src/components/columnas/campana/ColumnaCampanaTable.vue -->
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Eye, Edit3, Search } from 'lucide-vue-next'
@@ -19,6 +18,9 @@ interface SelectedFilters {
 const props = defineProps<{
 	columnas: ColumnaCampanaModel[]
 	mapeos: Option[]
+	mapeosRaw?: any[]
+	lineasCatalogo?: Option[]
+	campanasCatalogo?: Option[]
 	columnasCatalogo: Option[]
 	selectedFilters: SelectedFilters
 	openFilter: string | null
@@ -45,6 +47,26 @@ function getMapeoLabel(id: number) {
 
 function getColumnaLabel(id: number) {
 	return props.columnasCatalogo.find(c => c.value === id)?.label ?? `Columna ${id}`
+}
+
+function getLineaLabelByMapeo(mapeoId: number) {
+	try {
+		const m = (props.mapeosRaw || []).find((x: any) => Number(x.idABCConfigMapeoLinea) === Number(mapeoId))
+		const lineaId = m?.idABCCatLineaNegocio
+		return props.lineasCatalogo?.find(l => l.value === Number(lineaId))?.label ?? `Línea ${lineaId ?? '-'} `
+	} catch {
+		return '-'
+	}
+}
+
+function getCampanaLabelByMapeo(mapeoId: number) {
+	try {
+		const m = (props.mapeosRaw || []).find((x: any) => Number(x.idABCConfigMapeoLinea) === Number(mapeoId))
+		const campanaId = m?.idABCCatCampana
+		return props.campanasCatalogo?.find(c => c.value === Number(campanaId))?.label ?? (campanaId ? `Campaña ${campanaId}` : '-')
+	} catch {
+		return '-'
+	}
 }
 
 const selectedMapeos = computed({
@@ -80,18 +102,15 @@ const statusOptions = [
 		<div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
 			<table class="w-full text-left border-collapse table-fixed">
 				<colgroup>
-					<col class="w-[20%]" />
-					<col class="w-[20%]" />
-					<col class="w-[10%]" />
-					<col class="w-[8%]" />
-					<col class="w-[8%]" />
-					<col class="w-[8%]" />
-					<col class="w-[14%]" />
+					<col class="w-[40%]" />
 					<col class="w-[12%]" />
+					<col class="w-[48%]" />
 				</colgroup>
 				<thead>
 					<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-						<th class="px-4 py-3 w-[20%] relative">
+						<th class="px-4 py-3 relative">Línea</th>
+						<th class="px-4 py-3 relative">Campaña</th>
+						<th class="px-4 py-3 relative">
 							<FilterDropdown
 								label="Mapeo"
 								header-label="Filtrar por mapeo"
@@ -115,7 +134,7 @@ const statusOptions = [
 								@select-all="emit('selectAllColumnas')"
 							/>
 						</th>
-						<th class="px-4 py-3 w-[10%] relative text-center">
+						<th class="px-4 py-3 relative text-center">
 							<FilterDropdown
 								label="Activo"
 								header-label="Estado"
@@ -128,11 +147,7 @@ const statusOptions = [
 								@toggle="emit('toggleFilter', 'status')"
 							/>
 						</th>
-						<th class="px-4 py-3 w-[8%] text-center">Cargar</th>
-						<th class="px-4 py-3 w-[8%] text-center">Validar</th>
-						<th class="px-4 py-3 w-[8%] text-center">Enviar</th>
-						<th class="px-4 py-3 w-[14%] text-left">Regex</th>
-						<th class="px-4 py-3 w-[12%] text-right">Acciones</th>
+						<th class="px-4 py-3 text-right">Acciones</th>
 					</tr>
 				</thead>
 
@@ -162,6 +177,14 @@ const statusOptions = [
 								class="hover:bg-blue-50/30 transition-colors text-sm"
 								@dblclick="emit('details', c)"
 						>
+							<td class="px-4 py-2.5 text-slate-600">
+								{{ getLineaLabelByMapeo(c.mapeoId) }}
+							</td>
+
+							<td class="px-4 py-2.5 text-slate-600">
+								{{ getCampanaLabelByMapeo(c.mapeoId) }}
+							</td>
+
 							<td class="px-4 py-2.5 font-medium text-slate-700">
 								{{ getMapeoLabel(c.mapeoId) }}
 							</td>
@@ -198,42 +221,7 @@ const statusOptions = [
 								</label>
 							</td>
 
-							<td class="px-4 py-2.5 text-center">
-								<div class="flex justify-center">
-									<input
-										type="checkbox"
-										:checked="c.bolCarga"
-										disabled
-										class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
-									/>
-								</div>
-							</td>
-
-							<td class="px-4 py-2.5 text-center">
-								<div class="flex justify-center">
-									<input
-										type="checkbox"
-										:checked="c.bolValidacion"
-										disabled
-										class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
-									/>
-								</div>
-							</td>
-
-							<td class="px-4 py-2.5 text-center">
-								<div class="flex justify-center">
-									<input
-										type="checkbox"
-										:checked="c.bolEnvio"
-										disabled
-										class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
-									/>
-								</div>
-							</td>
-
-							<td class="px-4 py-2.5 text-slate-500 font-mono text-xs truncate max-w-[200px]" :title="c.regex">
-								{{ c.regex || '—' }}
-							</td>
+                            
 
 							<td class="px-4 py-2.5 text-right">
 								<div class="inline-flex items-center justify-end gap-2">

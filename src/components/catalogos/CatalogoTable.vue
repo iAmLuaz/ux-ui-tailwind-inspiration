@@ -61,8 +61,8 @@ function formatTimestamp(value?: string) {
             </td>
             <td class="px-4 py-2.5 text-slate-600">{{ item.codigo }}</td>
             <td class="px-4 py-2.5 font-semibold text-slate-700">{{ item.nombre }}</td>
-            <td class="px-4 py-2.5 text-slate-600">{{ formatTimestamp(item.fecCreacion) }}</td>
-            <td class="px-4 py-2.5 text-slate-600">{{ formatTimestamp(item.fecUltModificacion) }}</td>
+            <td class="px-4 py-2.5 text-slate-600">{{ formatTimestamp(item.fechaCreacion) }}</td>
+            <td class="px-4 py-2.5 text-slate-600">{{ formatTimestamp(item.fechaUltimaModificacion) }}</td>
           </tr>
         </tbody>
       </table>

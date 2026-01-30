@@ -1,4 +1,4 @@
-// src/types/columna.ts
+
 export interface ColumnaLineaKey {
   idABCConfigMapeoLinea: number
   idABCCatColumna: number
@@ -9,66 +9,88 @@ export interface ColumnaCampanaKey {
   idABCCatColumna: number
 }
 
-export interface ColumnaData {
-  llaveMapeoLineaColumna?: ColumnaLineaKey
-  idABCConfigMapeoLinea?: number
+export interface ColumnaValorCadena {
+  tipo?: { id?: number | null } | null
+  minimo?: number | null
+  maximo?: number | null
+}
+
+export interface ColumnaValorNumero {
+  tipo?: { id?: number | null } | null
+  enteros?: number | null
+  decimales?: number | null
+}
+
+export interface ColumnaValor {
+  tipo?: any | null
+  cadena?: ColumnaValorCadena | null
+  numero?: ColumnaValorNumero | null
+}
+
+export interface ColumnaBase {
   idABCCatColumna?: number
-  bolActivo: boolean
-  bolCarga: boolean
-  bolValidacion: boolean
-  bolEnvio: boolean
-  regex: string
-  fecCreacion: string
-  idABCUsuarioUltModificacion: number
-  fecUltModificacion: string
+  regex?: string | null
+  obligatorio?: boolean | null
+  bolActivo?: boolean
+  valor?: ColumnaValor | null
+
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
+  idABCUsuarioUltModificacion?: number
 }
 
-export type ColumnaCampanaData = Omit<ColumnaData, 'llaveMapeoLineaColumna' | 'idABCConfigMapeoLinea'> & {
-  llaveMapeoCampanaColumna?: ColumnaCampanaKey
-  idABCConfigMapeoCampana?: number
-  idABCCatCampana: number
+export interface ColumnaLineaData extends ColumnaBase {
+  scope: 'linea'
+  llaveMapeoLineaColumna: ColumnaLineaKey
+  idABCConfigMapeoLinea: number
 }
 
-export type ColumnaLineaGetResponse = ColumnaData
+export interface ColumnaCampanaData extends ColumnaBase {
+  scope: 'campana'
+  llaveMapeoCampanaColumna: ColumnaCampanaKey
+  idABCConfigMapeoCampana: number
+}
+
+export type ColumnaGetResponse =
+  | ColumnaLineaData
+  | ColumnaCampanaData
 
 export interface CreateColumnaLineaPayload {
-  idABCCatColumna: number
   idUsuario: number
-  regex: string
+  columna: {
+    idABCConfigMapeoLinea: number
+    idABCCatColumna: number
+    regex?: string | null
+    obligatorio?: boolean | null
+    valor?: ColumnaValor | null
+  }
 }
 
-export interface UpdateColumnaLineaPayload {
-  llaveMapeoLineaColumna?: ColumnaLineaKey
-  idABCConfigMapeoLinea?: number
-  idABCCatColumna?: number
-  bolCarga: boolean
-  bolValidacion: boolean
-  bolEnvio: boolean
-  regex: string
-  idUsuario: number
-}
+export interface UpdateColumnaLineaPayload extends CreateColumnaLineaPayload {}
 
 export interface PatchColumnaLineaPayload {
+  idUsuario: number
   idABCConfigMapeoLinea: number
   idABCCatColumna: number
-  idUsuario: number
 }
 
-export interface UpdateColumnaCampanaPayload {
-  llaveMapeoCampanaColumna?: ColumnaCampanaKey
-  idABCConfigMapeoCampana?: number
-  idABCCatColumna?: number
-  bolCarga: boolean
-  bolValidacion: boolean
-  bolEnvio: boolean
-  regex: string
+export interface CreateColumnaCampanaPayload {
   idUsuario: number
+  columna: {
+    idABCConfigMapeoCampana: number
+    idABCCatColumna: number
+    regex?: string | null
+    obligatorio?: boolean | null
+    valor?: ColumnaValor | null
+  }
 }
+
+export interface UpdateColumnaCampanaPayload extends CreateColumnaCampanaPayload {}
 
 export interface PatchColumnaCampanaPayload {
+  idUsuario: number
   idABCConfigMapeoCampana: number
   idABCCatColumna: number
-  idUsuario: number
 }
 
 export interface FieldConfig {

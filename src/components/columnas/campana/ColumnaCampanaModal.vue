@@ -1,4 +1,3 @@
-<!-- // src/components/columnas/campana/ColumnaCampanaModal.vue -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
@@ -24,9 +23,6 @@ const emit = defineEmits<{
 	(e: 'saved', payload: {
 		idABCConfigMapeoCampana: number
 		idABCCatColumna: number
-		bolCarga: boolean
-		bolValidacion: boolean
-		bolEnvio: boolean
 		regex: string
 	}): void
 }>()
@@ -34,9 +30,6 @@ const emit = defineEmits<{
 const form = ref({
 	idABCConfigMapeoCampana: 0,
 	idABCCatColumna: 0,
-	bolCarga: false,
-	bolValidacion: false,
-	bolEnvio: false,
 	regex: ''
 })
 
@@ -62,9 +55,6 @@ function resetForm() {
 	form.value = {
 		idABCConfigMapeoCampana: 0,
 		idABCCatColumna: 0,
-		bolCarga: false,
-		bolValidacion: false,
-		bolEnvio: false,
 		regex: ''
 	}
 }
@@ -83,10 +73,7 @@ watch(
 			form.value = {
 				idABCConfigMapeoCampana: initialData.mapeoId,
 				idABCCatColumna: initialData.columnaId,
-				bolCarga: initialData.bolCarga,
-				bolValidacion: initialData.bolValidacion,
-				bolEnvio: initialData.bolEnvio,
-				regex: initialData.regex
+				regex: initialData.regex ?? ''
 			}
 		}
 	},
@@ -158,23 +145,7 @@ function save() {
 						</div>
 					</div>
 
-					<div class="space-y-3 pt-2">
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Configuración</label>
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input type="checkbox" v-model="form.bolCarga" class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25" />
-								<span class="ml-2 text-sm text-gray-700 font-medium">Carga</span>
-							</label>
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input type="checkbox" v-model="form.bolValidacion" class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25" />
-								<span class="ml-2 text-sm text-gray-700 font-medium">Validación</span>
-							</label>
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input type="checkbox" v-model="form.bolEnvio" class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25" />
-								<span class="ml-2 text-sm text-gray-700 font-medium">Envío</span>
-							</label>
-						</div>
-					</div>
+                    
 
 					<div>
 						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Regex</label>

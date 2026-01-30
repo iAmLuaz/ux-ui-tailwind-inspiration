@@ -1,9 +1,8 @@
-<!-- // src/components/columnas/ColumnaLineaModal.vue -->
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { columnaService } from '@/services/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
-import type { ColumnaLineaModel } from '@/models/columnaLinea.model'
+import type { ColumnaLineaModel, ColumnaValor } from '@/models/columnaLinea.model'
 
 interface Option {
 	label: string
@@ -22,13 +21,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['close', 'saved'])
 
-const form = ref({
+const form = ref<{ idABCConfigMapeoLinea: number; idABCCatColumna: number; regex: string; obligatorio: boolean; valor: ColumnaValor | null }>({
 	idABCConfigMapeoLinea: 0,
 	idABCCatColumna: 0,
-	bolCarga: false,
-	bolValidacion: false,
-	bolEnvio: false,
-	regex: ''
+	regex: '',
+	obligatorio: false,
+	valor: null
 })
 
 const isEditing = computed(() => props.mode === 'edit')
@@ -53,10 +51,9 @@ function resetForm() {
 	form.value = {
 		idABCConfigMapeoLinea: 0,
 		idABCCatColumna: 0,
-		bolCarga: false,
-		bolValidacion: false,
-		bolEnvio: false,
-		regex: ''
+		regex: '',
+		obligatorio: false,
+		valor: null
 	}
 }
 
@@ -84,10 +81,9 @@ watch(
 			form.value = {
 				idABCConfigMapeoLinea: initialData.mapeoId,
 				idABCCatColumna: initialData.columnaId,
-				bolCarga: initialData.bolCarga,
-				bolValidacion: initialData.bolValidacion,
-				bolEnvio: initialData.bolEnvio,
-				regex: initialData.regex
+				regex: initialData.regex ?? '',
+				obligatorio: initialData.obligatorio ?? false,
+				valor: initialData.valor ?? null
 			}
 		}
 	},
@@ -110,22 +106,28 @@ watch(
 async function save() {
 	if (props.mode === 'add') {
 		await columnaService.createColumnaLinea(
-			form.value.idABCConfigMapeoLinea,
-			{
-				idABCCatColumna: form.value.idABCCatColumna,
-				regex: form.value.regex,
-				idUsuario: 1
-			}
-		)
+				form.value.idABCConfigMapeoLinea,
+				{
+					idUsuario: 1,
+					columna: {
+						idABCConfigMapeoLinea: form.value.idABCConfigMapeoLinea,
+						idABCCatColumna: form.value.idABCCatColumna,
+						regex: form.value.regex || null,
+						obligatorio: form.value.obligatorio ?? null,
+						valor: form.value.valor ?? null
+					}
+				}
+			)
 	} else {
 		await columnaService.updateColumnaLinea({
-			idABCConfigMapeoLinea: form.value.idABCConfigMapeoLinea,
-			idABCCatColumna: form.value.idABCCatColumna,
-			bolCarga: form.value.bolCarga,
-			bolValidacion: form.value.bolValidacion,
-			bolEnvio: form.value.bolEnvio,
-			regex: form.value.regex,
-			idUsuario: 1
+			idUsuario: 1,
+			columna: {
+				idABCConfigMapeoLinea: form.value.idABCConfigMapeoLinea,
+				idABCCatColumna: form.value.idABCCatColumna,
+				regex: form.value.regex || null,
+				obligatorio: form.value.obligatorio ?? null,
+				valor: form.value.valor ?? null
+			}
 		})
 	}
 
@@ -181,35 +183,7 @@ async function save() {
 						</div>
 					</div>
 
-					<div class="space-y-3 pt-2">
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Configuración</label>
-						<div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input
-									type="checkbox"
-									v-model="form.bolCarga"
-									class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25"
-								/>
-								<span class="ml-2 text-sm text-gray-700 font-medium">Carga</span>
-							</label>
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input
-									type="checkbox"
-									v-model="form.bolValidacion"
-									class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25"
-								/>
-								<span class="ml-2 text-sm text-gray-700 font-medium">Validación</span>
-							</label>
-							<label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors">
-								<input
-									type="checkbox"
-									v-model="form.bolEnvio"
-									class="h-4 w-4 rounded border-gray-300 text-[#00357F] focus:ring-[#00357F]/25"
-								/>
-								<span class="ml-2 text-sm text-gray-700 font-medium">Envío</span>
-							</label>
-						</div>
-					</div>
+                    
 
 					<div>
 						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Regex</label>

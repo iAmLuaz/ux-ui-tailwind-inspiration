@@ -1,5 +1,3 @@
-// src/services/catalogosService.ts
-
 import { api } from './api'
 import { mockCatalogosApi } from './mockData'
 import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos'
@@ -19,16 +17,17 @@ function normalizeCatalogo(item: any): CatalogoItem {
       : Number(item?.bolActivo ?? item?.status ?? 0) === 1,
     codigo: String(item?.codigo ?? ''),
     nombre: String(item?.nombre ?? ''),
-    fecCreacion: String(item?.fecCreacion ?? item?.fec_creacion ?? ''),
-    fecUltModificacion: String(item?.fecUltModificacion ?? item?.fec_ult_modificacion ?? '')
+    fechaCreacion: String(item?.fechaCreacion ?? item?.fec_creacion ?? ''),
+    fechaUltimaModificacion: String(item?.fechaUltimaModificacion ?? item?.fec_ult_modificacion ?? '')
   }
 }
 
 export const catalogosService = {
   getCatalogos(codigo: CatalogoCodigo | string) {
     return apiClient.getCatalogos(codigo).then(list => {
-      const data = Array.isArray(list) ? list : (list as any)?.data ?? []
-      return data.map(normalizeCatalogo)
+        let data: any[] = Array.isArray(list) ? list : (list as any)?.data ?? []
+        if (data.length === 1 && Array.isArray(data[0])) data = data[0]
+        return data.map(normalizeCatalogo)
     })
   }
 }

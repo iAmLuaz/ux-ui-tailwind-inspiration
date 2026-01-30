@@ -1,10 +1,10 @@
-// src/services/columnaService.ts
 import { api } from './api'
 import { mockColumnasApi } from './mockData'
 import type {
-  ColumnaData,
+  ColumnaGetResponse as ColumnaData,
   ColumnaCampanaData,
   CreateColumnaLineaPayload,
+  CreateColumnaCampanaPayload,
   UpdateColumnaLineaPayload,
   PatchColumnaLineaPayload,
   UpdateColumnaCampanaPayload,
@@ -25,7 +25,7 @@ interface ApiClient {
   patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
   createColumnaCampana(
     mapeoId: string | number,
-    payload: CreateColumnaLineaPayload
+    payload: CreateColumnaCampanaPayload
   ): Promise<any>
   createColumnaCampanaGlobal(payload: any): Promise<any>
   updateColumnaCampana(payload: UpdateColumnaCampanaPayload): Promise<any>
@@ -49,7 +49,7 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
     api.patchActivarColumnaLinea(payload),
   patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
     api.patchDesactivarColumnaLinea(payload),
-  createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaLineaPayload) =>
+  createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaCampanaPayload) =>
     api.createColumnaCampana(mapeoId, payload),
   createColumnaCampanaGlobal: (payload: any) => api.createColumnaCampanaGlobal(payload),
   updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
@@ -78,11 +78,17 @@ export const columnaService = {
   },
 
   createColumnaLinea(mapeoId: string | number, payload: CreateColumnaLineaPayload) {
-    return apiClient.createColumnaLinea(mapeoId, payload)
+    return apiClient.createColumnaLinea(mapeoId, payload).then(res => {
+      api.postBitacoraByContext('POST', `/lineas/mapeos/${mapeoId}/columnas`, payload, `Crear columna en mapeo ${mapeoId}`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+      return res
+    })
   },
 
   updateColumnaLinea(payload: UpdateColumnaLineaPayload) {
-    return apiClient.updateColumnaLinea(payload)
+    return apiClient.updateColumnaLinea(payload).then(res => {
+      api.postBitacoraByContext('PUT', '/lineas/mapeos/columnas', payload, `Actualizar columna`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+      return res
+    })
   },
 
   patchActivarColumnaLinea(payload: PatchColumnaLineaPayload) {
@@ -93,16 +99,25 @@ export const columnaService = {
     return apiClient.patchDesactivarColumnaLinea(payload)
   },
 
-  createColumnaCampana(mapeoId: string | number, payload: CreateColumnaLineaPayload) {
-    return apiClient.createColumnaCampana(mapeoId, payload)
+  createColumnaCampana(mapeoId: string | number, payload: CreateColumnaCampanaPayload) {
+    return apiClient.createColumnaCampana(mapeoId, payload).then(res => {
+      api.postBitacoraByContext('POST', `/campanas/mapeos/${mapeoId}/columnas`, payload, `Crear columna en mapeo campaña ${mapeoId}`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+      return res
+    })
   },
 
   createColumnaCampanaGlobal(payload: any) {
-    return apiClient.createColumnaCampanaGlobal(payload)
+    return apiClient.createColumnaCampanaGlobal(payload).then(res => {
+      api.postBitacoraByContext('POST', '/campanas/mapeos/0/columnas', payload, `Crear columna global de campaña`, payload.idUsuario ?? payload.idABCUsuario ?? 1).catch(() => {})
+      return res
+    })
   },
 
   updateColumnaCampana(payload: UpdateColumnaCampanaPayload) {
-    return apiClient.updateColumnaCampana(payload)
+    return apiClient.updateColumnaCampana(payload).then(res => {
+      api.postBitacoraByContext('PUT', '/campanas/mapeos/columnas', payload, `Actualizar columna campaña`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+      return res
+    })
   },
 
   patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload) {

@@ -1,4 +1,3 @@
-<!-- // src/views/ColumnasView.vue -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import ColumnasHeader from '@/components/columnas/ColumnasHeader.vue'

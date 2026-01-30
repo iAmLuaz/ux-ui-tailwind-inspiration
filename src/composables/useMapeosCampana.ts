@@ -10,6 +10,7 @@ interface Option {
 
 export function useMapeosCampana() {
   const mapeos = ref<Option[]>([])
+  const rawMapeos = ref<any[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -18,6 +19,7 @@ export function useMapeosCampana() {
     error.value = null
     try {
       const list: MapeoCampanaData[] = await mapeoService.getMapeosCampana()
+      rawMapeos.value = list
 
       mapeos.value = list.map(m => ({
         label: m.nombre || m.descripcion || `Mapeo ${Number(m.idABCConfigMapeoLinea)}`,
@@ -31,5 +33,5 @@ export function useMapeosCampana() {
     }
   }
 
-  return { mapeos, loading, error, fetchAll }
+  return { mapeos, rawMapeos, loading, error, fetchAll }
 }

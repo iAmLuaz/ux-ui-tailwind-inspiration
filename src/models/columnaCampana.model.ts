@@ -1,13 +1,18 @@
-// src/models/columnaCampana.model.ts
 export interface ColumnaCampanaModel {
+  tipo: 'campana'
+
   mapeoId: number
   columnaId: number
-  bolActivo: boolean
-  bolCarga: boolean
-  bolValidacion: boolean
-  bolEnvio: boolean
-  regex: string
 
-  fecCreacion?: string
-  fecUltModificacion?: string
+  bolActivo: boolean
+  regex: string | null
+
+  columna: {
+    tipo: {
+      idABCCatColumna: number
+    }
+  }
+
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
 }

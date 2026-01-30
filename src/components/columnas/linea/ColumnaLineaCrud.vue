@@ -1,4 +1,3 @@
-<!-- // src/components/columnas/ColumnaLineaCrud.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useColumnasLinea } from '@/composables/useColumnasLinea'
@@ -16,18 +15,34 @@ interface Option {
 
 import { useMapeosLinea } from '@/composables/useMapeosLinea'
 
+const props = defineProps<{
+	mapeoId?: number | string | null
+}>()
+
 const {
 	mapeos,
+	rawMapeos,
 	fetchAll: fetchMapeos
 } = useMapeosLinea()
 
 const columnasCatalogo = ref<Option[]>([])
+const lineasCatalogo = ref<Option[]>([])
 
 import type { CatalogoItem } from '@/types/catalogos'
 
 async function fetchCatalogosColumnas() {
 	const list: CatalogoItem[] = await catalogosService.getCatalogos('CLM')
 	columnasCatalogo.value = list
+		.filter((c: CatalogoItem) => c.bolActivo)
+		.map((c: CatalogoItem) => ({
+			label: c.nombre,
+			value: c.id
+		}))
+}
+
+async function fetchCatalogosLineas() {
+	const list: CatalogoItem[] = await catalogosService.getCatalogos('LNN')
+	lineasCatalogo.value = list
 		.filter((c: CatalogoItem) => c.bolActivo)
 		.map((c: CatalogoItem) => ({
 			label: c.nombre,
@@ -99,9 +114,13 @@ function toggleFilterMenu(column: string) {
 }
 
 onMounted(() => {
+	if (props.mapeoId !== undefined && props.mapeoId !== null) {
+		selectedFilters.mapeos = [Number(props.mapeoId)]
+	}
 	fetchAll()
 	fetchCatalogosColumnas()
 	fetchMapeos()
+	fetchCatalogosLineas()
 	updatePageSize()
 	window.addEventListener('resize', updatePageSize)
 })
@@ -124,6 +143,10 @@ watch(
 	{ deep: true }
 )
 
+watch(() => props.mapeoId, (v) => {
+	selectedFilters.mapeos = v !== undefined && v !== null ? [Number(v)] : []
+})
+
 function updatePageSize() {
 	const available = window.innerHeight * 0.87 - 240
 	const rows = Math.floor(available / 44)
@@ -140,6 +163,8 @@ defineExpose({ openAdd })
 			:columnas="paginated"
 			:mapeos="mapeos"
 			:columnas-catalogo="columnasCatalogo"
+			:lineas-catalogo="lineasCatalogo"
+			:mapeos-raw="rawMapeos"
 			:selected-filters="selectedFilters"
 			:open-filter="openFilter"
 			:total-columnas="filtered.length"

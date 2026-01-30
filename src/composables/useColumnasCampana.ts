@@ -1,4 +1,3 @@
-// src/composables/useColumnasCampana.ts
 import { ref } from 'vue'
 import { columnaService } from '@/services/columnaService'
 import { adaptColumnaCampana } from '@/adapters/columnaCampana.adapter'
@@ -44,9 +43,6 @@ export function useColumnasCampana() {
     async function create(payload: {
         idABCConfigMapeoCampana: number
         idABCCatColumna: number
-        bolCarga: boolean
-        bolValidacion: boolean
-        bolEnvio: boolean
         regex: string
         }) {
         loading.value = true
@@ -60,26 +56,21 @@ export function useColumnasCampana() {
             loading.value = false
         }
         }
-
         async function update(payload: {
         idABCConfigMapeoCampana: number
         idABCCatColumna: number
-        bolCarga: boolean
-        bolValidacion: boolean
-        bolEnvio: boolean
         regex: string
         }) {
         loading.value = true
         try {
-            await columnaService.updateColumnaCampana({
-                idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
-                idABCCatColumna: payload.idABCCatColumna,
-                bolCarga: payload.bolCarga,
-                bolValidacion: payload.bolValidacion,
-                bolEnvio: payload.bolEnvio,
-                regex: payload.regex,
-            idUsuario: 1
-            })
+			await columnaService.updateColumnaCampana({
+				idUsuario: 1,
+				columna: {
+					idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
+					idABCCatColumna: payload.idABCCatColumna,
+					regex: payload.regex
+				}
+			})
             await fetchAll()
         } finally {
             loading.value = false

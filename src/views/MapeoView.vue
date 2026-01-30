@@ -6,6 +6,7 @@ import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 import MapeoModal from '@/components/MapeoModal.vue'
 import MapeoTable from '@/components/MapeoTable.vue'
 import MapeoDetailsModal from '@/components/MapeoDetailsModal.vue'
+import MapeoColumnasModal from '@/components/MapeoColumnasModal.vue'
 import { Plus, Layers, Megaphone } from 'lucide-vue-next'
 
 const tabs = [
@@ -117,6 +118,10 @@ const modalMode = ref<'add' | 'edit'>('add')
 const selectedItem = ref<MapeoRow | null>(null)
 const showDetailsModal = ref(false)
 const detailsItem = ref<MapeoRow | null>(null)
+const showColumnasModal = ref(false)
+const columnasForModal = ref<any[]>([])
+const nombreMapeoForModal = ref<string>('')
+const mapeoIdForModal = ref<number | string | null>(null)
 
 function openAddModal() {
   modalMode.value = 'add'
@@ -141,23 +146,29 @@ async function handleSave(formData: any) {
     const lineaId = Number(formData.idABCCatLineaNegocio ?? selectedFilters.lineas[0] ?? 0)
 
     if (modalMode.value === 'add') {
-      if (activeTab.value === 'campana') {
+        if (activeTab.value === 'campana') {
         const campanaId = Number(formData.idABCCatCampana ?? selectedFilters.campanas[0] ?? 1)
         await mapeoService.createMapeoCampana(lineaId, campanaId, {
-          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion },
-          idUsuario: 1
+          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
+          idUsuario: formData.idUsuario ?? 1,
+          validar: formData.validar,
+          envio: formData.envio
         })
-      } else {
+        } else {
         await mapeoService.createMapeo(lineaId, {
-          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion },
-          idUsuario: 1
+          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
+          idUsuario: formData.idUsuario ?? 1,
+          validar: formData.validar,
+          envio: formData.envio
         })
-      }
+        }
     } else if (selectedItem.value) {
       const payload = {
-        mapeo: { id: selectedItem.value.idABCConfigMapeoLinea, nombre: formData.nombre, descripcion: formData.descripcion },
-        idUsuario: 1
-      }
+        mapeo: { id: selectedItem.value.idABCConfigMapeoLinea, nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
+        idUsuario: formData.idUsuario ?? 1,
+        validar: formData.validar,
+        envio: formData.envio
+        }
       if (activeTab.value === 'campana') {
         await mapeoService.updateMapeoCampana(payload)
       } else {
@@ -217,6 +228,13 @@ function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: b
   return items
     .filter(item => item.bolActivo !== false)
     .map(item => ({ label: item.nombre, value: item.id }))
+}
+
+function openColumnasModal(m: MapeoRow) {
+  columnasForModal.value = []
+  nombreMapeoForModal.value = (m as any).nombre ?? ''
+  mapeoIdForModal.value = (m as any).idABCConfigMapeoLinea ?? (m as any).id ?? null
+  showColumnasModal.value = true
 }
 
 async function fetchCatalogosBase() {
@@ -329,6 +347,7 @@ function updatePageSize() {
         @select-all-campanas="selectedFilters.campanas = campanasDisponibles.map(x => x.value)"
         @prev-page="prevPage"
         @next-page="nextPage"
+        @view-columnas="openColumnasModal"
       />
     </div>
     
@@ -349,6 +368,14 @@ function updatePageSize() {
       :item="detailsItem"
       :get-linea-label="getLineaLabel"
       @close="showDetailsModal = false"
+    />
+
+    <MapeoColumnasModal
+      :show="showColumnasModal"
+      :mapeo-id="mapeoIdForModal"
+      :mapeo-nombre="nombreMapeoForModal"
+      :lineas-disponibles="lineasDisponibles"
+      @close="showColumnasModal = false"
     />
   </div>
 </template>

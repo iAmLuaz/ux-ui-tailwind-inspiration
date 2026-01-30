@@ -1,4 +1,3 @@
-// src/composables/useMapeosLinea.ts
 import { ref } from 'vue'
 import { mapeoService } from '@/services/mapeoService'
 import type { MapeoData } from '@/types/mapeo'
@@ -10,6 +9,7 @@ interface Option {
 
 export function useMapeosLinea() {
 	const mapeos = ref<Option[]>([])
+	const rawMapeos = ref<any[]>([])
 	const loading = ref(false)
 	const error = ref<string | null>(null)
 
@@ -18,6 +18,7 @@ export function useMapeosLinea() {
 		error.value = null
 		try {
 			const list: MapeoData[] = await mapeoService.getAllMapeos()
+			rawMapeos.value = list
 			mapeos.value = list
 				.filter(m => m.bolActivo)
 				.map(m => ({
@@ -33,6 +34,7 @@ export function useMapeosLinea() {
 
 	return {
 		mapeos,
+		rawMapeos,
 		loading,
 		error,
 		fetchAll

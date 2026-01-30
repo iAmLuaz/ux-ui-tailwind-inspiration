@@ -1,4 +1,3 @@
-// src/composables/useColumnasLinea.ts
 import { ref } from 'vue'
 import { columnaService } from '@/services/columnaService'
 import { adaptColumnasLinea } from '@/adapters/columnaLinea.adapter'

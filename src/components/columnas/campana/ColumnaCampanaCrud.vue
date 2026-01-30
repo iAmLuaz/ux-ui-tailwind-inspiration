@@ -1,4 +1,3 @@
-<!-- // src/components/columnas/campana/ColumnaCampanaCrud.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
 import { useColumnasCampana } from '@/composables/useColumnasCampana'
@@ -18,7 +17,9 @@ interface Option {
 }
 
 const columnasCatalogo = ref<Option[]>([])
-const { mapeos, fetchAll: fetchMapeos } = useMapeosCampana()
+const lineasCatalogo = ref<Option[]>([])
+const campanasCatalogo = ref<Option[]>([])
+const { mapeos, rawMapeos, fetchAll: fetchMapeos } = useMapeosCampana()
 const { items, loading, error, fetchAll, toggle } = useColumnasCampana()
 
 const openFilter = ref<string | null>(null)
@@ -71,9 +72,6 @@ async function fetchCatalogos() {
 async function handleSave(payload: {
 	idABCConfigMapeoCampana: number
 	idABCCatColumna: number
-	bolCarga: boolean
-	bolValidacion: boolean
-	bolEnvio: boolean
 	regex: string
 }) {
 	loading.value = true
@@ -82,20 +80,22 @@ async function handleSave(payload: {
 			await columnaService.createColumnaCampana(
 				payload.idABCConfigMapeoCampana,
 				{
-					idABCCatColumna: payload.idABCCatColumna,
 					idUsuario: 1,
-					regex: payload.regex
+					columna: {
+						idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
+						idABCCatColumna: payload.idABCCatColumna,
+						regex: payload.regex
+					}
 				}
 			)
 		} else {
 			await columnaService.updateColumnaCampana({
-				idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
-				idABCCatColumna: payload.idABCCatColumna,
-				bolCarga: payload.bolCarga,
-				bolValidacion: payload.bolValidacion,
-				bolEnvio: payload.bolEnvio,
-				regex: payload.regex,
-				idUsuario: 1
+				idUsuario: 1,
+				columna: {
+					idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
+					idABCCatColumna: payload.idABCCatColumna,
+					regex: payload.regex
+				}
 			})
 		}
 
@@ -133,9 +133,18 @@ onMounted(() => {
 	fetchAll()
 	fetchCatalogos()
 	fetchMapeos()
+	fetchCatalogosLineasYCampanas()
 	updatePageSize()
 	window.addEventListener('resize', updatePageSize)
 })
+
+async function fetchCatalogosLineasYCampanas() {
+  const listL: CatalogoItem[] = await catalogosService.getCatalogos('LNN')
+  lineasCatalogo.value = listL.filter(c => c.bolActivo).map(c => ({ label: c.nombre, value: c.id }))
+
+  const listC: CatalogoItem[] = await catalogosService.getCatalogos('CMP')
+  campanasCatalogo.value = listC.filter(c => c.bolActivo).map(c => ({ label: c.nombre, value: c.id }))
+}
 
 onUnmounted(() => {
 	window.removeEventListener('resize', updatePageSize)
@@ -170,6 +179,9 @@ defineExpose({ openAdd })
 				<ColumnaCampanaTable
 					:columnas="paginated"
 					:mapeos="mapeos"
+					:mapeos-raw="rawMapeos"
+					:lineas-catalogo="lineasCatalogo"
+					:campanas-catalogo="campanasCatalogo"
 					:columnas-catalogo="columnasCatalogo"
 					:selected-filters="selectedFilters"
 					:open-filter="openFilter"

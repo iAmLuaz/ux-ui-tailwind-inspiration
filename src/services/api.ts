@@ -1,11 +1,12 @@
-// src/services/api.ts
 import type {
   CreateColumnaLineaPayload,
   PatchColumnaLineaPayload,
   UpdateColumnaLineaPayload,
   PatchColumnaCampanaPayload,
-  UpdateColumnaCampanaPayload
+  UpdateColumnaCampanaPayload,
+  CreateColumnaCampanaPayload
 } from '../types/columna'
+import type { BitacoraPayload } from '../types/bitacora'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
@@ -63,7 +64,7 @@ export const api = {
   getCatalogos: (codigo: string) => http.get(`/catalogos?codigo=${encodeURIComponent(codigo)}`),
 
   // Mapeo línea
-  getAllMapeos: () => http.get('/lineas/0/mapeos'),
+  getAllMapeos: () => http.get('/lineas/mapeos'),
   getMapeosByLinea: (lineaId: string | number) =>
     http.get(`/lineas/${lineaId}/mapeos`),
   createMapeoLinea: (lineaId: string | number, payload: any) =>
@@ -77,7 +78,7 @@ export const api = {
     http.patch('/lineas/mapeos/desactivar', payload),
 
   // Mapeo campaña
-  getMapeosCampana: () => http.get('/lineas/0/campanas/0/mapeos'),
+  getMapeosCampana: () => http.get('/lineas/campanas/mapeos'),
   createMapeoCampana: (
     lineaId: string | number,
     campanaId: string | number,
@@ -111,14 +112,14 @@ export const api = {
   patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
     http.patch('/lineas/mapeos/columnas/desactivar', payload),
 
-  // Columna mapeo campaña
+  // Columna mapeo (campaña)
   getColumnasCampana: () => http.get('/campanas/mapeos/0/columnas'),
   getColumnasCampanaByMapeo: (mapeoId: string | number) =>
     http.get(`/campanas/mapeos/${mapeoId}/columnas`),
   createColumnaCampanaGlobal: (payload: any) => http.post('/campanas/mapeos/0/columnas', payload),
   createColumnaCampana: (
     mapeoId: string | number,
-    payload: CreateColumnaLineaPayload
+    payload: CreateColumnaCampanaPayload
   ) => http.post(`/campanas/mapeos/${mapeoId}/columnas`, payload),
   updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
     http.put('/campanas/mapeos/columnas', payload),
@@ -126,4 +127,36 @@ export const api = {
     http.patch('/campanas/mapeos/columnas/activar', payload),
   patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
     http.patch('/campanas/mapeos/columnas/desactivar', payload)
+
+  ,
+  // Bitácoras de usuarios
+  postBitacoraUsuario: (payload: BitacoraPayload) => http.post('/bitacoras/usuarios', payload),
+  postBitacoraByContext: (
+    method: 'POST' | 'PUT' | 'PATCH' | string,
+    endpoint: string,
+    resourcePayload: any = {},
+    detalle?: string,
+    idUsuario: number = 1,
+    ip: string = '192.178.14.14',
+    navegador: string = 'chrome'
+  ) => {
+    const evento = method === 'POST' ? 3 : method === 'PUT' || method === 'PATCH' ? 4 : 0
+
+    let objeto = 2 
+    if (String(endpoint).includes('/columnas')) objeto = 4 
+
+    const payload: BitacoraPayload = {
+      idABCUsuario: idUsuario,
+      idABCCatEvento: evento,
+      idABCCatObjeto: objeto,
+      detalle: detalle ?? `${method} ${endpoint}`,
+      ip,
+      navegador
+    }
+
+
+    if (resourcePayload?.idABCCatColumna) payload.idABCCatColumna = resourcePayload.idABCCatColumna
+
+    return http.post('/bitacoras/usuarios', payload)
+  }
 }

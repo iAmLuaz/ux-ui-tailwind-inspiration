@@ -10,12 +10,9 @@ interface ColumnaDetailsItem {
 	mapeoId: number
 	columnaId: number
 	bolActivo: boolean
-	bolCarga: boolean
-	bolValidacion: boolean
-	bolEnvio: boolean
-	regex: string
-	fecCreacion?: string
-	fecUltModificacion?: string
+	regex: string | null
+	fechaCreacion?: string
+	fechaUltimaModificacion?: string
 }
 
 const props = defineProps<{
@@ -137,44 +134,7 @@ const columnaLabel = computed(() => {
 						</p>
 					</div>
 
-					<!-- Flags -->
-					<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-						<div class="bg-slate-50 rounded-lg p-3 border border-slate-200 flex flex-col items-center">
-							<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">
-								Cargar
-							</span>
-							<input
-								type="checkbox"
-								class="h-5 w-5 rounded border-slate-300 text-[#00357F] focus:ring-0 cursor-default"
-								:checked="item.bolCarga"
-								disabled
-							/>
-						</div>
-
-						<div class="bg-slate-50 rounded-lg p-3 border border-slate-200 flex flex-col items-center">
-							<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">
-								Validar
-							</span>
-							<input
-								type="checkbox"
-								class="h-5 w-5 rounded border-slate-300 text-[#00357F] focus:ring-0 cursor-default"
-								:checked="item.bolValidacion"
-								disabled
-							/>
-						</div>
-
-						<div class="bg-slate-50 rounded-lg p-3 border border-slate-200 flex flex-col items-center">
-							<span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">
-								Enviar
-							</span>
-							<input
-								type="checkbox"
-								class="h-5 w-5 rounded border-slate-300 text-[#00357F] focus:ring-0 cursor-default"
-								:checked="item.bolEnvio"
-								disabled
-							/>
-						</div>
-					</div>
+                    
 
 					<!-- Fechas -->
 					<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -183,7 +143,7 @@ const columnaLabel = computed(() => {
 								Creado
 							</span>
 							<p class="mt-1 font-semibold text-slate-700">
-								{{ formatDate(item.fecCreacion) }}
+								{{ formatDate(item.fechaCreacion) }}
 							</p>
 						</div>
 
@@ -192,7 +152,7 @@ const columnaLabel = computed(() => {
 								Última modificación
 							</span>
 							<p class="mt-1 font-semibold text-slate-700">
-								{{ formatDate(item.fecUltModificacion) }}
+								{{ formatDate(item.fechaUltimaModificacion) }}
 							</p>
 						</div>
 					</div>

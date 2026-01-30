@@ -1,4 +1,3 @@
-// src/types/mapeo.ts
 export interface MapeoData {
   idABCConfigMapeoLinea: number
   idABCCatLineaNegocio: number
@@ -6,10 +5,15 @@ export interface MapeoData {
   nombre: string
   descripcion: string
   bolActivo: boolean
-  bolDictaminacion: boolean | null
-  fecCreacion: string
-  idABCUsuarioUltModificacion: number
-  fecUltModificacion: string
+  bolDictaminacion?: boolean | null
+  idABCUsuarioUltModificacion?: number
+  
+  validar?: boolean
+  envio?: boolean
+  columnas?: number | any[]
+  fechaCreacion: string
+  fechaUltimaModificacion: string
+  
 }
 
 export interface MapeoCampanaData {
@@ -20,18 +24,25 @@ export interface MapeoCampanaData {
   nombre: string
   descripcion: string
   bolActivo: boolean
-  bolDictaminacion: boolean | null
-  fecCreacion: string
-  idABCUsuarioUltModificacion: number
-  fecUltModificacion: string
+  bolDictaminacion?: boolean | null
+  idABCUsuarioUltModificacion?: number
+
+  validar?: boolean
+  envio?: boolean
+  columnas?: number | any[]
+  fechaCreacion: string
+  fechaUltimaModificacion: string
 }
 
 export interface CreateMapeoPayload {
   mapeo: {
     nombre: string
     descripcion: string
+    validar?: boolean
+    envio?: boolean
   }
   idABCUsuario: number
+  idUsuario?: number
 }
 
 export interface UpdateMapeoPayload {
@@ -39,6 +50,8 @@ export interface UpdateMapeoPayload {
     id: number
     nombre: string
     descripcion: string
+    validar?: boolean
+    envio?: boolean
   }
   idUsuario: number
 }

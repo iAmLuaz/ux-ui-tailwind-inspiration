@@ -37,6 +37,7 @@ interface Props {
 interface Emits {
   (e: 'toggleFilter', column: string): void
   (e: 'viewDetails', item: MapeoRow): void
+  (e: 'viewColumnas', item: MapeoRow): void
   (e: 'toggleStatus', item: MapeoRow): void
   (e: 'edit', item: MapeoRow): void
   (e: 'selectAllLineas'): void
@@ -86,16 +87,16 @@ const thSmallClass = 'px-4 py-3'
     <div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
-          <col class="w-[8%]" />
           <col class="w-[18%]" />
-          <col v-if="props.activeTab === 'campana'" class="w-[18%]" />
-          <col class="w-[26%]" />
+          <col v-if="props.activeTab === 'campana'" class="w-[14%]" />
+          <col class="w-[28%]" />
+          <col class="w-[12%]" />
           <col class="w-[8%]" />
-          <col class="w-[22%]" />
+          <col class="w-[8%]" />
+          <col class="w-[8%]" />
         </colgroup>
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
-            <th :class="thSmallClass">ID</th>
             
             <th :class="thClass + ' relative'"> 
               <FilterDropdown
@@ -109,7 +110,6 @@ const thSmallClass = 'px-4 py-3'
                 @select-all="emit('selectAllLineas')"
               />
             </th>
-
             <th v-if="props.activeTab === 'campana'" :class="thClass + ' relative'">
               <FilterDropdown
                 label="Campaña"
@@ -123,7 +123,11 @@ const thSmallClass = 'px-4 py-3'
               />
             </th>
 
-            <th :class="thClass + ' text-left'">Nombre</th>
+            <th :class="thClass + ' text-left'">Nombre de ingesta</th>
+
+            <th :class="thClass">Columna</th>
+            <th :class="thSmallClass + ' text-center'">Validar</th>
+            <th :class="thSmallClass + ' text-center'">Envio</th>
             <!-- <th class="px-4 py-3 text-left">Información</th> -->
             
             <th :class="thSmallClass + ' relative'">
@@ -166,8 +170,6 @@ const thSmallClass = 'px-4 py-3'
 
           <template v-else v-for="m in props.filteredMapeos" :key="m.idABCConfigMapeoLinea">
             <tr class="hover:bg-blue-50/30 transition-colors text-sm">
-              <td class="px-4 py-2.5 font-mono text-xs text-slate-400" @dblclick="emit('viewDetails', m)">#{{ m.idABCConfigMapeoLinea }}</td>
-              
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                   {{ props.getLineaLabel(m.idABCCatLineaNegocio) }}
@@ -180,10 +182,39 @@ const thSmallClass = 'px-4 py-3'
 
               <td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', m)">{{ m.nombre }}</td>
 
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
+                <button @click.stop.prevent="emit('viewColumnas', m)" class="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 cursor-pointer transition-colors">
+                  
+                  {{ typeof (m as any).columnas === 'number' ? (m as any).columnas : (Array.isArray((m as any).columnas) ? (m as any).columnas.length : 0) }} configuradas
+                </button>
+              </td>
+
               <!-- <td class="px-4 py-2.5">
                 <span class="text-sm text-slate-500">{{ props.isDetailsOpen(m.idABCConfigMapeoLinea) ? 'Abierto' : 'Cerrado' }}</span>
               </td> -->
               
+              <td class="px-4 py-2.5 text-center">
+                <div class="flex justify-center">
+                  <input
+                    type="checkbox"
+                    :checked="(m as any).validar ?? false"
+                    disabled
+                    class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
+                  />
+                </div>
+              </td>
+
+              <td class="px-4 py-2.5 text-center">
+                <div class="flex justify-center">
+                  <input
+                    type="checkbox"
+                    :checked="(m as any).envio ?? false"
+                    disabled
+                    class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
+                  />
+                </div>
+              </td>
+
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <label 
                   class="inline-flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-200 cursor-pointer group select-none"

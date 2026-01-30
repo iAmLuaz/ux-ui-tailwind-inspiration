@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
+import { ref, onMounted } from 'vue'
+import { catalogosService } from '@/services/catalogosService'
 
 interface Props {
   show: boolean
@@ -13,6 +15,22 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const campanas = ref<{ id: number; nombre: string }[]>([])
+
+onMounted(async () => {
+  try {
+    const list: any[] = await catalogosService.getCatalogos('CMP')
+    campanas.value = (list || []).filter(c => c.bolActivo !== false).map(c => ({ id: c.id, nombre: c.nombre }))
+  } catch (_) {
+    campanas.value = []
+  }
+})
+
+function getCampanaLabel(id?: number) {
+  if (id === undefined || id === null) return '-'
+  return campanas.value.find(c => Number(c.id) === Number(id))?.nombre ?? `Campaña ${id}`
+}
 
 function formatTimestamp(value?: string) {
   if (!value) return ''
@@ -59,6 +77,10 @@ function formatTimestamp(value?: string) {
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Línea</span>
               <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
             </div>
+            <div v-if="(item as any).idABCCatCampana !== undefined" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
+              <p class="mt-1 font-semibold text-slate-700">{{ getCampanaLabel((item as any).idABCCatCampana) }}</p>
+            </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>
               <p class="mt-1 font-semibold" :class="item.bolActivo ? 'text-[#00357F]' : 'text-slate-500'">
@@ -75,11 +97,11 @@ function formatTimestamp(value?: string) {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Creado</span>
-              <p class="mt-1 text-slate-600">{{ formatTimestamp(item.fecCreacion) }}</p>
+              <p class="mt-1 text-slate-600">{{ formatTimestamp((item as any).fechaCreacion ?? item.fechaCreacion) }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Modificado</span>
-              <p class="mt-1 text-slate-600">{{ formatTimestamp(item.fecUltModificacion) }}</p>
+              <p class="mt-1 text-slate-600">{{ formatTimestamp((item as any).fechaUltimaModificacion ?? item.fechaUltimaModificacion) }}</p>
             </div>
           </div>
         </div>
