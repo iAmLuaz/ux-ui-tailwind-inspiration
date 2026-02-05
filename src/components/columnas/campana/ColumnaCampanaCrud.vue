@@ -5,11 +5,19 @@ import { useMapeosCampana } from '@/composables/useMapeosCampana'
 import { catalogosService } from '@/services/catalogosService'
 import type { CatalogoItem } from '@/types/catalogos'
 import type { ColumnaCampanaModel } from '@/models/columnaCampana.model'
-import { columnaService } from '@/services/columnaService'
 
 import ColumnaCampanaTable from './ColumnaCampanaTable.vue'
 import ColumnaCampanaModal from './ColumnaCampanaModal.vue'
 import ColumnaDetailsModal from '../ColumnaDetailsModal.vue'
+
+const props = defineProps<{
+	mapeoId?: number | string | null
+	mapeoNombre?: string
+	selectedLineaId?: number | string | null
+	selectedCampanaId?: number | string | null
+	selectedLineaNombre?: string | null
+	selectedCampanaNombre?: string | null
+}>()
 
 interface Option {
 	label: string
@@ -69,44 +77,6 @@ async function fetchCatalogos() {
 		.map(c => ({ label: c.nombre, value: c.id }))
 }
 
-async function handleSave(payload: {
-	idABCConfigMapeoCampana: number
-	idABCCatColumna: number
-	regex: string
-}) {
-	loading.value = true
-	try {
-		if (mode.value === 'add') {
-			await columnaService.createColumnaCampana(
-				payload.idABCConfigMapeoCampana,
-				{
-					idUsuario: 1,
-					columna: {
-						idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
-						idABCCatColumna: payload.idABCCatColumna,
-						regex: payload.regex
-					}
-				}
-			)
-		} else {
-			await columnaService.updateColumnaCampana({
-				idUsuario: 1,
-				columna: {
-					idABCConfigMapeoCampana: payload.idABCConfigMapeoCampana,
-					idABCCatColumna: payload.idABCCatColumna,
-					regex: payload.regex
-				}
-			})
-		}
-
-		showModal.value = false
-		await fetchAll()
-	} catch (e: any) {
-		console.error(e)
-	} finally {
-		loading.value = false
-	}
-}
 
 function openAdd() {
 	mode.value = 'add'
@@ -130,7 +100,10 @@ function toggleFilterMenu(column: string) {
 }
 
 onMounted(() => {
-	fetchAll()
+	if (props.mapeoId !== undefined && props.mapeoId !== null) {
+		selectedFilters.mapeos = [Number(props.mapeoId)]
+	}
+	fetchAll(props.mapeoId)
 	fetchCatalogos()
 	fetchMapeos()
 	fetchCatalogosLineasYCampanas()
@@ -164,6 +137,11 @@ watch(
 	{ deep: true }
 )
 
+watch(() => props.mapeoId, (v) => {
+    selectedFilters.mapeos = v !== undefined && v !== null ? [Number(v)] : []
+    fetchAll(v)
+})
+
 function updatePageSize() {
 	const available = window.innerHeight * 0.87 - 240
 	const rows = Math.floor(available / 44)
@@ -190,6 +168,7 @@ defineExpose({ openAdd })
 					:current-page="currentPage"
 					:total-pages="totalPages"
 					@toggle="toggle"
+					@add="openAdd"
 					@edit="openEdit"
 					@details="openDetails"
 					@toggle-filter="toggleFilterMenu"
@@ -209,15 +188,24 @@ defineExpose({ openAdd })
 		</div>
 
 		<ColumnaCampanaModal
+			:key="mode + String(selected?.columnaId ?? 'new')"
 			:show="showModal"
 			:mode="mode"
 			:mapeos="mapeos"
+			:lineas="lineasCatalogo"
+			:campanas="campanasCatalogo"
 			:columnas="columnasCatalogo"
 			:initial-data="selected"
 			:existing-items="items"
 			:is-loading="loading"
+			:selected-mapeo-id="props.mapeoId"
+			:selected-mapeo-nombre="props.mapeoNombre ?? null"
+			:selected-linea-id="props.selectedLineaId ?? null"
+			:selected-campana-id="props.selectedCampanaId ?? null"
+			:selected-linea-nombre="props.selectedLineaNombre ?? null"
+			:selected-campana-nombre="props.selectedCampanaNombre ?? null"
 			@close="showModal = false"
-			@saved="handleSave"
+			@saved="fetchAll"
 		/>
 
 		<ColumnaDetailsModal

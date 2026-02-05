@@ -70,16 +70,16 @@ function formatTimestamp(value?: string) {
         <div v-else class="space-y-4 text-sm">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
-            </div>
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Línea</span>
               <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
             </div>
             <div v-if="(item as any).idABCCatCampana !== undefined" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
               <p class="mt-1 font-semibold text-slate-700">{{ getCampanaLabel((item as any).idABCCatCampana) }}</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
+              <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
             </div>
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>

@@ -22,8 +22,8 @@ export function useMapeosCampana() {
       rawMapeos.value = list
 
       mapeos.value = list.map(m => ({
-        label: m.nombre || m.descripcion || `Mapeo ${Number(m.idABCConfigMapeoLinea)}`,
-        value: Number(m.idABCConfigMapeoLinea),
+        label: m.nombre || m.descripcion || `Mapeo ${Number(m.id ?? m.idABCConfigMapeoCampana ?? m.idABCConfigMapeoLinea)}`,
+        value: Number(m.id ?? m.idABCConfigMapeoCampana ?? m.idABCConfigMapeoLinea),
         bolActivo: Boolean(m.bolActivo)
       }))
     } catch (e: any) {

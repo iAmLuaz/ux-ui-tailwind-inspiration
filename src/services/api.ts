@@ -7,6 +7,7 @@ import type {
   CreateColumnaCampanaPayload
 } from '../types/columna'
 import type { BitacoraPayload } from '../types/bitacora'
+import { addToast } from '@/stores/toastStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
@@ -22,17 +23,76 @@ async function request<T>(
     ...options.headers
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers
-  })
+  const suppressToast = ((): boolean => {
+    const raw = (headers as any)['X-Suppress-Toast'] ?? (headers as any)['x-suppress-toast']
+    return String(raw ?? '').toLowerCase() === 'true'
+  })()
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`)
+  let response: Response
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers
+    })
+  } catch (err) {
+    addToast('Error de red: no se pudo conectar al servidor', 'error')
+    throw err
   }
 
+  const status = response.status
+  const method = (options.method || 'GET').toUpperCase()
+
   const text = await response.text()
-  return text ? JSON.parse(text) : (undefined as T)
+  const data = text ? JSON.parse(text) : undefined
+
+  if (response.ok) {
+    if (method === 'GET') {
+      const path = String(endpoint || '').toLowerCase()
+      if (!suppressToast && (path.includes('/mapeos') || path.includes('/columnas'))) {
+        addToast('Datos cargados correctamente', 'info')
+      }
+    } else if (method === 'POST') {
+      if (!suppressToast) addToast('Recurso creado correctamente', 'success')
+    } else if (method === 'PUT' || method === 'PATCH') {
+      if (!suppressToast) addToast('Recurso actualizado correctamente', 'success')
+    } else if (method === 'DELETE') {
+      if (!suppressToast) addToast('Recurso eliminado correctamente', 'success')
+    }
+
+    return data as T
+  }
+
+  let message = `Error ${status}`
+  switch (status) {
+    case 400:
+      message = 'Solicitud inválida (400)'
+      break
+    case 401:
+      message = 'No autorizado (401)'
+      break
+    case 403:
+      message = 'Prohibido (403)'
+      break
+    case 404:
+      message = 'No encontrado (404)'
+      break
+    case 429:
+      message = 'Demasiadas solicitudes (429). Intenta más tarde.'
+      break
+    case 500:
+      message = 'Error interno del servidor (500)'
+      break
+    default:
+      message = data && data.message ? String(data.message) : `${status} ${response.statusText}`
+  }
+
+  if (!((options.headers as any)?.['X-Suppress-Toast'] === 'true' || (options.headers as any)?.['x-suppress-toast'] === 'true' || suppressToast)) {
+    addToast(message, 'error')
+  }
+  const err = new Error(message)
+  ;(err as any).status = status
+  ;(err as any).response = response
+  throw err
 }
 
 
@@ -61,7 +121,7 @@ export const http = {
 
 export const api = {
   // Catálogos
-  getCatalogos: (codigo: string) => http.get(`/catalogos?codigo=${encodeURIComponent(codigo)}`),
+  getCatalogos: (codigo: string) => http.get(`/catalogos/${encodeURIComponent(String(codigo))}`),
 
   // Mapeo línea
   getAllMapeos: () => http.get('/lineas/mapeos'),
@@ -98,15 +158,17 @@ export const api = {
     http.patch('/lineas/campanas/mapeos/desactivar', payload),
 
   // Columna mapeo (línea)
+  getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),
   getColumnasByMapeo: (mapeoId: string | number) =>
     http.get(`/lineas/mapeos/${mapeoId}/columnas`),
-  getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),
   createColumnaLinea: (
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload
   ) => http.post(`/lineas/mapeos/${mapeoId}/columnas`, payload),
-  updateColumnaLinea: (payload: UpdateColumnaLineaPayload) =>
-    http.put('/lineas/mapeos/columnas', payload),
+  updateColumnaLinea: (mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload) => {
+    const endpoint = mapeoId ? `/lineas/mapeos/${mapeoId}/columnas` : '/lineas/mapeos/columnas'
+    return http.put(endpoint, payload)
+  },
   patchActivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
     http.patch('/lineas/mapeos/columnas/activar', payload),
   patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
@@ -121,8 +183,10 @@ export const api = {
     mapeoId: string | number,
     payload: CreateColumnaCampanaPayload
   ) => http.post(`/campanas/mapeos/${mapeoId}/columnas`, payload),
-  updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
-    http.put('/campanas/mapeos/columnas', payload),
+  updateColumnaCampana: (mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload) => {
+    const endpoint = mapeoId ? `/campanas/mapeos/${mapeoId}/columnas` : '/campanas/mapeos/columnas'
+    return http.put(endpoint, payload)
+  },
   patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
     http.patch('/campanas/mapeos/columnas/activar', payload),
   patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
@@ -156,7 +220,12 @@ export const api = {
 
 
     if (resourcePayload?.idABCCatColumna) payload.idABCCatColumna = resourcePayload.idABCCatColumna
+    else if (resourcePayload?.columna?.tipo?.id) payload.idABCCatColumna = resourcePayload.columna.tipo.id
 
-    return http.post('/bitacoras/usuarios', payload)
+    return request<any>('/bitacoras/usuarios', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'X-Suppress-Toast': 'true' }
+    })
   }
 }

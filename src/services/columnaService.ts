@@ -20,7 +20,7 @@ interface ApiClient {
     mapeoId: string | number,
     payload: CreateColumnaLineaPayload
   ): Promise<any>
-  updateColumnaLinea(payload: UpdateColumnaLineaPayload): Promise<any>
+  updateColumnaLinea(mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload): Promise<any>
   patchActivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
   patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
   createColumnaCampana(
@@ -28,7 +28,7 @@ interface ApiClient {
     payload: CreateColumnaCampanaPayload
   ): Promise<any>
   createColumnaCampanaGlobal(payload: any): Promise<any>
-  updateColumnaCampana(payload: UpdateColumnaCampanaPayload): Promise<any>
+  updateColumnaCampana(mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload): Promise<any>
   patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
   patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
 }
@@ -43,8 +43,8 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
     api.getColumnasCampanaByMapeo(mapeoId),
   createColumnaLinea: (mapeoId: string | number, payload: CreateColumnaLineaPayload) =>
     api.createColumnaLinea(mapeoId, payload),
-  updateColumnaLinea: (payload: UpdateColumnaLineaPayload) =>
-    api.updateColumnaLinea(payload),
+  updateColumnaLinea: (mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload) =>
+    api.updateColumnaLinea(mapeoId, payload),
   patchActivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
     api.patchActivarColumnaLinea(payload),
   patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
@@ -52,8 +52,8 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
   createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaCampanaPayload) =>
     api.createColumnaCampana(mapeoId, payload),
   createColumnaCampanaGlobal: (payload: any) => api.createColumnaCampanaGlobal(payload),
-  updateColumnaCampana: (payload: UpdateColumnaCampanaPayload) =>
-    api.updateColumnaCampana(payload),
+  updateColumnaCampana: (mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload) =>
+    api.updateColumnaCampana(mapeoId, payload),
   patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
     api.patchActivarColumnaCampana(payload),
   patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
@@ -84,9 +84,10 @@ export const columnaService = {
     })
   },
 
-  updateColumnaLinea(payload: UpdateColumnaLineaPayload) {
-    return apiClient.updateColumnaLinea(payload).then(res => {
-      api.postBitacoraByContext('PUT', '/lineas/mapeos/columnas', payload, `Actualizar columna`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+  updateColumnaLinea(mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload) {
+    return apiClient.updateColumnaLinea(mapeoId, payload).then(res => {
+      const endpoint = mapeoId ? `/lineas/mapeos/${mapeoId}/columnas` : '/lineas/mapeos/columnas'
+      api.postBitacoraByContext('PUT', endpoint, payload, `Actualizar columna`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
       return res
     })
   },
@@ -113,9 +114,10 @@ export const columnaService = {
     })
   },
 
-  updateColumnaCampana(payload: UpdateColumnaCampanaPayload) {
-    return apiClient.updateColumnaCampana(payload).then(res => {
-      api.postBitacoraByContext('PUT', '/campanas/mapeos/columnas', payload, `Actualizar columna campaña`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
+  updateColumnaCampana(mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload) {
+    return apiClient.updateColumnaCampana(mapeoId, payload).then(res => {
+      const endpoint = mapeoId ? `/campanas/mapeos/${mapeoId}/columnas` : '/campanas/mapeos/columnas'
+      api.postBitacoraByContext('PUT', endpoint, payload, `Actualizar columna campaña`, payload.idUsuario ?? (payload as any).idABCUsuario ?? 1).catch(() => {})
       return res
     })
   },

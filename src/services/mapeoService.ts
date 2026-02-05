@@ -48,15 +48,12 @@ function normalizeMapeo(item: any): MapeoData {
       rawDictaminacion === null || rawDictaminacion === undefined
         ? null
         : Boolean(rawDictaminacion),
-    // map new API flags into the compact type fields
     validar: typeof rawValidar === 'boolean' ? rawValidar : (rawValidar === undefined ? undefined : Number(rawValidar) === 1),
       envio: typeof rawEnvio === 'boolean' ? rawEnvio : (rawEnvio === undefined ? undefined : Number(rawEnvio) === 1),
-    // dates
     fechaCreacion: item?.fechaCreacion ?? item?.fec_creacion ?? item?.created_at ?? '',
     fechaUltimaModificacion: item?.fechaUltimaModificacion ?? item?.fec_ult_modificacion ?? item?.updated_at ?? ''
   }
 
-  // attach columnas info when present (mock/enrichment)
   if (Array.isArray(item?.columnas)) {
     ;(base as any).columnas = item.columnas
   } else if (typeof item?.columnas === 'number') {
@@ -65,7 +62,6 @@ function normalizeMapeo(item: any): MapeoData {
     ;(base as any).columnas = Number(item.columnas)
   }
 
-  // keep backward-compatible campana field if present in source
   if (item?.idABCCatCampana !== undefined) {
     ;(base as any).idABCCatCampana = Number(item?.idABCCatCampana ?? item?.id_campana ?? item?.idCampana ?? 0)
   }
@@ -111,7 +107,6 @@ export const mapeoService = {
       envio: payload.envio ?? payload.mapeo?.envio ?? false
     }
     return apiClient.createMapeoLinea(lineaId, normalized).then(res => {
-      // Log bitácora: POST on mapeos (mapéo -> objeto 2)
       api.postBitacoraByContext('POST', `/lineas/${lineaId}/mapeos`, normalized, `Crear mapeo línea ${lineaId}`, normalized.idUsuario).catch(() => {})
       return res
     })

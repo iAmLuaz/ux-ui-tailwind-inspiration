@@ -49,7 +49,6 @@ async function fetchMapeos() {
       : await mapeoService.getMapeosCampana()
     allMapeos.value = data
     
-    // keep filters empty on init; only filter when user selects
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -106,6 +105,7 @@ function nextPage() {
 }
 
 const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
+const getCampanaLabel = (id?: number) => campanasCatalogo.value.find(x => x.value === id)?.label || (id ?? '-')
 const isCampanaRow = (item: MapeoRow): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
 const campanasDisponibles = computed(() => {
@@ -122,6 +122,11 @@ const showColumnasModal = ref(false)
 const columnasForModal = ref<any[]>([])
 const nombreMapeoForModal = ref<string>('')
 const mapeoIdForModal = ref<number | string | null>(null)
+const lineaIdForModal = ref<number | string | null>(null)
+const campanaIdForModal = ref<number | string | null>(null)
+const lineaNombreForModal = ref<string | null>(null)
+const campanaNombreForModal = ref<string | null>(null)
+const isCampanaForModal = ref(false)
 
 function openAddModal() {
   modalMode.value = 'add'
@@ -233,8 +238,17 @@ function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: b
 function openColumnasModal(m: MapeoRow) {
   columnasForModal.value = []
   nombreMapeoForModal.value = (m as any).nombre ?? ''
-  mapeoIdForModal.value = (m as any).idABCConfigMapeoLinea ?? (m as any).id ?? null
+  {
+    const candidate = (m as any).idABCConfigMapeoCampana ?? (m as any).idABCConfigMapeoLinea ?? (m as any).idABCConfigMapeo ?? (m as any).id ?? null
+    mapeoIdForModal.value = candidate !== null && candidate !== undefined ? Number(candidate) : null
+  }
+  lineaIdForModal.value = (m as any).idABCCatLineaNegocio ?? null
+  campanaIdForModal.value = (m as any).idABCCatCampana ?? null
+  lineaNombreForModal.value = getLineaLabel((m as any).idABCCatLineaNegocio)
+  campanaNombreForModal.value = isCampanaRow(m) ? getCampanaLabel((m as any).idABCCatCampana) : null
+  isCampanaForModal.value = isCampanaRow(m)
   showColumnasModal.value = true
+  console.debug('[MapeoView] openColumnasModal id=', mapeoIdForModal.value, 'isCampana=', isCampanaForModal.value, 'm=', m)
 }
 
 async function fetchCatalogosBase() {
@@ -374,6 +388,11 @@ function updatePageSize() {
       :show="showColumnasModal"
       :mapeo-id="mapeoIdForModal"
       :mapeo-nombre="nombreMapeoForModal"
+      :selected-linea-id="lineaIdForModal"
+      :selected-campana-id="campanaIdForModal"
+      :selected-linea-nombre="lineaNombreForModal"
+      :selected-campana-nombre="campanaNombreForModal"
+      :is-campana="isCampanaForModal"
       :lineas-disponibles="lineasDisponibles"
       @close="showColumnasModal = false"
     />

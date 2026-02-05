@@ -17,6 +17,9 @@ import { useMapeosLinea } from '@/composables/useMapeosLinea'
 
 const props = defineProps<{
 	mapeoId?: number | string | null
+	mapeoNombre?: string
+	selectedLineaId?: number | string | null
+	selectedLineaNombre?: string | null
 }>()
 
 const {
@@ -117,7 +120,7 @@ onMounted(() => {
 	if (props.mapeoId !== undefined && props.mapeoId !== null) {
 		selectedFilters.mapeos = [Number(props.mapeoId)]
 	}
-	fetchAll()
+	fetchAll(props.mapeoId)
 	fetchCatalogosColumnas()
 	fetchMapeos()
 	fetchCatalogosLineas()
@@ -174,6 +177,7 @@ defineExpose({ openAdd })
 			@toggle="toggle"
 			@edit="openEdit"
 			@details="openDetails"
+			@add="openAdd"
 			@toggle-filter="toggleFilterMenu"
 			@select-all-mapeos="selectedFilters.mapeos = mapeos.map(x => x.value)"
 			@select-all-columnas="selectedFilters.columnas = columnasCatalogo.map(x => x.value)"
@@ -193,6 +197,11 @@ defineExpose({ openAdd })
 			:is-loading="loading"
 			:columnas="columnasCatalogo"
 			:mapeos="mapeos"
+			:lineas="lineasCatalogo"
+			:selected-mapeo-id="selected?.mapeoId ?? mapeoId ?? null"
+			:selected-mapeo-nombre="selected?.mapeoNombre ?? props.mapeoNombre ?? null"
+			:selected-linea-id="props.selectedLineaId ?? null"
+			:selected-linea-nombre="props.selectedLineaNombre ?? null"
 			:existing-items="items"
 			@close="showModal = false"
 			@saved="fetchAll"

@@ -172,14 +172,14 @@ function handleSave() {
           </div>
 
           <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">
-            <button
+            <!-- <button
               type="button"
               class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
               @click="$emit('close')"
               :disabled="isLoading"
             >
               Cancelar
-            </button>
+            </button> -->
             <button
               type="submit"
               class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"

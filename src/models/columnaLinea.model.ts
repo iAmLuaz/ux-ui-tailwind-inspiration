@@ -9,12 +9,14 @@ export interface ColumnaLineaModel {
   obligatorio: boolean | null
   valor: ColumnaValor | null
 
+  idUsuario?: number | null
+
   columna: {
     tipo: {
-      idABCCatColumna: number
+      id?: number
+      idABCCatColumna?: number
     }
 
-    // Campos opcionales que pueden venir embebidos desde la API
     bolActivo?: boolean
     obligatorio?: boolean | null
     regex?: string | null

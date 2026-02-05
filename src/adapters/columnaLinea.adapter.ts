@@ -71,7 +71,8 @@ export function adaptColumnasLinea(raw: unknown): ColumnaLineaModel[] {
     const llaveRec = asRecord(rec.llaveMapeoLineaColumna)
 
     const mapeoId = toNumber(columnaRec.idABCConfigMapeoLinea ?? llaveRec.idABCConfigMapeoLinea ?? rec.idABCConfigMapeoLinea)
-    const columnaId = toNumber(columnaRec.tipo ? (columnaRec.tipo as Record<string, unknown>).idABCCatColumna : llaveRec.idABCCatColumna ?? rec.idABCCatColumna)
+    const tipoRec = (columnaRec.tipo as Record<string, unknown>) ?? {}
+    const columnaId = toNumber(tipoRec.id ?? tipoRec.idABCCatColumna ?? llaveRec.idABCCatColumna ?? rec.idABCCatColumna)
 
     if (mapeoId === null || columnaId === null) continue
 
@@ -88,7 +89,14 @@ export function adaptColumnasLinea(raw: unknown): ColumnaLineaModel[] {
       regex,
       obligatorio,
       valor,
-      columna: { tipo: { idABCCatColumna: columnaId } },
+      idUsuario: toNumber(rec.idUsuario ?? columnaRec.idUsuario ?? null),
+      columna: {
+        tipo: { id: columnaId ?? undefined, idABCCatColumna: columnaId ?? undefined },
+        bolActivo: toBoolean(columnaRec.bolActivo ?? undefined),
+        obligatorio: normalizeObligatorio(columnaRec.obligatorio ?? columnaRec.obligatoria ?? undefined),
+        regex: normalizeRegex(columnaRec.regex ?? undefined),
+        valor: valor
+      },
       fechaCreacion: typeof columnaRec.fechaCreacion === 'string' ? columnaRec.fechaCreacion : (typeof rec.fechaCreacion === 'string' ? rec.fechaCreacion : undefined),
       fechaUltimaModificacion: typeof columnaRec.fechaUltimaModificacion === 'string' ? columnaRec.fechaUltimaModificacion : (typeof rec.fechaUltimaModificacion === 'string' ? rec.fechaUltimaModificacion : undefined)
     })

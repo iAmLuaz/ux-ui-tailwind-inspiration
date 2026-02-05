@@ -15,7 +15,7 @@ const logoUrl = 'src/assets/img/logo.webp'
 </script>
 
 <template>
-  <aside class="h-screen w-64 bg-[#00357F] text-white flex flex-col border-r border-blue-900 shadow-xl font-sans z-50">
+  <aside class="h-screen w-64 bg-[#00357F] text-white flex flex-col border-r border-blue-900 shadow-xl font-sans z-20">
     
     <div class="h-20 flex items-center justify-center px-6 border-b border-white/10 bg-[#002a66]">
       <img 

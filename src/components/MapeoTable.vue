@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Edit3, Search, Eye } from 'lucide-vue-next'
+import { Edit3, Search, Eye, Columns } from 'lucide-vue-next'
 import FilterDropdown from './FilterDropdown.vue'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 
@@ -84,12 +84,12 @@ const thSmallClass = 'px-4 py-3'
 
 <template>
   <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible flex flex-col  min-h-[400px] h-[87vh] max-h-[calc(100vh-2rem)]">
-    <div class="overflow-y-auto overflow-x-hidden flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
+    <div class="overflow-y-auto overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
           <col class="w-[18%]" />
           <col v-if="props.activeTab === 'campana'" class="w-[14%]" />
-          <col class="w-[28%]" />
+          <col class="w-[25%]" />
           <col class="w-[12%]" />
           <col class="w-[8%]" />
           <col class="w-[8%]" />
@@ -184,8 +184,8 @@ const thSmallClass = 'px-4 py-3'
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <button @click.stop.prevent="emit('viewColumnas', m)" class="inline-flex items-center px-2 py-0.5 rounded text-sm font-medium bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 cursor-pointer transition-colors">
-                  
-                  {{ typeof (m as any).columnas === 'number' ? (m as any).columnas : (Array.isArray((m as any).columnas) ? (m as any).columnas.length : 0) }} configuradas
+                  <Columns class="w-4 h-4 mr-1" />
+                  {{ typeof (m as any).columnas === 'number' ? (m as any).columnas : (Array.isArray((m as any).columnas) ? (m as any).columnas.length : 0) }}
                 </button>
               </td>
 
