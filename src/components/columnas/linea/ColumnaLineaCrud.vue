@@ -93,7 +93,7 @@ const paginated = computed(() => {
 const showModal = ref(false)
 const showDetails = ref(false)
 const mode = ref<'add' | 'edit'>('add')
-const selected = ref<ColumnaLineaModel | null>(null)
+const selected = ref<any>(null)
 
 function openAdd() {
 	mode.value = 'add'
@@ -211,7 +211,13 @@ defineExpose({ openAdd })
 			:show="showDetails"
 			:item="selected"
 			:mapeos="mapeos"
+			:raw-mapeos="rawMapeos"
+			:selected-mapeo-id="props.mapeoId ?? selected?.mapeoId ?? null"
+			:selected-mapeo-nombre="props.mapeoNombre ?? selected?.mapeoNombre ?? null"
 			:columnas="columnasCatalogo"
+			:lineas="lineasCatalogo"
+			:selected-linea-id="selected?.lineaId ?? props.selectedLineaId ?? null"
+			:selected-linea-nombre="selected?.lineaNombre ?? props.selectedLineaNombre ?? null"
 			@close="showDetails = false"
 		/>
 	</div>

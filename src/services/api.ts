@@ -10,6 +10,8 @@ import type { BitacoraPayload } from '../types/bitacora'
 import { addToast } from '@/stores/toastStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+// Track which endpoints already showed the initial "Datos cargados correctamente" toast
+const _shownLoadedToasts = new Set<string>()
 
 async function request<T>(
   endpoint: string,
@@ -45,11 +47,15 @@ async function request<T>(
   const text = await response.text()
   const data = text ? JSON.parse(text) : undefined
 
-  if (response.ok) {
+    if (response.ok) {
     if (method === 'GET') {
       const path = String(endpoint || '').toLowerCase()
       if (!suppressToast && (path.includes('/mapeos') || path.includes('/columnas'))) {
-        addToast('Datos cargados correctamente', 'info')
+        // Only show the "Datos cargados correctamente" toast once per exact endpoint
+        if (!_shownLoadedToasts.has(path)) {
+          addToast('Datos cargados correctamente', 'info')
+          _shownLoadedToasts.add(path)
+        }
       }
     } else if (method === 'POST') {
       if (!suppressToast) addToast('Recurso creado correctamente', 'success')

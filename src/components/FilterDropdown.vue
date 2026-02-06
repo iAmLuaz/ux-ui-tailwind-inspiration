@@ -41,17 +41,14 @@ const selectAllText = computed(() => props.selectAllLabel ?? 'Ver todas')
 	<div class="relative">
 		<button
 			type="button"
-			class="flex items-center gap-1.5 px-2 py-1 -ml-2 rounded-md transition-all duration-200 group focus:outline-none cursor-pointer"
-			:class="open ? 'bg-white text-[#00357F] shadow-sm ring-1 ring-slate-200' : 'hover:bg-white hover:shadow-sm cursor-pointer'"
 			@click.stop="emit('toggle')"
-		>
-			<span>{{ label }}</span>
+			:class="open
+				? 'p-2 bg-[#00357F] text-white rounded-md shadow-sm transition-colors flex items-center gap-2'
+				: 'p-2 bg-white text-slate-400 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-[#00357F] transition-colors flex items-center gap-2'">
+			<span class="text-sm text-[12px] font-medium" :class="open ? 'text-white' : isFiltered ? 'text-[#00357F]' : 'text-slate-600'">{{ label }}</span>
 			<Filter
-				class="w-3.5 h-3.5 transition-colors"
-				:class="[
-					isFiltered ? 'text-[#00357F] fill-blue-100' : 'text-slate-400',
-					open ? 'text-[#00357F]' : ''
-				]"
+				class="w-4 h-4 transition-colors"
+				:class="open ? 'text-white' : (isFiltered ? 'text-[#00357F]' : 'text-slate-400')"
 			/>
 		</button>
 

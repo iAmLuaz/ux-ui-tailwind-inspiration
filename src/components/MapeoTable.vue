@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Edit3, Search, Eye, Columns } from 'lucide-vue-next'
 import FilterDropdown from './FilterDropdown.vue'
+import TableSearch from './TableSearch.vue'
 import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
 
 type MapeoRow = MapeoData | MapeoCampanaData
@@ -44,6 +45,7 @@ interface Emits {
   (e: 'selectAllCampanas'): void
   (e: 'prevPage'): void
   (e: 'nextPage'): void
+  (e: 'search', query: string): void
 }
 
 const props = defineProps<Props>()
@@ -117,13 +119,31 @@ const thSmallClass = 'px-4 py-3'
                 :options="props.campanasDisponibles"
                 v-model="selectedCampanas"
                 :open="props.openFilter === 'campana'"
-                :is-filtered="!!selectedCampanas.length && selectedCampanas.length < props.campanasDisponibles.length"
+                :is-filtered="selectedCampanas.length < props.campanasDisponibles.length"
                 @toggle="emit('toggleFilter', 'campana')"
                 @select-all="emit('selectAllCampanas')"
               />
             </th>
 
-            <th :class="thClass + ' text-left'">Nombre de ingesta</th>
+            <th :class="thClass + ' text-left relative'">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">Nombre de ingesta</span>
+                <button
+                  @click.stop="emit('toggleFilter', 'search')"
+                  :class="props.openFilter === 'search' ? 'p-2 bg-[#00357F] text-white rounded-md shadow-sm transition-colors' : 'p-2 bg-white text-slate-400 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-[#00357F] transition-colors'"
+                  aria-label="Buscar en tabla"
+                  title="Buscar"
+                >
+                  <Search class="w-4 h-4 text-[#00357F]" :class="props.openFilter === 'search' ? 'text-white' : 'text-[#00357F]'" />
+                </button>
+              </div>
+
+              <TableSearch
+                :open="props.openFilter === 'search'"
+                @search="query => emit('search', query)"
+                @toggle="emit('toggleFilter', 'search')"
+              />
+            </th>
 
             <th :class="thClass">Columna</th>
             <th :class="thSmallClass + ' text-center'">Validar</th>

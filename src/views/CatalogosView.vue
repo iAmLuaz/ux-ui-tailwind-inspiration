@@ -8,7 +8,10 @@ const catalogosDisponibles = [
     { label: 'Roles', value: 'ROL' },
     { label: 'Líneas de negocio', value: 'LNN' },
     { label: 'Campañas', value: 'CMP' },
-    { label: 'Columnas', value: 'CLM' }
+    { label: 'Columnas', value: 'CLM' },
+    { label: 'Valores', value: 'VAL' },
+    { label: 'Cadenas', value: 'CDN' },
+    { label: 'Números', value: 'NMR' }
 ] as const
 
 const selectedCodigo = ref<CatalogoCodigo>('ROL')

@@ -30,6 +30,7 @@ const isLoading = ref(false)
 const error = ref<string | null>(null)
 
 const openFilter = ref<string | null>(null)
+const searchQuery = ref('')
 
 const pageSize = ref(10)
 const currentPage = ref(1)
@@ -59,8 +60,43 @@ async function fetchMapeos() {
   }
 }
 
+const normalizeString = (s: unknown) => {
+  if (s === null || s === undefined) return ''
+  const str = String(s)
+  try {
+    return str
+      .normalize('NFD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .trim()
+  } catch (e) {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim()
+  }
+}
+
 const filteredMapeos = computed(() => {
   return allMapeos.value.filter(item => {
+    const qRaw = (searchQuery.value || '').toString()
+    const q = normalizeString(qRaw)
+
+    let matchSearch = true
+    if (q) {
+      const name = normalizeString(item.nombre || '')
+      const nameWords = name.split(/\s+/).filter(Boolean)
+      const qTokens = q.split(/\s+/).filter(Boolean)
+
+      if (qTokens.length === 1) {
+        const token = qTokens[0] ?? ''
+        matchSearch = nameWords.some(w => w.includes(token)) || name.includes(token)
+      } else {
+        matchSearch = qTokens.every(token => nameWords.some(w => w.includes(token)))
+      }
+    }
+
     const matchLinea = selectedFilters.lineas.length
       ? selectedFilters.lineas.includes(item.idABCCatLineaNegocio)
       : true
@@ -78,7 +114,7 @@ const filteredMapeos = computed(() => {
         : false)
       : true
 
-    return matchLinea && matchStatus && matchCampana
+    return matchSearch && matchLinea && matchStatus && matchCampana
   })
 })
 
@@ -105,7 +141,10 @@ function nextPage() {
 }
 
 const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
-const getCampanaLabel = (id?: number) => campanasCatalogo.value.find(x => x.value === id)?.label || (id ?? '-')
+const getCampanaLabel = (id?: number) => {
+  if (id === undefined || id === null) return '-'
+  return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
+}
 const isCampanaRow = (item: MapeoRow): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
 const campanasDisponibles = computed(() => {
@@ -295,6 +334,12 @@ function updatePageSize() {
   const rows = Math.floor(available / 44)
   pageSize.value = Math.max(8, rows || 8)
 }
+
+function handleSearch(query: string) {
+  searchQuery.value = query || ''
+  currentPage.value = 1
+  openFilter.value = null
+}
 </script>
 
 <template>
@@ -362,6 +407,7 @@ function updatePageSize() {
         @prev-page="prevPage"
         @next-page="nextPage"
         @view-columnas="openColumnasModal"
+        @search="handleSearch"
       />
     </div>
     

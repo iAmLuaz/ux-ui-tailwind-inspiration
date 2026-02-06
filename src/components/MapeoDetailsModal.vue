@@ -68,24 +68,38 @@ function formatTimestamp(value?: string) {
         </div>
 
         <div v-else class="space-y-4 text-sm">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Línea</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
-            </div>
-            <div v-if="(item as any).idABCCatCampana !== undefined" class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ getCampanaLabel((item as any).idABCCatCampana) }}</p>
-            </div>
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
-              <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
-            </div>
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+          <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Línea</span>
+            <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
+          </div>
+          <div v-if="(item as any).idABCCatCampana !== undefined" class="bg-slate-50 rounded-lg p-2 border border-slate-200">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
+            <p class="mt-1 font-semibold text-slate-700">{{ getCampanaLabel((item as any).idABCCatCampana) }}</p>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
+            <p class="mt-1 font-semibold text-slate-700">{{ item.nombre }}</p>
+          </div>
+          <div class="grid grid-cols-3 sm:grid-cols-3 gap-3">
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Estatus</span>
               <p class="mt-1 font-semibold" :class="item.bolActivo ? 'text-[#00357F]' : 'text-slate-500'">
                 {{ item.bolActivo ? 'Activo' : 'Inactivo' }}
               </p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex flex-col items-start">
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Validar</span>
+
+              <label class="inline-flex items-center gap-2 mt-3">
+                <input type="checkbox" :checked="Boolean(item.validar)" disabled class="h-4 w-4 accent-[#00357F]" />
+              </label>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex flex-col items-start">
+              <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Enviar</span>
+
+              <label class="inline-flex items-center gap-2 mt-3">
+                <input type="checkbox" :checked="Boolean(item.envio)" disabled class="h-4 w-4 accent-[#00357F]" />
+              </label>
             </div>
           </div>
 
@@ -95,11 +109,11 @@ function formatTimestamp(value?: string) {
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Creado</span>
               <p class="mt-1 text-slate-600">{{ formatTimestamp((item as any).fechaCreacion ?? item.fechaCreacion) }}</p>
             </div>
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Modificado</span>
               <p class="mt-1 text-slate-600">{{ formatTimestamp((item as any).fechaUltimaModificacion ?? item.fechaUltimaModificacion) }}</p>
             </div>

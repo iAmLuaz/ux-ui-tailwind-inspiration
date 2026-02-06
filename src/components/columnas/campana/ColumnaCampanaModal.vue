@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
+import { catalogosService } from '@/services/catalogosService'
 import { columnaService } from '@/services/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import type { ColumnaCampanaModel } from '@/models/columnaCampana.model'
@@ -37,21 +38,67 @@ const form = ref<any>({
 	regex: '',
 	obligatorio: true,
 	valor: {
-		tipoSel: 'cadena',
+		tipoSel: null,
 		tipoId: null,
 		cadena: { tipoId: null, minimo: null, maximo: null },
 		numero: { tipoId: null, enteros: null, decimales: null }
 	}
 })
 
+const valOptions = ref<Option[]>([])
+const cdnOptions = ref<Option[]>([])
+const nmrOptions = ref<Option[]>([])
+const valItems = ref<any[]>([])
+
+async function fetchTipoOptions() {
+	try {
+		const [nmr, cdn, val] = await Promise.all([
+			catalogosService.getCatalogos('NMR'),
+			catalogosService.getCatalogos('CDN'),
+			catalogosService.getCatalogos('VAL')
+		])
+		valItems.value = val || []
+		valOptions.value = (valItems.value || []).map(i => ({ label: i.nombre, value: i.id }))
+		cdnOptions.value = (cdn || []).map(i => ({ label: i.nombre, value: i.id }))
+		nmrOptions.value = (nmr || []).map(i => ({ label: i.nombre, value: i.id }))
+	} catch (e) {
+		valOptions.value = []
+		cdnOptions.value = []
+		nmrOptions.value = []
+	}
+}
+
+onMounted(() => {
+	fetchTipoOptions()
+})
+
 const isEditing = computed(() => props.mode === 'edit')
 
-const mapeoNombre = computed(() => {
-	if (props.selectedMapeoNombre) return props.selectedMapeoNombre
-	const id = props.selectedMapeoId ?? form.value.idABCConfigMapeoCampana ?? null
-	const found = props.mapeos.find(m => m.value == id)
-	return found ? found.label : `Mapeo ${id ?? ''}`
+const selectedVal = computed(() => {
+	const id = form.value.valor.tipoSel
+	return valItems.value.find((i: any) => i.id === id) ?? null
 })
+
+const isCadena = computed(() => {
+	const s = selectedVal.value
+	if (!s) return false
+	const code = String(s.codigo || s.nombre || '').toUpperCase()
+	return code.includes('CDN') || code.includes('CADENA')
+})
+
+const isNumero = computed(() => {
+	const s = selectedVal.value
+	if (!s) return false
+	const code = String(s.codigo || s.nombre || '').toUpperCase()
+	return code.includes('NMR') || code.includes('NUMER')
+})
+
+// const mapeoNombre = computed(() => {
+// 	if (props.selectedMapeoNombre) return props.selectedMapeoNombre
+// 	const id = props.selectedMapeoId ?? form.value.idABCConfigMapeoCampana ?? null
+// 	const found = props.mapeos.find(m => m.value == id)
+// 	return found ? found.label : `Mapeo ${id ?? ''}`
+// })
 
 const hasMapeoInList = computed(() => {
 	const id = props.selectedMapeoId ?? form.value.idABCConfigMapeoCampana ?? null
@@ -93,6 +140,7 @@ function resetForm() {
 		regex: '',
 		obligatorio: true,
 		valor: {
+			tipoSel: null,
 			tipoId: null,
 			cadena: { tipoId: null, minimo: null, maximo: null },
 			numero: { tipoId: null, enteros: null, decimales: null }
@@ -153,14 +201,13 @@ watch(
 			form.value.campanaId = props.selectedCampanaId ?? form.value.campanaId
 			form.value.idABCCatColumna = initialData.columnaId
 			form.value.regex = initialData.regex ?? ''
-			form.value.obligatorio = initialData.obligatorio ?? initialData.columna?.obligatorio ?? false
+			form.value.obligatorio = initialData.obligatorio ?? initialData.columna?.obligatorio ?? null
 			const v = initialData.valor ?? initialData.columna?.valor ?? null
 			if (v) {
-				const hasCadena = Boolean(v.cadena && (v.cadena.minimo !== null || v.cadena.maximo !== null || (v.cadena.tipo && v.cadena.tipo.id)))
-				const hasNumero = Boolean(v.numero && (v.numero.enteros !== null || v.numero.decimales !== null || (v.numero.tipo && v.numero.tipo.id)))
-				form.value.valor.tipoSel = hasCadena && hasNumero ? 'ambos' : hasCadena ? 'cadena' : hasNumero ? 'numero' : 'cadena'
-
-				form.value.valor.tipoId = v.tipo?.id ?? null
+				// const hasCadena = Boolean(v.cadena && (v.cadena.minimo !== null || v.cadena.maximo !== null || (v.cadena.tipo && v.cadena.tipo.id)))
+				// const hasNumero = Boolean(v.numero && (v.numero.enteros !== null || v.numero.decimales !== null || (v.numero.tipo && v.numero.tipo.id)))
+				form.value.valor.tipoSel = v.tipo?.id ?? null
+					form.value.valor.tipoId = v.tipo?.id ?? null
 				form.value.valor.cadena.tipoId = v.cadena?.tipo?.id ?? null
 				form.value.valor.cadena.minimo = v.cadena?.minimo ?? null
 				form.value.valor.cadena.maximo = v.cadena?.maximo ?? null
@@ -169,7 +216,7 @@ watch(
 				form.value.valor.numero.decimales = v.numero?.decimales ?? null
 			} else {
 				form.value.valor = {
-					tipoSel: 'cadena',
+					tipoSel: null,
 					tipoId: null,
 					cadena: { tipoId: null, minimo: null, maximo: null },
 					numero: { tipoId: null, enteros: null, decimales: null }
@@ -195,7 +242,7 @@ watch(
 
 async function save() {
 	const valorPayload: any = {
-		tipo: { id: form.value.valor.tipoId ?? form.value.valor.cadena.tipoId ?? form.value.valor.numero.tipoId ?? null },
+		tipo: { id: form.value.valor.tipoSel ?? form.value.valor.cadena.tipoId ?? form.value.valor.numero.tipoId ?? null },
 		cadena: {
 			tipo: { id: form.value.valor.cadena.tipoId ?? null },
 			minimo: form.value.valor.cadena.minimo ?? null,
@@ -211,7 +258,7 @@ async function save() {
 	const payload = {
 		columna: {
 			tipo: { id: form.value.idABCCatColumna ?? null },
-			obligatorio: props.mode === 'add' ? true : (form.value.obligatorio ?? null),
+			obligatorio: form.value.obligatorio ?? null,
 			regex: form.value.regex || null,
 			valor: valorPayload
 		},
@@ -234,7 +281,8 @@ async function save() {
 		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
 			<div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
 				<h3 class="text-lg font-bold text-white flex items-center gap-2">
-					Configurar columna en {{ mapeoNombre }}
+					<!-- Agregar columna en el mapeo {{ mapeoNombre }} -->
+					Agregar columna
 				</h3>
 				<button
 					@click="$emit('close')"
@@ -248,15 +296,8 @@ async function save() {
 			<div class="p-6 overflow-y-auto custom-scrollbar">
 				<form @submit.prevent="save" class="space-y-5">
 
-					<div class="grid grid-cols-3 gap-4">
-						<div>
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mapeo</label>
-							<select v-model="form.idABCConfigMapeoCampana" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
-								<option v-if="props.selectedMapeoId && props.selectedMapeoNombre && !hasMapeoInList" :value="props.selectedMapeoId">{{ props.selectedMapeoNombre }}</option>
-								<option v-for="o in mapeos" :key="o.value" :value="o.value">{{ o.label }}</option>
-							</select>
-						</div>
-
+					<div class="grid grid-cols-2 gap-4">
+						
 						<div v-if="lineas && lineas.length">
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Línea</label>
 							<select v-model="form.lineaId" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
@@ -272,6 +313,13 @@ async function save() {
 								<option v-for="o in campanas" :key="o.value" :value="o.value">{{ o.label }}</option>
 							</select>
 						</div>
+					</div>
+					<div>
+						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mapeo</label>
+						<select v-model="form.idABCConfigMapeoCampana" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
+							<option v-if="props.selectedMapeoId && props.selectedMapeoNombre && !hasMapeoInList" :value="props.selectedMapeoId">{{ props.selectedMapeoNombre }}</option>
+							<option v-for="o in mapeos" :key="o.value" :value="o.value">{{ o.label }}</option>
+						</select>
 					</div>
 
 					<div>
@@ -292,24 +340,49 @@ async function save() {
 						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Obligatorio</label>
 						<div class="flex items-center gap-3">
 							<label class="inline-flex items-center gap-2">
-								<input type="checkbox" v-model="form.obligatorio" :disabled="!isEditing" class="h-4 w-4 accent-[#00357F]" />
+								<input type="checkbox" v-model="form.obligatorio" class="h-4 w-4 accent-[#00357F]" />
 								<span class="text-sm text-slate-600">Marcado si es obligatorio</span>
 							</label>
 						</div>
 					</div>
 
 					<div>
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Tipo valor</label>
 						<div>
-							<select v-model="form.valor.tipoSel" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
-								<option value="cadena">Cadena</option>
-								<option value="numero">Numérico</option>
-								<!-- <option value="ambos">Ambos</option> -->
-							</select>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Tipo valor</label>
+									<select v-model="form.valor.tipoSel" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
+										<option :value="null">Seleccione una opción</option>
+										<option v-for="o in valOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+									</select>
+								</div>
+								<div>
+									<div v-if="isCadena">
+										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Subtipo cadena</label>
+										<select v-model="form.valor.cadena.tipoId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
+											<option :value="null">Seleccione una opción</option>
+											<option v-for="o in cdnOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+										</select>
+									</div>
+									<div v-else-if="isNumero">
+										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Subtipo número</label>
+										<select v-model="form.valor.numero.tipoId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
+											<option :value="null">Seleccione una opción</option>
+											<option v-for="o in nmrOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
+										</select>
+									</div>
+									<div v-else>
+										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2 text-slate-400">Subtipo </label>
+										<div  class="flex items-center justify-center text-sm text-slate-400 italic bg-gray-50 border border-gray-200 rounded-lg p-2">
+											Para subtipo primero elige un tipo
+										</div>
+									</div>
+								</div>
+							</div>
 						</div>
 					</div>
 
-					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 'cadena' || form.valor.tipoSel === 'ambos'">
+					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 2">
 						<div>
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mínimo (cadena)</label>
 							<input type="number" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
@@ -321,7 +394,7 @@ async function save() {
 						</div>
 					</div>
 
-					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 'numero' || form.valor.tipoSel === 'ambos'">
+					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 1">
 						<div>
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Enteros (número)</label>
 							<input type="number" placeholder="Ej. 3" v-model.number="form.valor.numero.enteros" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />

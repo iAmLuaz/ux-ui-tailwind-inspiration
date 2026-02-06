@@ -68,7 +68,7 @@ const paginated = computed(() => {
 const showModal = ref(false)
 const showDetails = ref(false)
 const mode = ref<'add' | 'edit'>('add')
-const selected = ref<ColumnaCampanaModel | null>(null)
+const selected = ref<any>(null)
 
 async function fetchCatalogos() {
 	const list: CatalogoItem[] = await catalogosService.getCatalogos('CLM')
@@ -212,7 +212,16 @@ defineExpose({ openAdd })
 			:show="showDetails"
 			:item="selected"
 			:mapeos="mapeos"
+			:raw-mapeos="rawMapeos"
+			:selected-mapeo-id="props.mapeoId ?? selected?.mapeoId ?? null"
+			:selected-mapeo-nombre="props.mapeoNombre ?? selected?.mapeoNombre ?? null"
 			:columnas="columnasCatalogo"
+			:lineas="lineasCatalogo"
+			:campanas="campanasCatalogo"
+			:selected-linea-id="selected?.lineaId ?? props.selectedLineaId ?? null"
+			:selected-linea-nombre="selected?.lineaNombre ?? props.selectedLineaNombre ?? null"
+			:selected-campana-id="selected?.campanaId ?? props.selectedCampanaId ?? null"
+			:selected-campana-nombre="selected?.campanaNombre ?? props.selectedCampanaNombre ?? null"
 			@close="showDetails = false"
 		/>
 	</div>

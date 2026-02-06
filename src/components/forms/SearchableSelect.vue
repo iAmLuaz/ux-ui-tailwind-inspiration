@@ -65,7 +65,7 @@ onUnmounted(() => {
 	<div class="relative searchable-select">
 		<button
 			type="button"
-			class="w-full flex items-center justify-between pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
+			class="relative w-full flex items-center pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
 			:class="disabled ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
 			:disabled="disabled"
 			@click.stop="toggleOpen"
@@ -73,9 +73,11 @@ onUnmounted(() => {
 			<span class="truncate">
 				{{ selectedLabel || placeholder || 'Seleccione una opción' }}
 			</span>
-			<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-			</svg>
+			<span class="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
+				<svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+				</svg>
+			</span>
 		</button>
 
 		<div
