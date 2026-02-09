@@ -353,8 +353,8 @@ async function save() {
 									</div>
 									<div v-else>
 										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2 text-slate-400">Subtipo </label>
-										<div  class="flex items-center justify-center text-sm text-slate-400 italic bg-gray-50 border border-gray-200 rounded-lg p-2">
-											Para subtipo primero elige un tipo
+										<div  class="flex items-start justify-start text-sm text-slate-400 bg-gray-50 border border-gray-200 rounded-lg p-2">
+											Elige un tipo
 										</div>
 									</div>
 								</div>

@@ -223,8 +223,8 @@ export const mockColumnasApi = {
 			}
 			return columnas[idx]
 		},
-	async patchActivarColumnaLinea(payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; const c = columnas.find(x => x.columnaId === id); if (c) { c.bolActivo = true; c.fechaUltimaModificacion = now() } return c },
-	async patchDesactivarColumnaLinea(payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; const c = columnas.find(x => x.columnaId === id); if (c) { c.bolActivo = false; c.fechaUltimaModificacion = now() } return c },
+	async patchActivarColumnaLinea(mapeoId: any, payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; let c = columnas.find(x => x.columnaId === Number(id) && x.mapeoId === Number(mapeoId)); if (!c) c = columnas.find(x => x.columnaId === Number(id)); if (c) { c.bolActivo = true; c.fechaUltimaModificacion = now() } return c },
+	async patchDesactivarColumnaLinea(mapeoId: any, payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; let c = columnas.find(x => x.columnaId === Number(id) && x.mapeoId === Number(mapeoId)); if (!c) c = columnas.find(x => x.columnaId === Number(id)); if (c) { c.bolActivo = false; c.fechaUltimaModificacion = now() } return c },
 		async createColumnaCampana(mapeoId: string | number, payload: any): Promise<any> { 
 			await delay(20);
 			const nextId = columnas.length ? Math.max(...columnas.map(c => Number(c.columnaId) || 0)) + 1 : 1;
@@ -248,7 +248,7 @@ export const mockColumnasApi = {
 			}
 			return columnas[idx]
 		},
-	async patchActivarColumnaCampana(payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; const c = columnas.find(x => x.columnaId === id); if (c) { c.bolActivo = true; c.fechaUltimaModificacion = now() } return c },
-	async patchDesactivarColumnaCampana(payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; const c = columnas.find(x => x.columnaId === id); if (c) { c.bolActivo = false; c.fechaUltimaModificacion = now() } return c },
+	async patchActivarColumnaCampana(mapeoId: any, payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; let c = columnas.find(x => x.columnaId === Number(id) && x.mapeoId === Number(mapeoId)); if (!c) c = columnas.find(x => x.columnaId === Number(id)); if (c) { c.bolActivo = true; c.fechaUltimaModificacion = now() } return c },
+	async patchDesactivarColumnaCampana(mapeoId: any, payload: any): Promise<any> { await delay(10); const id = payload?.columna?.tipo?.id ?? payload?.columnaId ?? payload?.id; let c = columnas.find(x => x.columnaId === Number(id) && x.mapeoId === Number(mapeoId)); if (!c) c = columnas.find(x => x.columnaId === Number(id)); if (c) { c.bolActivo = false; c.fechaUltimaModificacion = now() } return c },
 	async postBitacoraUsuario(_payload: any): Promise<any> { await delay(10); return { ok: true } }
 }

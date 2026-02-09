@@ -37,7 +37,8 @@ export function useColumnasLinea() {
         ? columnaService.patchDesactivarColumnaLinea
         : columnaService.patchActivarColumnaLinea
 
-      await fn({ columna: { tipo: { id: item.columnaId } }, idUsuario: 1 })
+      const mapeoId = currentMapeo.value ?? item.mapeoId ?? 0
+      await fn(mapeoId, { columna: { tipo: { id: item.columnaId } }, idUsuario: 1 })
 
       await fetchAll(currentMapeo.value)
     } finally {

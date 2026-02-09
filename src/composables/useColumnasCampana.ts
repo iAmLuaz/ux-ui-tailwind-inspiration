@@ -49,13 +49,11 @@ export function useColumnasCampana() {
 		loading.value = true
 		try {
 			const wasActive = item.bolActivo
-			await columnaService[
-				wasActive
-					? 'patchDesactivarColumnaCampana'
-					: 'patchActivarColumnaCampana'
-			](
-				{ columna: { tipo: { id: item.columnaId } }, idUsuario: 1 }
-			)
+			const fn = wasActive
+				? columnaService.patchDesactivarColumnaCampana
+				: columnaService.patchActivarColumnaCampana
+			const mapeoId = currentMapeo.value ?? (item as any).mapeoId ?? 0
+			await fn(mapeoId, { columna: { tipo: { id: item.columnaId } }, idUsuario: 1 })
 			await fetchAll(currentMapeo.value)
 		} finally {
 			loading.value = false

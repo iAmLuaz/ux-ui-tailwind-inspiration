@@ -21,16 +21,16 @@ interface ApiClient {
     payload: CreateColumnaLineaPayload
   ): Promise<any>
   updateColumnaLinea(mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload): Promise<any>
-  patchActivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
-  patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload): Promise<any>
+  patchActivarColumnaLinea(mapeoId: string | number, payload: PatchColumnaLineaPayload): Promise<any>
+  patchDesactivarColumnaLinea(mapeoId: string | number, payload: PatchColumnaLineaPayload): Promise<any>
   createColumnaCampana(
     mapeoId: string | number,
     payload: CreateColumnaCampanaPayload
   ): Promise<any>
   createColumnaCampanaGlobal(payload: any): Promise<any>
   updateColumnaCampana(mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload): Promise<any>
-  patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
-  patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload): Promise<any>
+  patchActivarColumnaCampana(mapeoId: string | number, payload: PatchColumnaCampanaPayload): Promise<any>
+  patchDesactivarColumnaCampana(mapeoId: string | number, payload: PatchColumnaCampanaPayload): Promise<any>
 }
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
@@ -45,19 +45,19 @@ const apiClient = (USE_MOCK ? mockColumnasApi : {
     api.createColumnaLinea(mapeoId, payload),
   updateColumnaLinea: (mapeoId: string | number | undefined, payload: UpdateColumnaLineaPayload) =>
     api.updateColumnaLinea(mapeoId, payload),
-  patchActivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
-    api.patchActivarColumnaLinea(payload),
-  patchDesactivarColumnaLinea: (payload: PatchColumnaLineaPayload) =>
-    api.patchDesactivarColumnaLinea(payload),
+  patchActivarColumnaLinea: (mapeoId: string | number, payload: PatchColumnaLineaPayload) =>
+    api.patchActivarColumnaLinea(mapeoId, payload),
+  patchDesactivarColumnaLinea: (mapeoId: string | number, payload: PatchColumnaLineaPayload) =>
+    api.patchDesactivarColumnaLinea(mapeoId, payload),
   createColumnaCampana: (mapeoId: string | number, payload: CreateColumnaCampanaPayload) =>
     api.createColumnaCampana(mapeoId, payload),
   createColumnaCampanaGlobal: (payload: any) => api.createColumnaCampanaGlobal(payload),
   updateColumnaCampana: (mapeoId: string | number | undefined, payload: UpdateColumnaCampanaPayload) =>
     api.updateColumnaCampana(mapeoId, payload),
-  patchActivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
-    api.patchActivarColumnaCampana(payload),
-  patchDesactivarColumnaCampana: (payload: PatchColumnaCampanaPayload) =>
-    api.patchDesactivarColumnaCampana(payload)
+  patchActivarColumnaCampana: (mapeoId: string | number, payload: PatchColumnaCampanaPayload) =>
+    api.patchActivarColumnaCampana(mapeoId, payload),
+  patchDesactivarColumnaCampana: (mapeoId: string | number, payload: PatchColumnaCampanaPayload) =>
+    api.patchDesactivarColumnaCampana(mapeoId, payload)
 }) as ApiClient
 
 export const columnaService = {
@@ -92,12 +92,12 @@ export const columnaService = {
     })
   },
 
-  patchActivarColumnaLinea(payload: PatchColumnaLineaPayload) {
-    return apiClient.patchActivarColumnaLinea(payload)
+  patchActivarColumnaLinea(mapeoId: string | number, payload: PatchColumnaLineaPayload) {
+    return apiClient.patchActivarColumnaLinea(mapeoId, payload)
   },
 
-  patchDesactivarColumnaLinea(payload: PatchColumnaLineaPayload) {
-    return apiClient.patchDesactivarColumnaLinea(payload)
+  patchDesactivarColumnaLinea(mapeoId: string | number, payload: PatchColumnaLineaPayload) {
+    return apiClient.patchDesactivarColumnaLinea(mapeoId, payload)
   },
 
   createColumnaCampana(mapeoId: string | number, payload: CreateColumnaCampanaPayload) {
@@ -122,11 +122,11 @@ export const columnaService = {
     })
   },
 
-  patchActivarColumnaCampana(payload: PatchColumnaCampanaPayload) {
-    return apiClient.patchActivarColumnaCampana(payload)
+  patchActivarColumnaCampana(mapeoId: string | number, payload: PatchColumnaCampanaPayload) {
+    return apiClient.patchActivarColumnaCampana(mapeoId, payload)
   },
 
-  patchDesactivarColumnaCampana(payload: PatchColumnaCampanaPayload) {
-    return apiClient.patchDesactivarColumnaCampana(payload)
+  patchDesactivarColumnaCampana(mapeoId: string | number, payload: PatchColumnaCampanaPayload) {
+    return apiClient.patchDesactivarColumnaCampana(mapeoId, payload)
   }
 }

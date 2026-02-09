@@ -373,8 +373,8 @@ async function save() {
 									</div>
 									<div v-else>
 										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2 text-slate-400">Subtipo </label>
-										<div  class="flex items-center justify-center text-sm text-slate-400 italic bg-gray-50 border border-gray-200 rounded-lg p-2">
-											Para subtipo primero elige un tipo
+										<div  class="flex items-start justify-start text-sm text-slate-400 bg-gray-50 border border-gray-200 rounded-lg p-2">
+											Elige un tipo
 										</div>
 									</div>
 								</div>
@@ -400,7 +400,7 @@ async function save() {
 							<input type="number" placeholder="Ej. 3" v-model.number="form.valor.numero.enteros" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 
-						<div>
+						<div v-if="form.valor.numero.tipoId === 2">
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Decimales (número)</label>
 							<input type="number" placeholder="Ej. 2" v-model.number="form.valor.numero.decimales" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>

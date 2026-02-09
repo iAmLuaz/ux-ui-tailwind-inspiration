@@ -140,6 +140,7 @@ function handleSave() {
             <input
               id="field-nombre"
               v-model="formData.nombre"
+              placeholder="Escribe aquí..."
               type="text"
               required
               class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 bg-gray-50"
@@ -153,6 +154,7 @@ function handleSave() {
             <textarea
               id="field-descripcion"
               v-model="formData.descripcion"
+              placeholder="Escribe aquí..."
               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 resize-none"
               required
               rows="3"

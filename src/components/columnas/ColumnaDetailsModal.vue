@@ -172,17 +172,17 @@ onMounted(() => {
 })
 
 function mapTipoName(id: number | null | undefined) {
-	if (id === null || id === undefined) return '(No está configurado)'
+	if (id === null || id === undefined) return '(Sin configuración)'
 	return (valMap.value[id] ?? cdnMap.value[id] ?? nmrMap.value[id] ?? String(id))
 }
 
 function mapCadenaTipoName(id: number | null | undefined) {
-	if (id === null || id === undefined) return '(No está configurado)'
+	if (id === null || id === undefined) return '(Sin configuración)'
 	return (cdnMap.value[id] ?? String(id))
 }
 
 function mapNumeroTipoName(id: number | null | undefined) {
-	if (id === null || id === undefined) return '(No está configurado)'
+	if (id === null || id === undefined) return '(Sin configuración)'
 	return (nmrMap.value[id] ?? String(id))
 }
 </script>
@@ -282,7 +282,7 @@ function mapNumeroTipoName(id: number | null | undefined) {
 							<div class="grid grid-cols-1 gap-4">
 								<div class="grid grid-cols-2">
 									<div class="flex items-center gap-2 pb-2 border-b border-slate-100 ">
-										<div class="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+										<div class=" bg-gray-50 text-gray-600 rounded-md">
 											<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 											</svg>
@@ -297,7 +297,7 @@ function mapNumeroTipoName(id: number | null | undefined) {
 								</div>
 								</div>
 								<div class="flex items-center gap-2 pb-2 border-b border-slate-100" v-if="valor?.tipoId === 2" >
-									<div class="p-1.5 bg-blue-50 text-blue-600 rounded-md">
+									<div class=" bg-gray-50 text-gray-600 rounded-md">
 										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h18M3 12h18m-7 7h7" />
 										</svg>
@@ -309,7 +309,7 @@ function mapNumeroTipoName(id: number | null | undefined) {
 								</div>
 
 								<div class="flex items-center gap-2 pb-2 border-b border-slate-100" v-if="valor?.tipoId === 1">
-									<div class="p-1.5 bg-emerald-50 text-emerald-600 rounded-md">
+									<div class=" bg-gray-50 text-gray-600 rounded-md">
 										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
 										</svg>
@@ -324,12 +324,12 @@ function mapNumeroTipoName(id: number | null | undefined) {
 							<div v-if="valor?.tipoId === 2" class="space-y-3">
 
 								<div class="grid grid-cols-2 gap-2">
-								<div class="bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-									<span class="block text-[10px] text-slate-400 uppercase font-medium">Largo Mínimo</span>
+								<div class=" p-2 rounded-lg border border-slate-100 shadow-sm">
+									<span class="block text-[10px] text-slate-400 uppercase font-medium"> Mínimo</span>
 									<span class="text-sm font-mono font-semibold text-slate-600">{{ valor?.cadena?.minimo ?? '—' }}</span>
 								</div>
-								<div class="bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
-									<span class="block text-[10px] text-slate-400 uppercase font-medium">Largo Máximo</span>
+								<div class=" p-2 rounded-lg border border-slate-100 shadow-sm">
+									<span class="block text-[10px] text-slate-400 uppercase font-medium"> Máximo</span>
 									<span class="text-sm font-mono font-semibold text-slate-600">{{ valor?.cadena?.maximo ?? '—' }}</span>
 								</div>
 								</div>
@@ -338,11 +338,11 @@ function mapNumeroTipoName(id: number | null | undefined) {
 							<div v-if="valor?.tipoId === 1" class="space-y-3">
 
 								<div class="grid grid-cols-2 gap-2">
-								<div class="bg-white p-2 rounded-lg border border-slate-100 shadow-sm">
+								<div class=" p-2 rounded-lg border border-slate-100 shadow-sm">
 									<span class="block text-[10px] text-slate-400 uppercase font-medium">Enteros</span>
 									<span class="text-sm font-mono font-semibold text-slate-600">{{ valor?.numero?.enteros ?? '0' }}</span>
 								</div>
-								<div class="bg-white p-2 rounded-lg border border-slate-100 shadow-sm" v-if="valor?.numero?.tipoId === 2">
+								<div class=" p-2 rounded-lg border border-slate-100 shadow-sm" v-if="valor?.numero?.tipoId === 2">
 									<span class="block text-[10px] text-slate-400 uppercase font-medium">Decimales</span>
 									<span class="text-sm font-mono font-semibold text-slate-600">{{ valor?.numero?.decimales ?? '0' }}</span>
 								</div>
