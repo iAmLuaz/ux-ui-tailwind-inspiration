@@ -7,7 +7,7 @@ import MapeoModal from '@/components/MapeoModal.vue'
 import MapeoTable from '@/components/MapeoTable.vue'
 import MapeoDetailsModal from '@/components/MapeoDetailsModal.vue'
 import MapeoColumnasModal from '@/components/MapeoColumnasModal.vue'
-import { Plus, Layers, Megaphone } from 'lucide-vue-next'
+import { Plus, Layers, Megaphone, LayoutGrid } from 'lucide-vue-next'
 
 const tabs = [
   { key: 'linea', label: 'Líneas de negocio', icon: Layers },
@@ -349,7 +349,7 @@ function handleSearch(query: string) {
       <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
         <div>
           <h1 class="text-2xl font-bold text-[#00357F] tracking-tight flex items-center gap-2">
-            <Layers class="w-6 h-6"/>
+            <LayoutGrid class="w-6 h-6"/>
             Gestión de Mapeos
           </h1>
           <p class="text-sm text-slate-500 mt-1">

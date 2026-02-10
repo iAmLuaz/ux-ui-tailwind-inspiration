@@ -1,4 +1,5 @@
 export interface BitacoraPayload {
+  idUsuario: number
   bitacora: {
     evento: {
       id: number

@@ -145,9 +145,9 @@ const thSmallClass = 'px-4 py-3'
               />
             </th>
 
-            <th :class="thClass">Columna</th>
+            <th :class="thClass">Columnas</th>
             <th :class="thSmallClass + ' text-center'">Validar</th>
-            <th :class="thSmallClass + ' text-center'">Envio</th>
+            <th :class="thSmallClass + ' text-center'">Enviar</th>
             <!-- <th class="px-4 py-3 text-left">Información</th> -->
             
             <th :class="thSmallClass + ' relative'">

@@ -58,9 +58,11 @@ async function request<T>(
     ...options.headers
   }
 
+  const endpointLower = String(endpoint || '').toLowerCase()
+  const isBitacoraEndpoint = endpointLower.includes('/bitacoras/eventos') || endpointLower.includes('/bitacoras')
   const suppressToast = ((): boolean => {
     const raw = (headers as any)['X-Suppress-Toast'] ?? (headers as any)['x-suppress-toast']
-    return String(raw ?? '').toLowerCase() === 'true'
+    return String(raw ?? '').toLowerCase() === 'true' || isBitacoraEndpoint
   })()
 
   let response: Response
@@ -70,7 +72,7 @@ async function request<T>(
       headers
     })
   } catch (err) {
-    addToast('Error de red: no se pudo conectar al servidor', 'error')
+    if (!suppressToast) addToast('Error de red: no se pudo conectar al servidor', 'error')
     throw err
   }
 
@@ -81,8 +83,8 @@ async function request<T>(
   const data = text ? JSON.parse(text) : undefined
 
     if (response.ok) {
+      const path = endpointLower
     if (method === 'GET') {
-      const path = String(endpoint || '').toLowerCase()
       if (!suppressToast && (path.includes('/mapeos') || path.includes('/columnas'))) {
         if (!_shownLoadedToasts.has(path)) {
           addToast('Datos cargados correctamente', 'info')
@@ -90,11 +92,11 @@ async function request<T>(
         }
       }
     } else if (method === 'POST') {
-      if (!suppressToast) addToast('Recurso creado correctamente', 'success')
+      if (!suppressToast && !isBitacoraEndpoint) addToast('Recurso creado correctamente', 'success')
     } else if (method === 'PUT' || method === 'PATCH') {
-      if (!suppressToast) addToast('Recurso actualizado correctamente', 'success')
+      if (!suppressToast && !isBitacoraEndpoint) addToast('Recurso actualizado correctamente', 'success')
     } else if (method === 'DELETE') {
-      if (!suppressToast) addToast('Recurso eliminado correctamente', 'success')
+      if (!suppressToast && !isBitacoraEndpoint) addToast('Recurso eliminado correctamente', 'success')
     }
 
     return data as T
@@ -242,7 +244,7 @@ export const api = {
     ip: string = '192.178.14.14',
     navegador: string = 'chrome'
   ) => {
-    void idUsuario
+    // void idUsuario
     void resourcePayload
     const evento = method === 'POST' ? 3 : method === 'PUT' || method === 'PATCH' ? 4 : 0
 
@@ -256,6 +258,7 @@ export const api = {
     const resolvedDetalle = detalle ?? `${browserInfo.ua}, ${browserInfo.name}, ${browserInfo.version}, ${mac}`
 
     const payload: BitacoraPayload = {
+      idUsuario: idUsuario,
       bitacora: {
         evento: { id: evento },
         objeto: { id: objeto },

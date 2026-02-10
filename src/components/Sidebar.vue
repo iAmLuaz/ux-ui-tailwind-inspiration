@@ -54,7 +54,7 @@ const logoUrl = 'src/assets/img/logo.webp'
               <span>Tareas</span>
             </RouterLink>
           </li>
-           <li>
+           <!-- <li>
             <RouterLink 
               to="/catalogos" 
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group text-blue-100 hover:text-white hover:bg-white/10"
@@ -63,7 +63,7 @@ const logoUrl = 'src/assets/img/logo.webp'
               <Activity class="w-4 h-4" />
               <span>Catalogos</span>
             </RouterLink>
-          </li>
+          </li> -->
         </ul>
       </div>
 

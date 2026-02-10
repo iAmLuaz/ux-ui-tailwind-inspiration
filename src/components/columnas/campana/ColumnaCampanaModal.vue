@@ -385,12 +385,12 @@ async function save() {
 					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 2">
 						<div>
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mínimo (cadena)</label>
-							<input type="number" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" maxlength="1" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 
 						<div>
 							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Máximo (cadena)</label>
-							<input type="number" placeholder="Ej. 10" v-model.number="form.valor.cadena.maximo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" maxlength="4" placeholder="Ej. 10" v-model.number="form.valor.cadena.maximo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 					</div>
 

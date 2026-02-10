@@ -169,7 +169,7 @@ function handleSave() {
 
             <label class="flex items-center gap-2">
               <input type="checkbox" v-model="formData.envio" class="w-4 h-4" />
-              <span class="text-sm font-medium text-gray-700">Envio</span>
+              <span class="text-sm font-medium text-gray-700">Enviar</span>
             </label>
           </div>
 

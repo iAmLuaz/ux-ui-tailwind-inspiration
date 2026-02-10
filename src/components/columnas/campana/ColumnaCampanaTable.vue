@@ -86,7 +86,7 @@ const statusOptions = [
 							<tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
 								<th class="px-4 py-3 relative">
 									<FilterDropdown
-										label="Columna"
+										label="Columnas"
 										header-label="Filtrar por columna"
 										:options="props.columnasCatalogo"
 										v-model="selectedColumnas"
@@ -99,7 +99,7 @@ const statusOptions = [
 
 								<th class="px-4 py-3 relative text-center">
 									<FilterDropdown
-										label="Activo"
+										label="Estados"
 										header-label="Estado"
 										:options="statusOptions"
 										v-model="selectedStatus"
