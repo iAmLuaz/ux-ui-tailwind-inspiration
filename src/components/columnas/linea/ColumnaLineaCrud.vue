@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
-import { useColumnasLinea } from '@/composables/useColumnasLinea'
+import { useColumnasLinea } from '@/composables/columnas/linea/useColumnasLinea'
 import ColumnaLineaTable from './ColumnaLineaTable.vue'
 import ColumnaLineaModal from './ColumnaLineaModal.vue'
 import ColumnaDetailsModal from '../ColumnaDetailsModal.vue'
-import type { ColumnaLineaModel } from '@/models/columnaLinea.model'
+import type { ColumnaLineaModel } from '@/models/columnas/linea/columnaLinea.model'
 
-import { catalogosService } from '@/services/catalogosService'
+import { catalogosService } from '@/services/catalogos/catalogosService'
 
 interface Option {
 	label: string
 	value: number
 }
 
-import { useMapeosLinea } from '@/composables/useMapeosLinea'
+import { useMapeosLinea } from '@/composables/mapeos/linea/useMapeosLinea'
 
 const props = defineProps<{
 	mapeoId?: number | string | null
@@ -31,7 +31,7 @@ const {
 const columnasCatalogo = ref<Option[]>([])
 const lineasCatalogo = ref<Option[]>([])
 
-import type { CatalogoItem } from '@/types/catalogos'
+import type { CatalogoItem } from '@/types/catalogos/catalogos'
 
 async function fetchCatalogosColumnas() {
 	const list: CatalogoItem[] = await catalogosService.getCatalogos('CLM')
@@ -110,6 +110,13 @@ function openEdit(item: ColumnaLineaModel) {
 function openDetails(item: ColumnaLineaModel) {
 	selected.value = item
 	showDetails.value = true
+}
+
+async function handleSaved() {
+	await Promise.all([
+		fetchAll(props.mapeoId ?? null),
+		fetchMapeos()
+	])
 }
 
 function toggleFilterMenu(column: string) {
@@ -204,7 +211,7 @@ defineExpose({ openAdd })
 			:selected-linea-nombre="props.selectedLineaNombre ?? null"
 			:existing-items="items"
 			@close="showModal = false"
-			@saved="fetchAll"
+			@saved="handleSaved"
 		/>
 
 		<ColumnaDetailsModal

@@ -1,0 +1,7 @@
+[
+  {"id":1,"codigo":"LNN_1","nombre":"Linea 1","bolActivo":true},
+  {"id":2,"codigo":"LNN_2","nombre":"Linea 2","bolActivo":true},
+  {"id":3,"codigo":"LNN_3","nombre":"Linea 3","bolActivo":true},
+  {"id":4,"codigo":"LNN_4","nombre":"Linea 4","bolActivo":true},
+  {"id":5,"codigo":"LNN_5","nombre":"Linea 5","bolActivo":false}
+]

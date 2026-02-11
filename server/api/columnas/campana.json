@@ -1,0 +1,16 @@
+[
+  {
+    "idABCConfigMapeoCampana": 201,
+    "idABCCatColumna": 1,
+    "bolActivo": true,
+    "regex": "^\\d{1,5}$",
+    "obligatorio": true
+  },
+  {
+    "idABCConfigMapeoCampana": 202,
+    "idABCCatColumna": 2,
+    "bolActivo": true,
+    "regex": "^.{1,100}$",
+    "obligatorio": false
+  }
+]

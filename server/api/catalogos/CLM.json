@@ -1,0 +1,5 @@
+[
+  {"id":1,"codigo":"CLM_A","nombre":"Clase A","bolActivo":true},
+  {"id":2,"codigo":"CLM_B","nombre":"Clase B","bolActivo":true},
+  {"id":3,"codigo":"CLM_C","nombre":"Clase C","bolActivo":true}
+]

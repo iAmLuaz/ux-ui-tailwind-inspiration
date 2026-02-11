@@ -1,0 +1,23 @@
+[
+  {
+    "idABCConfigMapeoLinea": 101,
+    "idABCCatColumna": 1,
+    "bolActivo": true,
+    "regex": "^\\d+$",
+    "obligatorio": true
+  },
+  {
+    "idABCConfigMapeoLinea": 101,
+    "idABCCatColumna": 2,
+    "bolActivo": true,
+    "regex": "^\\w+$",
+    "obligatorio": false
+  },
+  {
+    "idABCConfigMapeoLinea": 102,
+    "idABCCatColumna": 3,
+    "bolActivo": false,
+    "regex": "^.{1,50}$",
+    "obligatorio": true
+  }
+]

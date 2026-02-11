@@ -1,5 +1,4 @@
 import { api } from './api'
-import { mockApi } from './mockData'
 import type { MapeoData } from '../types/mapeo'
 import type { MapeoCampanaData } from '../types/mapeo'
 
@@ -23,8 +22,7 @@ interface ApiClient {
   patchDesactivarMapeoCampana(payload: any): Promise<MapeoCampanaData>
 }
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true'
-const apiClient = (USE_MOCK ? mockApi : api) as ApiClient
+const apiClient = api as ApiClient
 
 function normalizeMapeo(item: any): MapeoData {
   const rawActivo = item?.bolActivo ?? item?.status ?? false

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { catalogosService } from '@/services/catalogosService'
+import { catalogosService } from '@/services/catalogos/catalogosService'
 
 interface Option {
 	label: string

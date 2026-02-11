@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue'
-import { catalogosService } from '@/services/catalogosService'
-import { columnaService } from '@/services/columnaService'
+import { catalogosService } from '@/services/catalogos/catalogosService'
+import { columnaService } from '@/services/columnas/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
-import type { ColumnaLineaModel } from '@/models/columnaLinea.model'
+import type { ColumnaLineaModel } from '@/models/columnas/linea/columnaLinea.model'
 
 interface Option {
 	label: string

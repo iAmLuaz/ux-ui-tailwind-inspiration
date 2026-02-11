@@ -1,12 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
-import { catalogosService } from '../services/catalogosService'
-import { mapeoService } from '../services/mapeoService'
-import type { MapeoData, MapeoCampanaData } from '../types/mapeo'
-import MapeoModal from '@/components/MapeoModal.vue'
-import MapeoTable from '@/components/MapeoTable.vue'
-import MapeoDetailsModal from '@/components/MapeoDetailsModal.vue'
-import MapeoColumnasModal from '@/components/MapeoColumnasModal.vue'
+import { catalogosService } from '../services/catalogos/catalogosService'
+import { mapeoLineaService } from '@/services/mapeos/linea/mapeoLineaService'
+import { mapeoCampanaService } from '@/services/mapeos/campana/mapeoCampanaService'
+import type { MapeoLineaData } from '@/types/mapeos/linea'
+import type { MapeoCampanaData } from '@/types/mapeos/campana'
+import type { MapeoFiltersModel, MapeoCampanaFiltersModel } from '@/models/mapeos/shared/mapeoFilters.model'
+import type { MapeoLineaFormModel } from '@/models/mapeos/linea/mapeoLinea.model'
+import type { MapeoCampanaFormModel } from '@/models/mapeos/campana/mapeoCampana.model'
+import { toCreateMapeoLineaPayload, toUpdateMapeoLineaPayload } from '@/models/mapeos/linea/mapeoLinea.model'
+import { toCreateMapeoCampanaPayload, toUpdateMapeoCampanaPayload } from '@/models/mapeos/campana/mapeoCampana.model'
+import MapeoLineaModal from '@/components/mapeos/linea/MapeoLineaModal.vue'
+import MapeoCampanaModal from '@/components/mapeos/campana/MapeoCampanaModal.vue'
+import MapeoLineaTable from '@/components/mapeos/linea/MapeoLineaTable.vue'
+import MapeoCampanaTable from '@/components/mapeos/campana/MapeoCampanaTable.vue'
+import MapeoLineaDetailsModal from '@/components/mapeos/linea/MapeoLineaDetailsModal.vue'
+import MapeoCampanaDetailsModal from '@/components/mapeos/campana/MapeoCampanaDetailsModal.vue'
+import MapeoLineaColumnasModal from '@/components/mapeos/linea/MapeoLineaColumnasModal.vue'
+import MapeoCampanaColumnasModal from '@/components/mapeos/campana/MapeoCampanaColumnasModal.vue'
 import { Plus, Layers, Megaphone, LayoutGrid } from 'lucide-vue-next'
 
 const tabs = [
@@ -23,40 +34,55 @@ interface Option {
 
 const lineasDisponibles = ref<Option[]>([])
 const campanasCatalogo = ref<Option[]>([])
-
-type MapeoRow = MapeoData | MapeoCampanaData
-const allMapeos = ref<MapeoRow[]>([])
-const isLoading = ref(false)
+const allMapeosLinea = ref<MapeoLineaData[]>([])
+const allMapeosCampana = ref<MapeoCampanaData[]>([])
+const isLoadingLinea = ref(false)
+const isLoadingCampana = ref(false)
 const error = ref<string | null>(null)
 
-const openFilter = ref<string | null>(null)
-const searchQuery = ref('')
+const openFilterLinea = ref<string | null>(null)
+const openFilterCampana = ref<string | null>(null)
+const searchQueryLinea = ref('')
+const searchQueryCampana = ref('')
 
 const pageSize = ref(10)
-const currentPage = ref(1)
+const currentPageLinea = ref(1)
+const currentPageCampana = ref(1)
 
-const selectedFilters = reactive({
-  lineas: [] as number[],
-  campanas: [] as number[],
-  status: [] as boolean[]
+const selectedFiltersLinea = reactive<MapeoFiltersModel>({
+  lineas: [],
+  status: []
 })
 
-async function fetchMapeos() {
-  isLoading.value = true
+const selectedFiltersCampana = reactive<MapeoCampanaFiltersModel>({
+  lineas: [],
+  campanas: [],
+  status: []
+})
+
+async function fetchMapeosLinea() {
+  isLoadingLinea.value = true
   error.value = null
   try {
-    const data = activeTab.value === 'linea'
-      ? await mapeoService.getAllMapeos()
-      : await mapeoService.getMapeosCampana()
-    allMapeos.value = data
-    
+    const data = await mapeoLineaService.getAllMapeos()
+    allMapeosLinea.value = data
   } catch (e: any) {
     error.value = e.message
   } finally {
-    if (modalMode.value === 'edit' && activeTab.value === 'campana') {
-      showModal.value = false
-    }
-    isLoading.value = false
+    isLoadingLinea.value = false
+  }
+}
+
+async function fetchMapeosCampana() {
+  isLoadingCampana.value = true
+  error.value = null
+  try {
+    const data = await mapeoCampanaService.getMapeosCampana()
+    allMapeosCampana.value = data
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    isLoadingCampana.value = false
   }
 }
 
@@ -78,194 +104,225 @@ const normalizeString = (s: unknown) => {
   }
 }
 
-const filteredMapeos = computed(() => {
-  return allMapeos.value.filter(item => {
-    const qRaw = (searchQuery.value || '').toString()
-    const q = normalizeString(qRaw)
+function matchesSearch(nameValue: string, query: string) {
+  const q = normalizeString(query)
+  if (!q) return true
 
-    let matchSearch = true
-    if (q) {
-      const name = normalizeString(item.nombre || '')
-      const nameWords = name.split(/\s+/).filter(Boolean)
-      const qTokens = q.split(/\s+/).filter(Boolean)
+  const name = normalizeString(nameValue || '')
+  const nameWords = name.split(/\s+/).filter(Boolean)
+  const qTokens = q.split(/\s+/).filter(Boolean)
 
-      if (qTokens.length === 1) {
-        const token = qTokens[0] ?? ''
-        matchSearch = nameWords.some(w => w.includes(token)) || name.includes(token)
-      } else {
-        matchSearch = qTokens.every(token => nameWords.some(w => w.includes(token)))
-      }
-    }
+  if (qTokens.length === 1) {
+    const token = qTokens[0] ?? ''
+    return nameWords.some(w => w.includes(token)) || name.includes(token)
+  }
+  return qTokens.every(token => nameWords.some(w => w.includes(token)))
+}
 
-    const matchLinea = selectedFilters.lineas.length
-      ? selectedFilters.lineas.includes(item.idABCCatLineaNegocio)
+const filteredMapeosLinea = computed(() => {
+  return allMapeosLinea.value.filter(item => {
+    const matchSearch = matchesSearch(item.nombre || '', searchQueryLinea.value || '')
+    const matchLinea = selectedFiltersLinea.lineas.length
+      ? selectedFiltersLinea.lineas.includes(item.idABCCatLineaNegocio)
       : true
-
-    const matchStatus = item.bolActivo !== undefined
-      ? (selectedFilters.status.length
-        ? selectedFilters.status.includes(item.bolActivo)
-        : true)
+    const matchStatus = selectedFiltersLinea.status.length
+      ? selectedFiltersLinea.status.includes(item.bolActivo)
       : true
-    const matchCampana = activeTab.value === 'campana'
-      ? (isCampanaRow(item)
-        ? (selectedFilters.campanas.length
-          ? selectedFilters.campanas.includes(item.idABCCatCampana)
-          : true)
-        : false)
-      : true
+    return matchSearch && matchLinea && matchStatus
+  })
+})
 
+const filteredMapeosCampana = computed(() => {
+  return allMapeosCampana.value.filter(item => {
+    const matchSearch = matchesSearch(item.nombre || '', searchQueryCampana.value || '')
+    const matchLinea = selectedFiltersCampana.lineas.length
+      ? selectedFiltersCampana.lineas.includes(item.idABCCatLineaNegocio)
+      : true
+    const matchStatus = selectedFiltersCampana.status.length
+      ? selectedFiltersCampana.status.includes(item.bolActivo)
+      : true
+    const matchCampana = selectedFiltersCampana.campanas.length
+      ? selectedFiltersCampana.campanas.includes(item.idABCCatCampana)
+      : true
     return matchSearch && matchLinea && matchStatus && matchCampana
   })
 })
 
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filteredMapeos.value.length / pageSize.value))
+const totalPagesLinea = computed(() =>
+  Math.max(1, Math.ceil(filteredMapeosLinea.value.length / pageSize.value))
 )
 
-const paginatedMapeos = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredMapeos.value.slice(start, start + pageSize.value)
+const totalPagesCampana = computed(() =>
+  Math.max(1, Math.ceil(filteredMapeosCampana.value.length / pageSize.value))
+)
+
+const paginatedMapeosLinea = computed(() => {
+  const start = (currentPageLinea.value - 1) * pageSize.value
+  return filteredMapeosLinea.value.slice(start, start + pageSize.value)
 })
 
-const canPrevPage = computed(() => currentPage.value > 1)
-const canNextPage = computed(() => currentPage.value < totalPages.value)
+const paginatedMapeosCampana = computed(() => {
+  const start = (currentPageCampana.value - 1) * pageSize.value
+  return filteredMapeosCampana.value.slice(start, start + pageSize.value)
+})
 
-function prevPage() {
-  if (!canPrevPage.value) return
-  currentPage.value -= 1
+const canPrevPageLinea = computed(() => currentPageLinea.value > 1)
+const canNextPageLinea = computed(() => currentPageLinea.value < totalPagesLinea.value)
+const canPrevPageCampana = computed(() => currentPageCampana.value > 1)
+const canNextPageCampana = computed(() => currentPageCampana.value < totalPagesCampana.value)
+
+function prevPageLinea() {
+  if (!canPrevPageLinea.value) return
+  currentPageLinea.value -= 1
 }
 
-function nextPage() {
-  if (!canNextPage.value) return
-  currentPage.value += 1
+function nextPageLinea() {
+  if (!canNextPageLinea.value) return
+  currentPageLinea.value += 1
+}
+
+function prevPageCampana() {
+  if (!canPrevPageCampana.value) return
+  currentPageCampana.value -= 1
+}
+
+function nextPageCampana() {
+  if (!canNextPageCampana.value) return
+  currentPageCampana.value += 1
 }
 
 const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
 const getCampanaLabel = (id?: number) => {
   if (id === undefined || id === null) return '-'
-  return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
+  return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campana ${id}`
 }
-const isCampanaRow = (item: MapeoRow): item is MapeoCampanaData =>
+const isCampanaRow = (item: MapeoLineaData | MapeoCampanaData): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
-const campanasDisponibles = computed(() => {
-  if (activeTab.value !== 'campana') return [] as { label: string; value: number }[]
-  return campanasCatalogo.value
-})
+const campanasDisponibles = computed(() => campanasCatalogo.value)
 
 const showModal = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
-const selectedItem = ref<MapeoRow | null>(null)
+const modalTab = ref<TabKey>('linea')
+const selectedItem = ref<MapeoLineaData | MapeoCampanaData | null>(null)
 const showDetailsModal = ref(false)
-const detailsItem = ref<MapeoRow | null>(null)
+const detailsItem = ref<MapeoLineaData | MapeoCampanaData | null>(null)
+const detailsTab = ref<TabKey>('linea')
 const showColumnasModal = ref(false)
-const columnasForModal = ref<any[]>([])
+const columnasTab = ref<TabKey>('linea')
 const nombreMapeoForModal = ref<string>('')
 const mapeoIdForModal = ref<number | string | null>(null)
 const lineaIdForModal = ref<number | string | null>(null)
 const campanaIdForModal = ref<number | string | null>(null)
 const lineaNombreForModal = ref<string | null>(null)
 const campanaNombreForModal = ref<string | null>(null)
-const isCampanaForModal = ref(false)
 
 function openAddModal() {
   modalMode.value = 'add'
+  modalTab.value = activeTab.value
   selectedItem.value = null
   showModal.value = true
 }
 
-function openEditModal(item: MapeoRow) {
+function openEditModal(item: MapeoLineaData | MapeoCampanaData) {
   modalMode.value = 'edit'
+  modalTab.value = activeTab.value
   selectedItem.value = item
   showModal.value = true
 }
 
-function openDetails(item: MapeoRow) {
+function openDetails(item: MapeoLineaData | MapeoCampanaData) {
   detailsItem.value = item
+  detailsTab.value = activeTab.value
   showDetailsModal.value = true
 }
 
-async function handleSave(formData: any) {
-  isLoading.value = true
+async function handleSave(formData: MapeoLineaFormModel | MapeoCampanaFormModel) {
   try {
-    const lineaId = Number(formData.idABCCatLineaNegocio ?? selectedFilters.lineas[0] ?? 0)
+    if (modalTab.value === 'campana') {
+      isLoadingCampana.value = true
+      const payload = formData as MapeoCampanaFormModel
+      const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersCampana.lineas[0] ?? 0)
+      const campanaId = Number(payload.idABCCatCampana ?? selectedFiltersCampana.campanas[0] ?? 0)
 
-    if (modalMode.value === 'add') {
-        if (activeTab.value === 'campana') {
-        const campanaId = Number(formData.idABCCatCampana ?? selectedFilters.campanas[0] ?? 1)
-        await mapeoService.createMapeoCampana(lineaId, campanaId, {
-          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
-          idUsuario: formData.idUsuario ?? 1,
-          validar: formData.validar,
-          envio: formData.envio
-        })
-        } else {
-        await mapeoService.createMapeo(lineaId, {
-          mapeo: { nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
-          idUsuario: formData.idUsuario ?? 1,
-          validar: formData.validar,
-          envio: formData.envio
-        })
-        }
-    } else if (selectedItem.value) {
-      const payload = {
-        mapeo: { id: selectedItem.value.idABCConfigMapeoLinea, nombre: formData.nombre, descripcion: formData.descripcion, validar: formData.validar, envio: formData.envio },
-        idUsuario: formData.idUsuario ?? 1,
-        validar: formData.validar,
-        envio: formData.envio
-        }
-      if (activeTab.value === 'campana') {
-        await mapeoService.updateMapeoCampana(payload)
-      } else {
-        await mapeoService.updateMapeo(payload)
+      if (modalMode.value === 'add') {
+        await mapeoCampanaService.createMapeoCampana(lineaId, campanaId, toCreateMapeoCampanaPayload(payload))
+      } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
+        await mapeoCampanaService.updateMapeoCampana(
+          toUpdateMapeoCampanaPayload(payload, selectedItem.value.idABCConfigMapeoLinea)
+        )
       }
+      showModal.value = false
+      await fetchMapeosCampana()
+    } else {
+      isLoadingLinea.value = true
+      const payload = formData as MapeoLineaFormModel
+      const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersLinea.lineas[0] ?? 0)
+
+      if (modalMode.value === 'add') {
+        await mapeoLineaService.createMapeo(lineaId, toCreateMapeoLineaPayload(payload))
+      } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
+        await mapeoLineaService.updateMapeo(
+          toUpdateMapeoLineaPayload(payload, selectedItem.value.idABCConfigMapeoLinea)
+        )
+      }
+      showModal.value = false
+      await fetchMapeosLinea()
     }
-    showModal.value = false
   } catch (e: any) {
     error.value = e.message
   } finally {
-    await fetchMapeos()
-    isLoading.value = false
+    isLoadingLinea.value = false
+    isLoadingCampana.value = false
   }
 }
 
-async function toggleStatus(item: MapeoRow) {
-  isLoading.value = true
+async function toggleStatus(item: MapeoLineaData | MapeoCampanaData) {
   try {
     const wasActive = item.bolActivo
     item.bolActivo = !item.bolActivo
-    if (activeTab.value === 'campana') {
+    if (isCampanaRow(item)) {
+      isLoadingCampana.value = true
       if (wasActive) {
-        await mapeoService.patchDesactivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
+        await mapeoCampanaService.patchDesactivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
       } else {
-        await mapeoService.patchActivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
+        await mapeoCampanaService.patchActivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
       }
+      await fetchMapeosCampana()
     } else {
+      isLoadingLinea.value = true
       if (wasActive) {
-        await mapeoService.patchDesactivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
+        await mapeoLineaService.patchDesactivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
       } else {
-        await mapeoService.patchActivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
+        await mapeoLineaService.patchActivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
       }
+      await fetchMapeosLinea()
     }
-    await fetchMapeos()
   } catch (e: any) {
     error.value = e.message
   } finally {
-    isLoading.value = false
+    isLoadingLinea.value = false
+    isLoadingCampana.value = false
   }
 }
 
-const toggleFilterMenu = (column: string) => {
-  openFilter.value = openFilter.value === column ? null : column
+const toggleFilterMenuLinea = (column: string) => {
+  openFilterLinea.value = openFilterLinea.value === column ? null : column
+}
+
+const toggleFilterMenuCampana = (column: string) => {
+  openFilterCampana.value = openFilterCampana.value === column ? null : column
 }
 
 function handleTabChange(tab: TabKey) {
   if (activeTab.value === tab) return
   activeTab.value = tab
   if (activeTab.value === 'campana') {
-    selectedFilters.campanas = []
+    currentPageCampana.value = 1
+    if (!allMapeosCampana.value.length) fetchMapeosCampana()
+  } else {
+    currentPageLinea.value = 1
+    if (!allMapeosLinea.value.length) fetchMapeosLinea()
   }
-  currentPage.value = 1
-  fetchMapeos()
 }
 
 function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: boolean }[]) {
@@ -274,8 +331,7 @@ function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: b
     .map(item => ({ label: item.nombre, value: item.id }))
 }
 
-function openColumnasModal(m: MapeoRow) {
-  columnasForModal.value = []
+function openColumnasModal(m: MapeoLineaData | MapeoCampanaData) {
   nombreMapeoForModal.value = (m as any).nombre ?? ''
   {
     const candidate = (m as any).idABCConfigMapeoCampana ?? (m as any).idABCConfigMapeoLinea ?? (m as any).idABCConfigMapeo ?? (m as any).id ?? null
@@ -285,9 +341,8 @@ function openColumnasModal(m: MapeoRow) {
   campanaIdForModal.value = (m as any).idABCCatCampana ?? null
   lineaNombreForModal.value = getLineaLabel((m as any).idABCCatLineaNegocio)
   campanaNombreForModal.value = isCampanaRow(m) ? getCampanaLabel((m as any).idABCCatCampana) : null
-  isCampanaForModal.value = isCampanaRow(m)
+  columnasTab.value = isCampanaRow(m) ? 'campana' : 'linea'
   showColumnasModal.value = true
-  console.debug('[MapeoView] openColumnasModal id=', mapeoIdForModal.value, 'isCampana=', isCampanaForModal.value, 'm=', m)
 }
 
 async function fetchCatalogosBase() {
@@ -306,7 +361,8 @@ async function fetchCatalogosBase() {
 
 onMounted(() => {
   fetchCatalogosBase()
-  fetchMapeos()
+  fetchMapeosLinea()
+  fetchMapeosCampana()
   updatePageSize()
   window.addEventListener('resize', updatePageSize)
 })
@@ -315,16 +371,30 @@ onUnmounted(() => {
   window.removeEventListener('resize', updatePageSize)
 })
 
-watch(filteredMapeos, () => {
-  if (currentPage.value > totalPages.value) {
-    currentPage.value = totalPages.value
+watch(filteredMapeosLinea, () => {
+  if (currentPageLinea.value > totalPagesLinea.value) {
+    currentPageLinea.value = totalPagesLinea.value
+  }
+})
+
+watch(filteredMapeosCampana, () => {
+  if (currentPageCampana.value > totalPagesCampana.value) {
+    currentPageCampana.value = totalPagesCampana.value
   }
 })
 
 watch(
-  selectedFilters,
+  selectedFiltersLinea,
   () => {
-    currentPage.value = 1
+    currentPageLinea.value = 1
+  },
+  { deep: true }
+)
+
+watch(
+  selectedFiltersCampana,
+  () => {
+    currentPageCampana.value = 1
   },
   { deep: true }
 )
@@ -335,15 +405,21 @@ function updatePageSize() {
   pageSize.value = Math.max(8, rows || 8)
 }
 
-function handleSearch(query: string) {
-  searchQuery.value = query || ''
-  currentPage.value = 1
-  openFilter.value = null
+function handleSearchLinea(query: string) {
+  searchQueryLinea.value = query || ''
+  currentPageLinea.value = 1
+  openFilterLinea.value = null
+}
+
+function handleSearchCampana(query: string) {
+  searchQueryCampana.value = query || ''
+  currentPageCampana.value = 1
+  openFilterCampana.value = null
 }
 </script>
 
 <template>
-  <div class="p-6 bg-slate-50 min-h-screen font-sans text-slate-800" @click.self="openFilter = null">
+  <div class="p-6 bg-slate-50 min-h-screen font-sans text-slate-800" @click.self="openFilterLinea = null; openFilterCampana = null">
     <div class="max-w-7xl mx-auto space-y-4">
       
       <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
@@ -383,54 +459,110 @@ function handleSearch(query: string) {
         </div>
       </div>
 
-      <MapeoTable
-        :active-tab="activeTab"
+      <MapeoLineaTable
+        v-if="activeTab === 'linea'"
         :lineas-disponibles="lineasDisponibles"
-        :campanas-disponibles="campanasDisponibles"
-        :selected-filters="selectedFilters"
-        :open-filter="openFilter"
-        :filtered-mapeos="paginatedMapeos"
-        :total-mapeos="filteredMapeos.length"
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :can-prev-page="canPrevPage"
-        :can-next-page="canNextPage"
-        :is-loading="isLoading"
+        :selected-filters="selectedFiltersLinea"
+        :open-filter="openFilterLinea"
+        :filtered-mapeos="paginatedMapeosLinea"
+        :total-mapeos="filteredMapeosLinea.length"
+        :current-page="currentPageLinea"
+        :total-pages="totalPagesLinea"
+        :can-prev-page="canPrevPageLinea"
+        :can-next-page="canNextPageLinea"
+        :is-loading="isLoadingLinea"
         :get-linea-label="getLineaLabel"
-        :is-campana-row="isCampanaRow"
-        @toggle-filter="toggleFilterMenu"
+        @toggle-filter="toggleFilterMenuLinea"
         @view-details="openDetails"
         @toggle-status="toggleStatus"
         @edit="openEditModal"
-        @select-all-lineas="selectedFilters.lineas = lineasDisponibles.map(x => x.value)"
-        @select-all-campanas="selectedFilters.campanas = campanasDisponibles.map(x => x.value)"
-        @prev-page="prevPage"
-        @next-page="nextPage"
+        @select-all-lineas="selectedFiltersLinea.lineas = lineasDisponibles.map(x => x.value)"
+        @prev-page="prevPageLinea"
+        @next-page="nextPageLinea"
         @view-columnas="openColumnasModal"
-        @search="handleSearch"
+        @search="handleSearchLinea"
+      />
+
+      <MapeoCampanaTable
+        v-else
+        :lineas-disponibles="lineasDisponibles"
+        :campanas-disponibles="campanasDisponibles"
+        :selected-filters="selectedFiltersCampana"
+        :open-filter="openFilterCampana"
+        :filtered-mapeos="paginatedMapeosCampana"
+        :total-mapeos="filteredMapeosCampana.length"
+        :current-page="currentPageCampana"
+        :total-pages="totalPagesCampana"
+        :can-prev-page="canPrevPageCampana"
+        :can-next-page="canNextPageCampana"
+        :is-loading="isLoadingCampana"
+        :get-linea-label="getLineaLabel"
+        :get-campana-label="getCampanaLabel"
+        @toggle-filter="toggleFilterMenuCampana"
+        @view-details="openDetails"
+        @toggle-status="toggleStatus"
+        @edit="openEditModal"
+        @select-all-lineas="selectedFiltersCampana.lineas = lineasDisponibles.map(x => x.value)"
+        @select-all-campanas="selectedFiltersCampana.campanas = campanasDisponibles.map(x => x.value)"
+        @prev-page="prevPageCampana"
+        @next-page="nextPageCampana"
+        @view-columnas="openColumnasModal"
+        @search="handleSearchCampana"
       />
     </div>
-    
-    <MapeoModal
+
+    <MapeoLineaModal
+      v-if="modalTab === 'linea'"
       :show="showModal"
       :mode="modalMode"
-      :active-tab="activeTab"
       :lineas-disponibles="lineasDisponibles"
-      :campanas-disponibles="campanasDisponibles"
       :initial-data="selectedItem"
-      :is-loading="isLoading"
+      :is-loading="isLoadingLinea"
       @save="handleSave"
       @close="showModal = false"
     />
 
-    <MapeoDetailsModal
+    <MapeoCampanaModal
+      v-else
+      :show="showModal"
+      :mode="modalMode"
+      :lineas-disponibles="lineasDisponibles"
+      :campanas-disponibles="campanasDisponibles"
+      :initial-data="selectedItem"
+      :is-loading="isLoadingCampana"
+      @save="handleSave"
+      @close="showModal = false"
+    />
+
+    <MapeoLineaDetailsModal
+      v-if="detailsTab === 'linea'"
       :show="showDetailsModal"
-      :item="detailsItem"
+      :item="detailsItem as any"
       :get-linea-label="getLineaLabel"
       @close="showDetailsModal = false"
     />
 
-    <MapeoColumnasModal
+    <MapeoCampanaDetailsModal
+      v-else
+      :show="showDetailsModal"
+      :item="detailsItem as any"
+      :get-linea-label="getLineaLabel"
+      @close="showDetailsModal = false"
+    />
+
+    <MapeoLineaColumnasModal
+      v-if="columnasTab === 'linea'"
+      :show="showColumnasModal"
+      :mapeo-id="mapeoIdForModal"
+      :mapeo-nombre="nombreMapeoForModal"
+      :selected-linea-id="lineaIdForModal"
+      :selected-linea-nombre="lineaNombreForModal"
+      :lineas-disponibles="lineasDisponibles"
+      @close="showColumnasModal = false"
+    />
+
+    <MapeoCampanaColumnasModal
+      v-else
       :show="showColumnasModal"
       :mapeo-id="mapeoIdForModal"
       :mapeo-nombre="nombreMapeoForModal"
@@ -438,7 +570,6 @@ function handleSearch(query: string) {
       :selected-campana-id="campanaIdForModal"
       :selected-linea-nombre="lineaNombreForModal"
       :selected-campana-nombre="campanaNombreForModal"
-      :is-campana="isCampanaForModal"
       :lineas-disponibles="lineasDisponibles"
       @close="showColumnasModal = false"
     />

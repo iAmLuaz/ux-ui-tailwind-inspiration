@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next'
-import type { CatalogoItem } from '../../types/catalogos'
+import type { CatalogoItem } from '../../types/catalogos/catalogos'
 
 interface Props {
   items: CatalogoItem[]

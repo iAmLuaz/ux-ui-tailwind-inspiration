@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { catalogosService } from '../services/catalogosService'
-import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos'
+import { catalogosService } from '../services/catalogos/catalogosService'
+import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos/catalogos'
 import CatalogosTable from '@/components/catalogos/CatalogoTable.vue'
 
 const catalogosDisponibles = [

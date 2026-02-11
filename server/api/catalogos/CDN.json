@@ -1,0 +1,4 @@
+[
+  {"id":1,"codigo":"CDN_1","nombre":"Cadena 1","bolActivo":true},
+  {"id":2,"codigo":"CDN_2","nombre":"Cadena 2","bolActivo":true}
+]

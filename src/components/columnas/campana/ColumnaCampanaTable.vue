@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { Eye, Edit3, Search, Plus } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
-import type { ColumnaCampanaModel } from '@/models/columnaCampana.model'
+import type { ColumnaCampanaModel } from '@/models/columnas/campana/columnaCampana.model'
 
 interface Option {
 	label: string

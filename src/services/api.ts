@@ -5,11 +5,14 @@ import type {
   PatchColumnaCampanaPayload,
   UpdateColumnaCampanaPayload,
   CreateColumnaCampanaPayload
-} from '../types/columna'
+} from '../types/columnas/columna'
 import type { BitacoraPayload } from '../types/bitacora'
 import { addToast } from '@/stores/toastStore'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL
+  || (import.meta.env.VITE_USE_MOCK === 'true'
+    ? 'http://localhost:3100/api'
+    : 'http://localhost:3000/api')
 const _shownLoadedToasts = new Set<string>()
 
 function getBrowserInfo() {
@@ -32,14 +35,14 @@ function getBrowserInfo() {
 }
 
 async function getClientIp(): Promise<string> {
-  try {
-    const res = await fetch('https://api.ipify.org?format=json')
-    if (!res.ok) return '0.0.0.0'
-    const data = await res.json()
-    return String(data?.ip ?? '0.0.0.0')
-  } catch {
+  // try {
+  //   const res = await fetch('https://api.ipify.org?format=json')
+  //   if (!res.ok) return '0.0.0.0'
+  //   const data = await res.json()
+  //   return String(data?.ip ?? '0.0.0.0')
+  // } catch {
     return '0.0.0.0'
-  }
+  // }
 }
 
 async function getClientMac(): Promise<string> {

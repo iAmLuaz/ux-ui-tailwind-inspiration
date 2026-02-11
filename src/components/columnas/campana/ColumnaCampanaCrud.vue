@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, reactive, watch } from 'vue'
-import { useColumnasCampana } from '@/composables/useColumnasCampana'
-import { useMapeosCampana } from '@/composables/useMapeosCampana'
-import { catalogosService } from '@/services/catalogosService'
-import type { CatalogoItem } from '@/types/catalogos'
-import type { ColumnaCampanaModel } from '@/models/columnaCampana.model'
+import { useColumnasCampana } from '@/composables/columnas/campana/useColumnasCampana'
+import { useMapeosCampana } from '@/composables/mapeos/campana/useMapeosCampana'
+import { catalogosService } from '@/services/catalogos/catalogosService'
+import type { CatalogoItem } from '@/types/catalogos/catalogos'
+import type { ColumnaCampanaModel } from '@/models/columnas/campana/columnaCampana.model'
 
 import ColumnaCampanaTable from './ColumnaCampanaTable.vue'
 import ColumnaCampanaModal from './ColumnaCampanaModal.vue'
@@ -93,6 +93,13 @@ function openEdit(item: ColumnaCampanaModel) {
 function openDetails(item: ColumnaCampanaModel) {
 	selected.value = item
 	showDetails.value = true
+}
+
+async function handleSaved() {
+	await Promise.all([
+		fetchAll(props.mapeoId ?? null),
+		fetchMapeos()
+	])
 }
 
 function toggleFilterMenu(column: string) {
@@ -205,7 +212,7 @@ defineExpose({ openAdd })
 			:selected-linea-nombre="props.selectedLineaNombre ?? null"
 			:selected-campana-nombre="props.selectedCampanaNombre ?? null"
 			@close="showModal = false"
-			@saved="fetchAll"
+			@saved="handleSaved"
 		/>
 
 		<ColumnaDetailsModal

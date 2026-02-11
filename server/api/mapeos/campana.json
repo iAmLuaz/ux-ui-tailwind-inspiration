@@ -1,0 +1,30 @@
+[
+  {
+    "idABCConfigMapeoLinea": 201,
+    "idABCCatLineaNegocio": 1,
+    "idABCCatCampana": 1,
+    "idABCUsuario": 1,
+    "nombre": "Mapeo Campana 1",
+    "descripcion": "Descripcion de mapeo campana 1",
+    "bolActivo": true,
+    "validar": true,
+    "envio": false,
+    "columnas": 2,
+    "fechaCreacion": "2025-01-05T00:00:00.000Z",
+    "fechaUltimaModificacion": "2025-01-05T00:00:00.000Z"
+  },
+  {
+    "idABCConfigMapeoLinea": 202,
+    "idABCCatLineaNegocio": 2,
+    "idABCCatCampana": 2,
+    "idABCUsuario": 1,
+    "nombre": "Mapeo Campana 2",
+    "descripcion": "Descripcion de mapeo campana 2",
+    "bolActivo": true,
+    "validar": false,
+    "envio": true,
+    "columnas": 1,
+    "fechaCreacion": "2025-01-06T00:00:00.000Z",
+    "fechaUltimaModificacion": "2025-01-06T00:00:00.000Z"
+  }
+]

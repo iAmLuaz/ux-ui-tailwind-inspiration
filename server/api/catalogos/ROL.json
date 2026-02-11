@@ -1,0 +1,4 @@
+[
+  {"id":1,"codigo":"ROL_ADMIN","nombre":"Administrador","bolActivo":true},
+  {"id":2,"codigo":"ROL_USER","nombre":"Usuario","bolActivo":true}
+]
