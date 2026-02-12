@@ -51,7 +51,7 @@ function send(res, status, data) {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Suppress-Toast'
+    'Access-Control-Allow-Headers': 'Content-Type, X-Suppress-Toast, ngrok-skip-browser-warning'
   })
   res.end(payload)
 }
@@ -82,8 +82,13 @@ function findMapeoLinea(id) {
   return store.mapeosLinea.find(m => Number(m.idABCConfigMapeoLinea) === Number(id))
 }
 
+function getCampanaMapeoId(item) {
+  return Number(item?.idABCConfigMapeoCampana ?? item?.idABCConfigMapeoLinea ?? item?.id ?? 0)
+}
+
 function findMapeoCampana(id) {
-  return store.mapeosCampana.find(m => Number(m.idABCConfigMapeoLinea) === Number(id))
+  const targetId = Number(id)
+  return store.mapeosCampana.find(m => getCampanaMapeoId(m) === targetId)
 }
 
 function matchPath(urlPath, pattern) {
@@ -140,7 +145,7 @@ function withColumnCounts(list, scope) {
   }
   return list.map(m => ({
     ...m,
-    columnas: store.columnasCampana.filter(c => Number(c.idABCConfigMapeoCampana) === Number(m.idABCConfigMapeoLinea)).length
+    columnas: store.columnasCampana.filter(c => Number(c.idABCConfigMapeoCampana) === getCampanaMapeoId(m)).length
   }))
 }
 
@@ -151,8 +156,16 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://${req.headers.host}`)
     const pathname = url.pathname
 
+    if (req.method === 'GET' && (pathname === '/' || pathname === '/health')) {
+      return send(res, 200, {
+        status: 'ok',
+        apiBase: `${url.origin}${API_PREFIX}`,
+        hint: 'Use the /api endpoints (e.g. /api/lineas/mapeos).'
+      })
+    }
+
     if (!pathname.startsWith(API_PREFIX)) {
-      return send(res, 404, { message: 'Not found' })
+      return send(res, 404, { message: 'Not found', hint: 'Try /api or /health.' })
     }
 
     const pathOnly = pathname.slice(API_PREFIX.length)
@@ -232,10 +245,10 @@ const server = http.createServer(async (req, res) => {
         const body = await parseBody(req)
         const lineaId = Number(campanaCreateParams.lineaId)
         const campanaId = Number(campanaCreateParams.campanaId)
-        const next = nextId(store.mapeosCampana, 'idABCConfigMapeoLinea')
+        const next = nextId(store.mapeosCampana, 'idABCConfigMapeoCampana')
         const base = body.mapeo ?? body
         const record = {
-          idABCConfigMapeoLinea: next,
+          idABCConfigMapeoCampana: next,
           idABCCatLineaNegocio: Number(base.idABCCatLineaNegocio ?? lineaId),
           idABCCatCampana: Number(base.idABCCatCampana ?? campanaId),
           idABCUsuario: Number(body.idUsuario ?? body.idABCUsuario ?? 1),
@@ -294,7 +307,7 @@ const server = http.createServer(async (req, res) => {
       if (pathOnly === '/lineas/campanas/mapeos') {
         const body = await parseBody(req)
         const payload = body.mapeo ?? body
-        const id = Number(payload.id ?? payload.idABCConfigMapeoLinea)
+        const id = Number(payload.id ?? payload.idABCConfigMapeoCampana ?? payload.idABCConfigMapeoLinea)
         const current = findMapeoCampana(id)
         if (!current) return send(res, 404, { message: 'Not found' })
         Object.assign(current, payload, { fechaUltimaModificacion: now() })
@@ -369,7 +382,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathOnly === '/lineas/campanas/mapeos/activar' || pathOnly === '/lineas/campanas/mapeos/desactivar') {
         const body = await parseBody(req)
-        const id = Number(body?.mapeo?.id ?? body?.id)
+        const id = Number(body?.mapeo?.id ?? body?.mapeo?.idABCConfigMapeoCampana ?? body?.id)
         const current = findMapeoCampana(id)
         if (!current) return send(res, 404, { message: 'Not found' })
         current.bolActivo = pathOnly.endsWith('/activar')

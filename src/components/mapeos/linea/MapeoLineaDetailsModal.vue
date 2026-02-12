@@ -5,6 +5,7 @@ interface Props {
   show: boolean
   item?: MapeoLineaData | null
   getLineaLabel: (id?: number) => string
+  getCampanaLabel?: (id?: number) => string
 }
 
 interface Emits {
@@ -13,6 +14,10 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+// function isCampanaItem(item?: MapeoData | MapeoCampanaData | null): item is MapeoCampanaData {
+//   return !!item && Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
+// }
 
 function formatTimestamp(value?: string) {
   if (!value) return ''

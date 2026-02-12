@@ -1,6 +1,6 @@
 [
   {
-    "idABCConfigMapeoLinea": 201,
+    "idABCConfigMapeoCampana": 201,
     "idABCCatLineaNegocio": 1,
     "idABCCatCampana": 1,
     "idABCUsuario": 1,
@@ -14,7 +14,7 @@
     "fechaUltimaModificacion": "2025-01-05T00:00:00.000Z"
   },
   {
-    "idABCConfigMapeoLinea": 202,
+    "idABCConfigMapeoCampana": 202,
     "idABCCatLineaNegocio": 2,
     "idABCCatCampana": 2,
     "idABCUsuario": 1,

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import logo from '../assets/img/logo.webp'
 import { 
   LayoutGrid, 
   Activity, 
@@ -11,7 +12,7 @@ import {
   LogOut,
 } from 'lucide-vue-next'
 
-const logoUrl = 'src/assets/img/logo.webp'
+const logoUrl = logo
 </script>
 
 <template>
