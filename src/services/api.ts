@@ -200,6 +200,34 @@ export const api = {
   patchDesactivarMapeoCampana: (payload: any) =>
     http.patch('/lineas/campanas/mapeos/desactivar', payload),
 
+  // Tareas linea
+  getTareasLinea: () => http.get('/lineas/tareas'),
+  getTareasLineaByLinea: (lineaId: string | number) =>
+    http.get(`/lineas/${lineaId}/tareas`),
+  createTareaLinea: (lineaId: string | number, payload: any) =>
+    http.post(`/lineas/${lineaId}/tareas`, payload),
+  updateTareaLinea: (payload: any) => http.put('/lineas/tareas', payload),
+  deleteTareaLinea: (lineaId: string | number, tareaId: string | number) =>
+    http.delete(`/lineas/${lineaId}/tareas/${tareaId}`),
+  patchActivarTareaLinea: (payload: any) =>
+    http.patch('/lineas/tareas/activar', payload),
+  patchDesactivarTareaLinea: (payload: any) =>
+    http.patch('/lineas/tareas/desactivar', payload),
+
+  // Tareas campana
+  getTareasCampana: () => http.get('/lineas/campanas/tareas'),
+  getTareasCampanaByLineaCampana: (lineaId: string | number, campanaId: string | number) =>
+    http.get(`/lineas/${lineaId}/campanas/${campanaId}/tareas`),
+  createTareaCampana: (lineaId: string | number, campanaId: string | number, payload: any) =>
+    http.post(`/lineas/${lineaId}/campanas/${campanaId}/tareas`, payload),
+  updateTareaCampana: (payload: any) => http.put('/lineas/campanas/tareas', payload),
+  deleteTareaCampana: (lineaId: string | number, campanaId: string | number, tareaId: string | number) =>
+    http.delete(`/lineas/${lineaId}/campanas/${campanaId}/tareas/${tareaId}`),
+  patchActivarTareaCampana: (payload: any) =>
+    http.patch('/lineas/campanas/tareas/activar', payload),
+  patchDesactivarTareaCampana: (payload: any) =>
+    http.patch('/lineas/campanas/tareas/desactivar', payload),
+
   // Columna mapeo (línea)
   getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),
   getColumnasByMapeo: (mapeoId: string | number) =>

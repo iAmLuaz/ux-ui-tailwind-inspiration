@@ -5,6 +5,19 @@ import TareaLineaTable from '@/components/tareas/linea/TareaLineaTable.vue'
 import TareaCampanaTable from '@/components/tareas/campana/TareaCampanaTable.vue'
 import TareaLineaModal from '@/components/tareas/linea/TareaLineaModal.vue'
 import TareaCampanaModal from '@/components/tareas/campana/TareaCampanaModal.vue'
+import { catalogosService } from '@/services/catalogos/catalogosService'
+import { tareaLineaService } from '@/services/tareas/linea/tareaLineaService'
+import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
+import { mapeoLineaService } from '@/services/mapeos/linea/mapeoLineaService'
+import { mapeoCampanaService } from '@/services/mapeos/campana/mapeoCampanaService'
+import type { TareaLineaData } from '@/types/tareas/linea'
+import type { TareaCampanaData } from '@/types/tareas/campana'
+import type { MapeoLineaData } from '@/types/mapeos/linea'
+import type { MapeoCampanaData } from '@/types/mapeos/campana'
+import type { TareaLineaFormModel } from '@/models/tareas/linea/tareaLinea.model'
+import type { TareaCampanaFormModel } from '@/models/tareas/campana/tareaCampana.model'
+import { toCreateTareaLineaPayload, toUpdateTareaLineaPayload } from '@/models/tareas/linea/tareaLinea.model'
+import { toCreateTareaCampanaPayload, toUpdateTareaCampanaPayload } from '@/models/tareas/campana/tareaCampana.model'
 
 const tabs = [
   { key: 'linea', label: 'Lineas de negocio', icon: Layers },
@@ -19,35 +32,20 @@ interface Option {
   value: number
 }
 
-interface TareaLineaRow {
-  id: number
-  idABCCatLineaNegocio: number
-  nombre: string
-  horario?: string
-  tipoCarga?: string
-  tipoEjecucion?: string
-  bolActivo: boolean
-}
-
-interface TareaCampanaRow {
-  id: number
-  idABCCatLineaNegocio: number
-  idABCCatCampana: number
-  nombre: string
-  horario?: string
-  tipoCarga?: string
-  tipoEjecucion?: string
-  bolActivo: boolean
-}
+type TareaLineaRow = TareaLineaData
+type TareaCampanaRow = TareaCampanaData
 
 const lineasDisponibles = ref<Option[]>([])
 const campanasDisponibles = ref<Option[]>([])
 
 const allTareasLinea = ref<TareaLineaRow[]>([])
 const allTareasCampana = ref<TareaCampanaRow[]>([])
+const allMapeosLinea = ref<MapeoLineaData[]>([])
+const allMapeosCampana = ref<MapeoCampanaData[]>([])
 
 const isLoadingLinea = ref(false)
 const isLoadingCampana = ref(false)
+const error = ref<string | null>(null)
 
 const openFilterLinea = ref<string | null>(null)
 const openFilterCampana = ref<string | null>(null)
@@ -107,9 +105,13 @@ function matchesSearch(nameValue: string, query: string) {
   return qTokens.every(token => nameWords.some(w => w.includes(token)))
 }
 
+function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: string } }) {
+  return `${item.ingesta ?? ''} ${item.carga?.ejecucion ?? ''}`.trim()
+}
+
 const filteredTareasLinea = computed(() => {
   return allTareasLinea.value.filter(item => {
-    const matchSearch = matchesSearch(item.nombre || '', searchQueryLinea.value || '')
+    const matchSearch = matchesSearch(getSearchableText(item), searchQueryLinea.value || '')
     const matchLinea = selectedFiltersLinea.lineas.length
       ? selectedFiltersLinea.lineas.includes(item.idABCCatLineaNegocio)
       : true
@@ -122,7 +124,7 @@ const filteredTareasLinea = computed(() => {
 
 const filteredTareasCampana = computed(() => {
   return allTareasCampana.value.filter(item => {
-    const matchSearch = matchesSearch(item.nombre || '', searchQueryCampana.value || '')
+    const matchSearch = matchesSearch(getSearchableText(item), searchQueryCampana.value || '')
     const matchLinea = selectedFiltersCampana.lineas.length
       ? selectedFiltersCampana.lineas.includes(item.idABCCatLineaNegocio)
       : true
@@ -185,6 +187,59 @@ const getCampanaLabel = (id?: number) => {
   return campanasDisponibles.value.find(x => x.value === id)?.label ?? `Campana ${id}`
 }
 
+function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: boolean }[]) {
+  return items
+    .filter(item => item.bolActivo !== false)
+    .map(item => ({ label: item.nombre, value: item.id }))
+}
+
+async function fetchCatalogos() {
+  const [lineas, campanas] = await Promise.all([
+    catalogosService.getCatalogos('LNN'),
+    catalogosService.getCatalogos('CMP')
+  ])
+  lineasDisponibles.value = mapCatalogosToOptions(lineas)
+  campanasDisponibles.value = mapCatalogosToOptions(campanas)
+}
+
+async function fetchTareasLinea() {
+  isLoadingLinea.value = true
+  error.value = null
+  try {
+    allTareasLinea.value = await tareaLineaService.getAll()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    isLoadingLinea.value = false
+  }
+}
+
+async function fetchTareasCampana() {
+  isLoadingCampana.value = true
+  error.value = null
+  try {
+    allTareasCampana.value = await tareaCampanaService.getAll()
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    isLoadingCampana.value = false
+  }
+}
+
+async function fetchMapeos() {
+  error.value = null
+  try {
+    const [linea, campana] = await Promise.all([
+      mapeoLineaService.getAllMapeos(),
+      mapeoCampanaService.getMapeosCampana()
+    ])
+    allMapeosLinea.value = linea
+    allMapeosCampana.value = campana
+  } catch (e: any) {
+    error.value = e.message
+  }
+}
+
 const toggleFilterMenuLinea = (column: string) => {
   openFilterLinea.value = openFilterLinea.value === column ? null : column
 }
@@ -214,6 +269,9 @@ function handleSearchCampana(query: string) {
   openFilterCampana.value = null
 }
 
+const isCampanaRow = (item: TareaLineaRow | TareaCampanaRow): item is TareaCampanaRow =>
+  Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
+
 function openDetails() {}
 function openEdit(item: TareaLineaRow | TareaCampanaRow) {
   modalMode.value = 'edit'
@@ -221,7 +279,33 @@ function openEdit(item: TareaLineaRow | TareaCampanaRow) {
   selectedItem.value = item
   showModal.value = true
 }
-function toggleStatus() {}
+
+async function toggleStatus(item: TareaLineaRow | TareaCampanaRow) {
+  try {
+    if (isCampanaRow(item)) {
+      isLoadingCampana.value = true
+      if (item.bolActivo) {
+        await tareaCampanaService.patchDesactivar(Number(item.idABCConfigTareaCampana), 1)
+      } else {
+        await tareaCampanaService.patchActivar(Number(item.idABCConfigTareaCampana), 1)
+      }
+      await fetchTareasCampana()
+    } else {
+      isLoadingLinea.value = true
+      if (item.bolActivo) {
+        await tareaLineaService.patchDesactivar(Number(item.idABCConfigTareaLinea), 1)
+      } else {
+        await tareaLineaService.patchActivar(Number(item.idABCConfigTareaLinea), 1)
+      }
+      await fetchTareasLinea()
+    }
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    isLoadingLinea.value = false
+    isLoadingCampana.value = false
+  }
+}
 
 function openAddModal() {
   modalMode.value = 'add'
@@ -235,8 +319,44 @@ function closeModal() {
   selectedItem.value = null
 }
 
-function handleSave() {
-  closeModal()
+async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel) {
+  try {
+    if (modalTab.value === 'campana') {
+      isLoadingCampana.value = true
+      const payload = formData as TareaCampanaFormModel
+      const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersCampana.lineas[0] ?? 0)
+      const campanaId = Number(payload.idABCCatCampana ?? selectedFiltersCampana.campanas[0] ?? 0)
+
+      if (modalMode.value === 'add') {
+        await tareaCampanaService.create(lineaId, campanaId, toCreateTareaCampanaPayload(payload))
+      } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
+        await tareaCampanaService.update(
+          toUpdateTareaCampanaPayload(payload, selectedItem.value.idABCConfigTareaCampana)
+        )
+      }
+      closeModal()
+      await fetchTareasCampana()
+    } else {
+      isLoadingLinea.value = true
+      const payload = formData as TareaLineaFormModel
+      const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersLinea.lineas[0] ?? 0)
+
+      if (modalMode.value === 'add') {
+        await tareaLineaService.create(lineaId, toCreateTareaLineaPayload(payload))
+      } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
+        await tareaLineaService.update(
+          toUpdateTareaLineaPayload(payload, selectedItem.value.idABCConfigTareaLinea)
+        )
+      }
+      closeModal()
+      await fetchTareasLinea()
+    }
+  } catch (e: any) {
+    error.value = e.message
+  } finally {
+    isLoadingLinea.value = false
+    isLoadingCampana.value = false
+  }
 }
 
 function updatePageSize() {
@@ -247,6 +367,10 @@ function updatePageSize() {
 
 onMounted(() => {
   updatePageSize()
+  fetchCatalogos()
+  fetchTareasLinea()
+  fetchTareasCampana()
+  fetchMapeos()
   window.addEventListener('resize', updatePageSize)
 })
 
@@ -371,12 +495,21 @@ watch(
         @search="handleSearchCampana"
       />
 
+      <p
+        v-if="error"
+        class="text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200"
+      >
+        {{ error }}
+      </p>
+
       <TareaLineaModal
         v-if="modalTab === 'linea'"
         :show="showModal"
         :mode="modalMode"
         :lineas-disponibles="lineasDisponibles"
+        :mapeos-linea="allMapeosLinea"
         :initial-data="selectedItem"
+        :is-loading="isLoadingLinea"
         @save="handleSave"
         @close="closeModal"
       />
@@ -387,7 +520,9 @@ watch(
         :mode="modalMode"
         :lineas-disponibles="lineasDisponibles"
         :campanas-disponibles="campanasDisponibles"
+        :mapeos-campana="allMapeosCampana"
         :initial-data="selectedItem"
+        :is-loading="isLoadingCampana"
         @save="handleSave"
         @close="closeModal"
       />

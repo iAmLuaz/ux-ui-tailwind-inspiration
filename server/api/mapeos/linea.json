@@ -1,41 +1,50 @@
 [
-  {
-    "idABCConfigMapeoLinea": 101,
-    "idABCCatLineaNegocio": 1,
-    "idABCUsuario": 1,
-    "nombre": "Mapeo Linea 1",
-    "descripcion": "Descripcion de mapeo linea 1",
-    "bolActivo": true,
-    "validar": true,
-    "envio": false,
-    "columnas": 3,
-    "fechaCreacion": "2025-01-01T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-01T00:00:00.000Z"
-  },
-  {
-    "idABCConfigMapeoLinea": 102,
-    "idABCCatLineaNegocio": 2,
-    "idABCUsuario": 1,
-    "nombre": "Mapeo Linea 2",
-    "descripcion": "Descripcion de mapeo linea 2",
-    "bolActivo": true,
-    "validar": false,
-    "envio": true,
-    "columnas": 2,
-    "fechaCreacion": "2025-01-02T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-02T00:00:00.000Z"
-  },
-  {
-    "idABCConfigMapeoLinea": 103,
-    "idABCCatLineaNegocio": 3,
-    "idABCUsuario": 1,
-    "nombre": "Mapeo Linea 3",
-    "descripcion": "Descripcion de mapeo linea 3",
-    "bolActivo": false,
-    "validar": true,
-    "envio": true,
-    "columnas": 1,
-    "fechaCreacion": "2025-01-03T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-03T00:00:00.000Z"
-  }
+    {
+        "idABCCatLineaNegocio": 3,
+        "bolActivo": false,
+        "id": 23,
+        "nombre": "0126LC002TEST2",
+        "descripcion": "Prueba de configuración de mapeo para carga, validación y envío de lista de contactos de Febrero del 2026. Versión 002.",
+        "fechaCreacion": "2026-02-09T18:16:18.364+00:00",
+        "fechaUltimaModificacion": "2026-02-11T23:39:44.136+00:00",
+        "columnas": 1,
+        "validar": true,
+        "envio": false
+    },
+    {
+        "idABCCatLineaNegocio": 1,
+        "bolActivo": true,
+        "id": 25,
+        "nombre": "0126LC002TEST21",
+        "descripcion": "Demo",
+        "fechaCreacion": "2026-02-11T23:39:56.976+00:00",
+        "fechaUltimaModificacion": "2026-02-11T23:39:56.976+00:00",
+        "columnas": 1,
+        "validar": false,
+        "envio": true
+    },
+    {
+        "idABCCatLineaNegocio": 1,
+        "bolActivo": true,
+        "id": 22,
+        "nombre": "0126LC002TEST1",
+        "descripcion": "Prueba de configuración de mapeo para carga, validación y envío de lista de contactos de Febrero del 2026. Versión 001. v2",
+        "fechaCreacion": "2026-02-09T17:35:17.001+00:00",
+        "fechaUltimaModificacion": "2026-02-09T18:13:49.429+00:00",
+        "columnas": 1,
+        "validar": false,
+        "envio": false
+    },
+    {
+        "idABCCatLineaNegocio": 1,
+        "bolActivo": false,
+        "id": 24,
+        "nombre": "0126LC002TEST1",
+        "descripcion": "Prueba de configuración de mapeo para carga, validación y envío de lista de contactos de Febrero del 2026. Versión 002.",
+        "fechaCreacion": "2026-02-09T18:59:10.596+00:00",
+        "fechaUltimaModificacion": "2026-02-10T22:56:14.813+00:00",
+        "columnas": 0,
+        "validar": true,
+        "envio": false
+    }
 ]

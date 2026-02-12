@@ -1,5 +1,300 @@
 [
-  {"id":1,"codigo":"CLM_A","nombre":"Clase A","bolActivo":true},
-  {"id":2,"codigo":"CLM_B","nombre":"Clase B","bolActivo":true},
-  {"id":3,"codigo":"CLM_C","nombre":"Clase C","bolActivo":true}
+    [
+        {
+            "id": 1,
+            "bolActivo": true,
+            "codigo": "NOM",
+            "nombre": "NOMBRE",
+            "fecCreacion": "2026-01-21T19:01:02.000+00:00",
+            "fecUltModificacion": "2026-01-21T19:01:02.000+00:00"
+        },
+        {
+            "id": 2,
+            "bolActivo": true,
+            "codigo": "DAU",
+            "nombre": "DESCUENTO SEGURO DE AUTO ",
+            "fecCreacion": "2026-01-30T01:11:11.000+00:00",
+            "fecUltModificacion": "2026-01-30T01:11:11.000+00:00"
+        },
+        {
+            "id": 3,
+            "bolActivo": true,
+            "codigo": "APM",
+            "nombre": "APELLIDO MATERNO",
+            "fecCreacion": "2026-01-23T15:42:01.000+00:00",
+            "fecUltModificacion": "2026-01-23T15:42:01.000+00:00"
+        },
+        {
+            "id": 4,
+            "bolActivo": true,
+            "codigo": "CID",
+            "nombre": "COSTUMER ID",
+            "fecCreacion": "2026-01-23T15:42:36.000+00:00",
+            "fecUltModificacion": "2026-01-23T15:42:36.000+00:00"
+        },
+        {
+            "id": 5,
+            "bolActivo": true,
+            "codigo": "COR",
+            "nombre": "CORREO",
+            "fecCreacion": "2026-01-23T15:43:42.000+00:00",
+            "fecUltModificacion": "2026-01-23T15:43:42.000+00:00"
+        },
+        {
+            "id": 6,
+            "bolActivo": true,
+            "codigo": "TEL",
+            "nombre": "TELEFONO",
+            "fecCreacion": "2026-01-23T15:43:55.000+00:00",
+            "fecUltModificacion": "2026-01-23T15:43:55.000+00:00"
+        },
+        {
+            "id": 7,
+            "bolActivo": true,
+            "codigo": "EDA",
+            "nombre": "EDAD",
+            "fecCreacion": "2026-01-23T15:47:04.000+00:00",
+            "fecUltModificacion": "2026-01-23T15:47:04.000+00:00"
+        },
+        {
+            "id": 42,
+            "bolActivo": true,
+            "codigo": "EMA",
+            "nombre": "EMAIL_ADDRESS_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 43,
+            "bolActivo": true,
+            "codigo": "MOM",
+            "nombre": "MOBILE_NUMBER_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 44,
+            "bolActivo": true,
+            "codigo": "MOC",
+            "nombre": "MOBILE_COUNTRY_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 45,
+            "bolActivo": true,
+            "codigo": "AFO",
+            "nombre": "ID_AFORE ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 46,
+            "bolActivo": true,
+            "codigo": "DEA",
+            "nombre": "DESCRIPCION_DE_AFORE ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 47,
+            "bolActivo": true,
+            "codigo": "LDN",
+            "nombre": "LINEA_DE_NEGOCIO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 48,
+            "bolActivo": true,
+            "codigo": "NDC",
+            "nombre": "NUMERO_DE_CUENTA ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 49,
+            "bolActivo": true,
+            "codigo": "NSS",
+            "nombre": "NSS ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 50,
+            "bolActivo": true,
+            "codigo": "CUR",
+            "nombre": "CURP ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 51,
+            "bolActivo": true,
+            "codigo": "RFC",
+            "nombre": "RFC ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 52,
+            "bolActivo": true,
+            "codigo": "SIF",
+            "nombre": "SIEFORE ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 53,
+            "bolActivo": true,
+            "codigo": "DOB",
+            "nombre": "DATE_OF_BIRTH ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 54,
+            "bolActivo": true,
+            "codigo": "SEG",
+            "nombre": "SEGMENTO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 55,
+            "bolActivo": true,
+            "codigo": "REG",
+            "nombre": "REGIMEN ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 56,
+            "bolActivo": true,
+            "codigo": "PS1",
+            "nombre": "POSTAL_STREET_1_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 57,
+            "bolActivo": true,
+            "codigo": "PS2",
+            "nombre": "POSTAL_STREET_2_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 58,
+            "bolActivo": true,
+            "codigo": "CIT",
+            "nombre": "CITY_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 59,
+            "bolActivo": true,
+            "codigo": "STE",
+            "nombre": "STATE_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 60,
+            "bolActivo": true,
+            "codigo": "POC",
+            "nombre": "POSTAL_CODE_ ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 61,
+            "bolActivo": true,
+            "codigo": "IDC",
+            "nombre": "ID_CLIENTE_AHORRADOR ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 62,
+            "bolActivo": true,
+            "codigo": "POL",
+            "nombre": "POLIZA ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 63,
+            "bolActivo": true,
+            "codigo": "IDP",
+            "nombre": "ID_PRESTAMO_PENSIONADO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 64,
+            "bolActivo": true,
+            "codigo": "IDS",
+            "nombre": "ID_SUSCEPTIBLE_PRESTAMO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 65,
+            "bolActivo": true,
+            "codigo": "TIP",
+            "nombre": "TIPO_PENSION ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 66,
+            "bolActivo": true,
+            "codigo": "GRP",
+            "nombre": "GRUPO_PAGO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 67,
+            "bolActivo": true,
+            "codigo": "IDB",
+            "nombre": "ID_BAJA_CAMBIO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 68,
+            "bolActivo": true,
+            "codigo": "FBC",
+            "nombre": "FECHA_BAJA_CAMBIO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 69,
+            "bolActivo": true,
+            "codigo": "REI",
+            "nombre": "REGIMEN_IMSS ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 70,
+            "bolActivo": true,
+            "codigo": "SEA",
+            "nombre": "SEGMENTO_AFO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        },
+        {
+            "id": 71,
+            "bolActivo": true,
+            "codigo": "GEN",
+            "nombre": "GENERO ",
+            "fecCreacion": "2026-01-26T22:41:03.000+00:00",
+            "fecUltModificacion": "2026-01-26T22:41:03.000+00:00"
+        }
+    ]
 ]

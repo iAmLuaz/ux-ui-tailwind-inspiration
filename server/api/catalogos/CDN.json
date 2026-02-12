@@ -1,4 +1,28 @@
 [
-  {"id":1,"codigo":"CDN_1","nombre":"Cadena 1","bolActivo":true},
-  {"id":2,"codigo":"CDN_2","nombre":"Cadena 2","bolActivo":true}
+    [
+        {
+            "id": 1,
+            "bolActivo": true,
+            "codigo": "NMR",
+            "nombre": "NUMERICO",
+            "fecCreacion": "2026-01-29T22:33:04.000+00:00",
+            "fecUltModificacion": "2026-01-29T22:33:04.000+00:00"
+        },
+        {
+            "id": 2,
+            "bolActivo": true,
+            "codigo": "ALF",
+            "nombre": "ALFABETICO",
+            "fecCreacion": "2026-02-06T02:07:44.000+00:00",
+            "fecUltModificacion": "2026-02-06T02:07:44.000+00:00"
+        },
+        {
+            "id": 3,
+            "bolActivo": true,
+            "codigo": "ALN",
+            "nombre": "ALFANUMERICO",
+            "fecCreacion": "2026-02-06T02:08:24.000+00:00",
+            "fecUltModificacion": "2026-02-06T02:08:24.000+00:00"
+        }
+    ]
 ]

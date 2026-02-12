@@ -21,6 +21,7 @@ interface Props {
   mode: 'add' | 'edit'
   lineasDisponibles: Option[]
   campanasDisponibles: Option[]
+  existingMapeos: { idABCConfigMapeoCampana?: number; nombre?: string }[]
   initialData?: Record<string, any> | null
   isLoading?: boolean
 }
@@ -39,11 +40,33 @@ const emit = defineEmits<Emits>()
 const formData = ref<MapeoCampanaFormData>(initializeFormData())
 
 const isEditing = computed(() => props.mode === 'edit')
+const normalizeName = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+const isDuplicateName = computed(() => {
+  if (isEditing.value) return false
+  const name = normalizeName(formData.value.nombre || '')
+  if (!name) return false
+  return props.existingMapeos.some(item => normalizeName(item.nombre || '') === name)
+})
 
 watch(
   () => [props.initialData, props.mode],
   () => {
     formData.value = initializeFormData()
+  }
+)
+
+watch(
+  () => props.show,
+  (isOpen) => {
+    if (isOpen) {
+      formData.value = initializeFormData()
+    }
   }
 )
 
@@ -72,6 +95,7 @@ function initializeFormData(): MapeoCampanaFormData {
 }
 
 function handleSave() {
+  if (isDuplicateName.value) return
   emit('save', formData.value)
 }
 </script>
@@ -142,8 +166,10 @@ function handleSave() {
               placeholder="Escribe aqui..."
               type="text"
               required
-              class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 bg-gray-50"
+              class="w-full px-4 py-2.5 border rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 bg-gray-50"
+              :class="isDuplicateName ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-300'"
             />
+            <p v-if="isDuplicateName" class="text-xs text-red-500 mt-1">Ya existe un mapeo con este nombre.</p>
           </div>
 
           <div>
@@ -176,7 +202,7 @@ function handleSave() {
             <button
               type="submit"
               class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-              :disabled="isLoading"
+              :disabled="isLoading || isDuplicateName"
             >
               <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

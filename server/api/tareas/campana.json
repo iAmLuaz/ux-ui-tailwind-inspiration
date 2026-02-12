@@ -1,0 +1,50 @@
+[
+  {
+    "idABCConfigTareaCampana": 801,
+    "idABCCatLineaNegocio": 1,
+    "idABCCatCampana": 1,
+    "ingesta": "FTP",
+    "carga": {
+      "ejecucion": "Automatica",
+      "dia": "Lunes",
+      "hora": "20:00"
+    },
+    "validacion": {
+      "ejecucion": "Automatica",
+      "dia": "Lunes",
+      "hora": "21:00"
+    },
+    "envio": {
+      "ejecucion": "Automatica",
+      "dia": "Lunes",
+      "hora": "22:00"
+    },
+    "bolActivo": true,
+    "fechaCreacion": "2025-01-15T00:00:00.000Z",
+    "fechaUltimaModificacion": "2025-01-15T00:00:00.000Z"
+  },
+  {
+    "idABCConfigTareaCampana": 802,
+    "idABCCatLineaNegocio": 2,
+    "idABCCatCampana": 2,
+    "ingesta": "API",
+    "carga": {
+      "ejecucion": "Automatica",
+      "dia": "Jueves",
+      "hora": "23:00"
+    },
+    "validacion": {
+      "ejecucion": "Automatica",
+      "dia": "Viernes",
+      "hora": "00:00"
+    },
+    "envio": {
+      "ejecucion": "Automatica",
+      "dia": "Viernes",
+      "hora": "01:00"
+    },
+    "bolActivo": true,
+    "fechaCreacion": "2025-01-16T00:00:00.000Z",
+    "fechaUltimaModificacion": "2025-01-16T00:00:00.000Z"
+  }
+]

@@ -5,12 +5,25 @@ import FilterDropdown from '@/components/FilterDropdown.vue'
 import TableSearch from '@/components/TableSearch.vue'
 
 export interface TareaLineaRow {
-  id: number
+  idABCConfigTareaLinea: number
   idABCCatLineaNegocio: number
-  nombre: string
-  horario?: string
-  tipoCarga?: string
+  ingesta: string
   bolActivo: boolean
+  carga?: {
+    ejecucion?: string
+    dia?: string
+    hora?: string
+  }
+  validacion?: {
+    ejecucion?: string
+    dia?: string
+    hora?: string
+  }
+  envio?: {
+    ejecucion?: string
+    dia?: string
+    hora?: string
+  }
 }
 
 interface Option {
@@ -70,6 +83,14 @@ const statusOptions = [
   { label: 'Inactivos', value: false }
 ]
 
+const isScheduleOk = (schedule?: { ejecucion?: string; dia?: string; hora?: string }) =>
+  Boolean(schedule?.ejecucion && (!schedule?.dia || schedule?.hora))
+
+const isConfigured = (t: TareaLineaRow) =>
+  isScheduleOk(t.carga) &&
+  isScheduleOk(t.validacion) &&
+  isScheduleOk(t.envio)
+
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
 </script>
@@ -79,12 +100,11 @@ const thSmallClass = 'px-4 py-3'
     <div class="overflow-y-auto overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
+          <col class="w-[24%]" />
+          <col class="w-[26%]" />
+          <col class="w-[14%]" />
+          <col class="w-[16%]" />
           <col class="w-[20%]" />
-          <col class="w-[30%]" />
-          <col class="w-[15%]" />
-          <col class="w-[15%]" />
-          <col class="w-[10%]" />
-          <col class="w-[10%]" />
         </colgroup>
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
@@ -103,7 +123,7 @@ const thSmallClass = 'px-4 py-3'
 
             <th :class="thClass + ' text-left relative'">
               <div class="flex items-center gap-2">
-                <span class="font-semibold">Nombre de tarea</span>
+                <span class="font-semibold">Ingesta</span>
                 <button
                   @click.stop="emit('toggleFilter', 'search')"
                   :class="props.openFilter === 'search' ? 'p-2 bg-[#00357F] text-white rounded-md shadow-sm transition-colors' : 'p-2 bg-white text-slate-400 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-[#00357F] transition-colors'"
@@ -121,8 +141,8 @@ const thSmallClass = 'px-4 py-3'
               />
             </th>
 
-            <th :class="thSmallClass + ' text-left'">Horario</th>
-            <th :class="thSmallClass + ' text-left'">Tipo de carga</th>
+            <th :class="thSmallClass + ' text-left'">Configurado</th>
+
             <th :class="thSmallClass + ' relative'">
               <FilterDropdown
                 label="Estado"
@@ -160,7 +180,7 @@ const thSmallClass = 'px-4 py-3'
             </td>
           </tr>
 
-          <template v-else v-for="t in props.filteredTareas" :key="t.id">
+          <template v-else v-for="t in props.filteredTareas" :key="t.idABCConfigTareaLinea">
             <tr class="hover:bg-blue-50/30 transition-colors text-sm">
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
@@ -168,14 +188,19 @@ const thSmallClass = 'px-4 py-3'
                 </span>
               </td>
 
-              <td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', t)">{{ t.nombre }}</td>
-
               <td class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', t)">
-                {{ t.horario || '-' }}
+                {{ t.ingesta || '-' }}
               </td>
 
-              <td class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', t)">
-                {{ t.tipoCarga || '-' }}
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                  :class="isConfigured(t)
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-amber-50 text-amber-700 border-amber-200'"
+                >
+                  {{ isConfigured(t) ? 'Configurado' : 'Pendiente' }}
+                </span>
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">

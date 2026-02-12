@@ -1,30 +1,54 @@
 [
-  {
-    "idABCConfigMapeoCampana": 201,
-    "idABCCatLineaNegocio": 1,
-    "idABCCatCampana": 1,
-    "idABCUsuario": 1,
-    "nombre": "Mapeo Campana 1",
-    "descripcion": "Descripcion de mapeo campana 1",
-    "bolActivo": true,
-    "validar": true,
-    "envio": false,
-    "columnas": 2,
-    "fechaCreacion": "2025-01-05T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-05T00:00:00.000Z"
-  },
-  {
-    "idABCConfigMapeoCampana": 202,
-    "idABCCatLineaNegocio": 2,
-    "idABCCatCampana": 2,
-    "idABCUsuario": 1,
-    "nombre": "Mapeo Campana 2",
-    "descripcion": "Descripcion de mapeo campana 2",
-    "bolActivo": true,
-    "validar": false,
-    "envio": true,
-    "columnas": 1,
-    "fechaCreacion": "2025-01-06T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-06T00:00:00.000Z"
-  }
+    {
+        "idABCCatLineaNegocio": 1,
+        "idABCCatCampana": 1,
+        "bolActivo": true,
+        "id": 18,
+        "nombre": "0126PET001TEST12",
+        "descripcion": "Prueba de configuración de mapeo para carga, validación y envío de lista de contactos de Febrero del 2026. Versión 001. v22",
+        "fechaCreacion": "2026-02-09T17:34:52.340+00:00",
+        "fechaUltimaModificacion": "2026-02-11T00:23:22.033+00:00",
+        "columnas": 2,
+        "validar": true,
+        "envio": true
+    },
+    {
+        "idABCCatLineaNegocio": 1,
+        "idABCCatCampana": 5,
+        "bolActivo": true,
+        "id": 19,
+        "nombre": "0126PET001TEST123",
+        "descripcion": "1212",
+        "fechaCreacion": "2026-02-11T00:23:17.214+00:00",
+        "fechaUltimaModificacion": "2026-02-11T00:23:17.214+00:00",
+        "columnas": 1,
+        "validar": false,
+        "envio": true
+    },
+    {
+        "idABCCatLineaNegocio": 2,
+        "idABCCatCampana": 4,
+        "bolActivo": true,
+        "id": 21,
+        "nombre": "xq",
+        "descripcion": "qw",
+        "fechaCreacion": "2026-02-11T23:51:41.546+00:00",
+        "fechaUltimaModificacion": "2026-02-11T23:51:41.546+00:00",
+        "columnas": 0,
+        "validar": true,
+        "envio": false
+    },
+    {
+        "idABCCatLineaNegocio": 2,
+        "idABCCatCampana": 4,
+        "bolActivo": true,
+        "id": 20,
+        "nombre": "xq",
+        "descripcion": "qw",
+        "fechaCreacion": "2026-02-11T23:51:30.118+00:00",
+        "fechaUltimaModificacion": "2026-02-11T23:51:30.118+00:00",
+        "columnas": 0,
+        "validar": false,
+        "envio": false
+    }
 ]
