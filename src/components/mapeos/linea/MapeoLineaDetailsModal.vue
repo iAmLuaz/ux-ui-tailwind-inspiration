@@ -37,19 +37,13 @@ function formatTimestamp(value?: string) {
     @click.self="emit('close')"
   >
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-      <div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+      <div class="px-4 py-2.5 bg-[#00357F] border-b border-white/10 flex items-center shrink-0">
+        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           Detalle de Mapeo
         </h3>
-        <button
-          @click="emit('close')"
-          class="text-white/70 hover:text-white transition-colors text-2xl leading-none focus:outline-none cursor-pointer"
-        >
-          &times;
-        </button>
       </div>
 
-      <div class="p-6 overflow-y-auto custom-scrollbar">
+      <div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
         <div v-if="!item" class="text-sm text-slate-500">
           Sin informacion para mostrar.
         </div>
@@ -102,6 +96,16 @@ function formatTimestamp(value?: string) {
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="shrink-0 flex justify-end gap-3 p-3 border-t border-gray-100 bg-white">
+        <button
+          type="button"
+          class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
+          @click="emit('close')"
+        >
+          Cerrar
+        </button>
       </div>
     </div>
   </div>

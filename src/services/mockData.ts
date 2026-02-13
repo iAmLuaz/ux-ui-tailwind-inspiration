@@ -5,7 +5,7 @@ export function delay(ms: number = 10): Promise<void> {
 const noopLog = () => {}
 
 export const mockCatalogosApi = {
-	async getCatalogos(codigo: string | unknown): Promise<any[]> {
+	async getCatalogos(codigo?: string | unknown): Promise<any[]> {
 		await delay()
 		noopLog()
 		const now = new Date()
@@ -29,9 +29,15 @@ export const mockCatalogosApi = {
 			fecUltModificacion: makeDate(i)
 		}))
 
-		if (String(codigo).toUpperCase().includes('LNN')) return lineas
-		if (String(codigo).toUpperCase().includes('CMP')) return campanas
-		return [...lineas, ...campanas]
+		const grouped = [
+			{ codigo: 'LNN', nombre: 'LINEA_NEGOCIO', registros: lineas },
+			{ codigo: 'CMP', nombre: 'CAMPANA', registros: campanas }
+		]
+
+		if (!codigo) return grouped
+
+		const selected = grouped.find(group => String(group.codigo).toUpperCase() === String(codigo).toUpperCase())
+		return selected?.registros ?? []
 	}
 }
 

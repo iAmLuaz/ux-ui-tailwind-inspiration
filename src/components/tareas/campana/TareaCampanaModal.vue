@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, defineComponent, h } from 'vue'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 interface Option {
   label: string
@@ -83,6 +84,12 @@ const displayedMapeoOptions = computed(() => {
   }
   return allMapeoOptions.value
 })
+const displayedMapeoOptionsWithCurrent = computed(() => {
+  const current = String(formData.value.ingesta || '').trim()
+  if (!current) return displayedMapeoOptions.value
+  if (displayedMapeoOptions.value.some(opt => String(opt.value) === current)) return displayedMapeoOptions.value
+  return [{ label: current, value: current }, ...displayedMapeoOptions.value]
+})
 
 const formData = ref<TareaCampanaFormData>(initializeFormData())
 
@@ -90,10 +97,10 @@ const isEditing = computed(() => props.mode === 'edit')
 const isLineaSelected = computed(() => Boolean(formData.value.idABCCatLineaNegocio))
 const isCampanaSelected = computed(() => Boolean(formData.value.idABCCatCampana))
 const isAutoMapped = ref(false)
-const isIngestaDisabled = computed(() => displayedMapeoOptions.value.length === 0)
+const isIngestaDisabled = computed(() => isEditing.value || displayedMapeoOptionsWithCurrent.value.length === 0)
 const isHeaderLocked = computed(() => isEditing.value || isAutoMapped.value)
 const ingestaPlaceholder = computed(() => {
-  if (!displayedMapeoOptions.value.length) {
+  if (!displayedMapeoOptionsWithCurrent.value.length) {
     return 'Sin mapeos disponibles'
   }
   return 'Seleccione origen de datos...'
@@ -111,7 +118,7 @@ const ingestaHelper = computed(() => {
   return 'Puedes seleccionar una ingesta primero y se autocompletara la linea y campaña.'
 })
 const isScheduleComplete = (ejecucion: string, dia: string, hora: string) =>
-  Boolean(ejecucion && (!dia || hora))
+  Boolean(ejecucion && dia && hora)
 
 const hasCargaConfig = computed(() =>
   isScheduleComplete(formData.value.ejecucionIngesta, formData.value.diaIngesta, formData.value.horaIngesta)
@@ -121,6 +128,9 @@ const hasValidacionConfig = computed(() =>
 )
 const hasEnvioConfig = computed(() =>
   isScheduleComplete(formData.value.ejecucionEnvio, formData.value.diaEnvio, formData.value.horaEnvio)
+)
+const canSave = computed(() =>
+  Boolean(formData.value.ingesta) && hasCargaConfig.value && hasValidacionConfig.value && hasEnvioConfig.value
 )
 
 const ConfigField = defineComponent({
@@ -148,31 +158,17 @@ const ConfigField = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    const handleChange = (event: Event) => {
-      const target = event.target as HTMLSelectElement
-      emit('update:modelValue', target.value)
-    }
-
     return () =>
       h('div', [
         h('label', { class: 'block text-[10px] font-bold text-gray-500 uppercase mb-1' }, props.label),
-        h(
-          'select',
-          {
-            value: props.modelValue,
-            onChange: handleChange,
-            disabled: props.disabled,
-            required: props.required,
-            class: [
-              'w-full pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-all outline-none',
-              props.disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#00357F]'
-            ]
-          },
-          [
-            h('option', { value: '', disabled: true }, 'Seleccionar'),
-            ...props.options.map(opt => h('option', { value: opt, key: opt }, opt))
-          ]
-        )
+        h(SearchableSelect, {
+          modelValue: props.modelValue || null,
+          options: props.options.map(opt => ({ label: opt, value: opt })),
+          placeholder: 'Seleccionar',
+          disabled: props.disabled,
+          required: props.required,
+          'onUpdate:modelValue': (value: string | number) => emit('update:modelValue', String(value ?? ''))
+        })
       ])
   }
 })
@@ -210,33 +206,19 @@ const SelectField = defineComponent({
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    const handleChange = (event: Event) => {
-      const target = event.target as HTMLSelectElement
-      emit('update:modelValue', target.value)
-    }
-
     return () =>
       h('div', [
         props.hideLabel
           ? null
           : h('label', { class: 'block text-[10px] font-bold text-gray-500 uppercase mb-1' }, props.label),
-        h(
-          'select',
-          {
-            value: props.modelValue,
-            onChange: handleChange,
-            disabled: props.disabled,
-            required: props.required,
-            class: [
-              'w-full pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-all outline-none',
-              props.disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white cursor-pointer hover:border-[#00357F]'
-            ]
-          },
-          [
-            h('option', { value: '', disabled: true }, props.placeholder),
-            ...props.options.map(opt => h('option', { value: opt.value, key: String(opt.value) }, opt.label))
-          ]
-        )
+        h(SearchableSelect, {
+          modelValue: props.modelValue || null,
+          options: props.options,
+          placeholder: props.placeholder,
+          disabled: props.disabled,
+          required: props.required,
+          'onUpdate:modelValue': (value: string | number) => emit('update:modelValue', value)
+        })
       ])
   }
 })
@@ -258,10 +240,10 @@ watch(
 
 watch(hasCargaConfig, (ready) => {
   if (!ready) {
-    formData.value.ejecucionValidacion = ''
+    formData.value.ejecucionValidacion = 'Automatica'
     formData.value.diaValidacion = ''
     formData.value.horaValidacion = ''
-    formData.value.ejecucionEnvio = ''
+    formData.value.ejecucionEnvio = 'Automatica'
     formData.value.diaEnvio = ''
     formData.value.horaEnvio = ''
   }
@@ -269,7 +251,7 @@ watch(hasCargaConfig, (ready) => {
 
 watch(hasValidacionConfig, (ready) => {
   if (!ready) {
-    formData.value.ejecucionEnvio = ''
+    formData.value.ejecucionEnvio = 'Automatica'
     formData.value.diaEnvio = ''
     formData.value.horaEnvio = ''
   }
@@ -306,6 +288,7 @@ watch(
   () => [formData.value.idABCCatLineaNegocio, formData.value.idABCCatCampana, props.mapeosCampana],
   () => {
     if (!displayedMapeoOptions.value.some(opt => opt.value === formData.value.ingesta)) {
+      if (isEditing.value) return
       formData.value.ingesta = ''
       isAutoMapped.value = false
     }
@@ -324,7 +307,7 @@ watch(
     if (match) {
       formData.value.idABCCatLineaNegocio = match.idLinea || ''
       formData.value.idABCCatCampana = match.idCampana || ''
-      isAutoMapped.value = true
+      isAutoMapped.value = !isEditing.value
     }
   }
 )
@@ -333,6 +316,11 @@ const resetHeaderSelection = () => {
   formData.value.ingesta = ''
   formData.value.idABCCatLineaNegocio = ''
   formData.value.idABCCatCampana = ''
+  isAutoMapped.value = false
+}
+
+const resetAllForm = () => {
+  formData.value = initializeFormData()
   isAutoMapped.value = false
 }
 
@@ -386,21 +374,15 @@ function handleSave() {
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
     <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh] ">
       
-      <div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+      <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
+        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
         </h3>
-        <button
-          @click="$emit('close')"
-          :disabled="isLoading"
-          class="text-white/70 hover:text-white transition-colors text-2xl leading-none focus:outline-none cursor-pointer"
-        >
-          &times;
-        </button>
       </div>
 
-      <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50">
-        <form @submit.prevent="handleSave" class="space-y-6">
+      <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">
+        <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
+          <div class="space-y-6">
           
           <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 relative">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -423,26 +405,32 @@ function handleSave() {
               />
 
               <div class="md:col-span-2">
-                <div class="flex items-center justify-between gap-3">
-                  <span class="text-[10px] font-bold text-gray-500 uppercase">Nombre de la ingesta <span class="text-red-500">*</span></span>
+                <span class="text-[10px] font-bold text-gray-500 uppercase">Nombre de la ingesta <span class="text-red-500">*</span></span>
+                <div class="mt-1 flex items-center gap-2">
+                  <div class="flex-1">
+                    <SelectField
+                      label="Nombre de la ingesta"
+                      v-model="formData.ingesta"
+                      :options="displayedMapeoOptionsWithCurrent"
+                      required
+                      :disabled="isIngestaDisabled"
+                      :placeholder="ingestaPlaceholder"
+                      hide-label
+                    />
+                  </div>
                   <button
                     type="button"
-                    class="text-[10px] font-bold uppercase tracking-wide text-[#00357F] bg-[#FFD100]/70 hover:bg-[#FFD100] px-2 py-1 rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Elegir de nuevo"
+                    aria-label="Elegir de nuevo"
+                    class="shrink-0 h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-[#00357F] bg-[#FFD100]/70 hover:bg-[#FFD100] transition disabled:opacity-40 disabled:cursor-not-allowed"
                     :disabled="!isAutoMapped || isEditing"
                     @click="resetHeaderSelection"
                   >
-                    Elegir de nuevo
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+                    </svg>
                   </button>
                 </div>
-                <SelectField
-                  label="Nombre de la ingesta"
-                  v-model="formData.ingesta"
-                  :options="displayedMapeoOptions"
-                  required
-                  :disabled="isIngestaDisabled"
-                  :placeholder="ingestaPlaceholder"
-                  hide-label
-                />
                 <p class="text-[11px] text-gray-500 mt-1">{{ ingestaHelper }}</p>
               </div>
             </div>
@@ -466,13 +454,13 @@ function handleSave() {
                   </h4>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <ConfigField label="Ejecución" v-model="formData.ejecucionIngesta" :options="ejecucionOptions" required />
-                    <ConfigField label="Día" v-model="formData.diaIngesta" :options="diaOptions" />
+                    <ConfigField label="Día" v-model="formData.diaIngesta" :options="diaOptions" required />
                     <ConfigField
                       label="Hora"
                       v-model="formData.horaIngesta"
                       :options="horaOptions"
                       :disabled="!formData.diaIngesta"
-                      :required="Boolean(formData.diaIngesta)"
+                      required
                     />
                   </div>
                 </div>
@@ -495,13 +483,13 @@ function handleSave() {
                   </h4>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <ConfigField label="Ejecución" v-model="formData.ejecucionValidacion" :options="ejecucionOptions" :disabled="!hasCargaConfig" required />
-                    <ConfigField label="Día" v-model="formData.diaValidacion" :options="diaOptions" :disabled="!hasCargaConfig" />
+                    <ConfigField label="Día" v-model="formData.diaValidacion" :options="diaOptions" :disabled="!hasCargaConfig" required />
                     <ConfigField
                       label="Hora"
                       v-model="formData.horaValidacion"
                       :options="horaOptions"
                       :disabled="!hasCargaConfig || !formData.diaValidacion"
-                      :required="Boolean(formData.diaValidacion)"
+                      required
                     />
                   </div>
                 </div>
@@ -526,13 +514,13 @@ function handleSave() {
                   </h4>
                   <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <ConfigField label="Ejecución" v-model="formData.ejecucionEnvio" :options="ejecucionOptions" :disabled="!hasValidacionConfig" required />
-                    <ConfigField label="Día" v-model="formData.diaEnvio" :options="diaOptions" :disabled="!hasValidacionConfig" />
+                    <ConfigField label="Día" v-model="formData.diaEnvio" :options="diaOptions" :disabled="!hasValidacionConfig" required />
                     <ConfigField
                       label="Hora"
                       v-model="formData.horaEnvio"
                       :options="horaOptions"
                       :disabled="!hasValidacionConfig || !formData.diaEnvio"
-                      :required="Boolean(formData.diaEnvio)"
+                      required
                     />
                   </div>
                 </div>
@@ -541,11 +529,38 @@ function handleSave() {
 
           </div>
 
-          <div class="flex justify-end pt-4 mt-6">
+          </div>
+        </div>
+
+        <div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
+          <button
+            v-if="mode === 'add'"
+            type="button"
+            title="Restaurar todo"
+            aria-label="Restaurar todo"
+            class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            :disabled="isLoading"
+            @click="resetAllForm"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+            </svg>
+          </button>
+          <div v-else></div>
+
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="px-8 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-4 focus:ring-gray-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
+              @click="$emit('close')"
+              :disabled="isLoading"
+            >
+              Cancelar
+            </button>
             <button
               type="submit"
               class="px-8 py-3 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-4 focus:ring-yellow-300/50 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed flex items-center gap-3"
-              :disabled="isLoading || isIngestaDisabled"
+              :disabled="isLoading || isIngestaDisabled || !canSave"
             >
               <svg v-if="isLoading" class="animate-spin h-5 w-5 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -554,8 +569,8 @@ function handleSave() {
               <span>{{ isLoading ? 'Guardando configuración...' : 'Guardar' }}</span>
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   </div>
 </template>

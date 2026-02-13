@@ -84,7 +84,7 @@ const statusOptions = [
 ]
 
 const isScheduleOk = (schedule?: { ejecucion?: string; dia?: string; hora?: string }) =>
-  Boolean(schedule?.ejecucion && (!schedule?.dia || schedule?.hora))
+  Boolean(schedule?.ejecucion && schedule?.dia && schedule?.hora)
 
 const isConfigured = (t: TareaLineaRow) =>
   isScheduleOk(t.carga) &&

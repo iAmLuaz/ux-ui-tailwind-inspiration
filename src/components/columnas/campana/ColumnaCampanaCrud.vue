@@ -71,7 +71,8 @@ const mode = ref<'add' | 'edit'>('add')
 const selected = ref<any>(null)
 
 async function fetchCatalogos() {
-	const list: CatalogoItem[] = await catalogosService.getCatalogos('CLM')
+	const catalogos = await catalogosService.getCatalogosAgrupados()
+	const list: CatalogoItem[] = catalogos.find(group => group.codigo === 'CLM')?.registros ?? []
 	columnasCatalogo.value = list
 		.filter(c => c.bolActivo)
 		.map(c => ({ label: c.nombre, value: c.id }))
@@ -119,10 +120,11 @@ onMounted(() => {
 })
 
 async function fetchCatalogosLineasYCampanas() {
-  const listL: CatalogoItem[] = await catalogosService.getCatalogos('LNN')
+	const catalogos = await catalogosService.getCatalogosAgrupados()
+	const listL: CatalogoItem[] = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
   lineasCatalogo.value = listL.filter(c => c.bolActivo).map(c => ({ label: c.nombre, value: c.id }))
 
-  const listC: CatalogoItem[] = await catalogosService.getCatalogos('CMP')
+	const listC: CatalogoItem[] = catalogos.find(group => group.codigo === 'CMP')?.registros ?? []
   campanasCatalogo.value = listC.filter(c => c.bolActivo).map(c => ({ label: c.nombre, value: c.id }))
 }
 

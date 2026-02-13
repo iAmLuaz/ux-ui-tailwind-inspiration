@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 
 interface Option {
 	label: string
-	value: number
+	value: number | string
 }
 
 const props = defineProps<{
-	modelValue: number
+	modelValue: number | string | null
 	options: Option[]
 	placeholder?: string
 	disabled?: boolean
@@ -15,14 +15,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-	(e: 'update:modelValue', value: number): void
+	(e: 'update:modelValue', value: number | string): void
 }>()
 
 const isOpen = ref(false)
 const search = ref('')
+const rootRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
+const panelStyle = ref<Record<string, string>>({})
+const openUpward = ref(false)
+const optionsMaxHeight = ref(240)
 
 const selectedLabel = computed(() =>
-	props.options.find(opt => opt.value === props.modelValue)?.label ?? ''
+	props.options.find(opt => String(opt.value) === String(props.modelValue ?? ''))?.label ?? ''
 )
 
 const filteredOptions = computed(() => {
@@ -41,28 +46,56 @@ function selectOption(option: Option) {
 	isOpen.value = false
 }
 
+function updatePanelPosition() {
+	if (!rootRef.value || !isOpen.value) return
+	const rect = rootRef.value.getBoundingClientRect()
+	const viewportHeight = window.innerHeight
+	const spaceBelow = viewportHeight - rect.bottom - 12
+	const spaceAbove = rect.top - 12
+	openUpward.value = spaceBelow < 260 && spaceAbove > spaceBelow
+	const availableSpace = openUpward.value ? spaceAbove : spaceBelow
+	optionsMaxHeight.value = Math.max(120, Math.min(320, availableSpace - 56))
+
+	panelStyle.value = {
+		top: openUpward.value ? `${rect.top - 8}px` : `${rect.bottom + 8}px`,
+		left: `${rect.left}px`,
+		width: `${rect.width}px`
+	}
+}
+
 function handleClickOutside(event: MouseEvent) {
 	const target = event.target as HTMLElement
+	if (rootRef.value?.contains(target) || panelRef.value?.contains(target)) {
+		return
+	}
 	if (!target.closest('.searchable-select')) {
 		isOpen.value = false
 	}
 }
 
-watch(isOpen, open => {
-	if (open) search.value = ''
+watch(isOpen, async open => {
+	if (open) {
+		search.value = ''
+		await nextTick()
+		updatePanelPosition()
+	}
 })
 
 onMounted(() => {
 	document.addEventListener('click', handleClickOutside)
+	window.addEventListener('resize', updatePanelPosition)
+	window.addEventListener('scroll', updatePanelPosition, true)
 })
 
 onUnmounted(() => {
 	document.removeEventListener('click', handleClickOutside)
+	window.removeEventListener('resize', updatePanelPosition)
+	window.removeEventListener('scroll', updatePanelPosition, true)
 })
 </script>
 
 <template>
-	<div class="relative searchable-select">
+	<div ref="rootRef" class="relative searchable-select">
 		<button
 			type="button"
 			class="relative w-full flex items-center pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
@@ -79,10 +112,15 @@ onUnmounted(() => {
 				</svg>
 			</span>
 		</button>
+	</div>
 
+	<Teleport to="body">
 		<div
 			v-if="isOpen"
-			class="absolute top-full left-0 mt-2 w-full bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-50 overflow-hidden"
+			ref="panelRef"
+			class="fixed bg-white rounded-xl shadow-xl ring-1 ring-black/5 z-[9999] overflow-hidden"
+			:class="openUpward ? '-translate-y-full' : ''"
+			:style="panelStyle"
 		>
 			<div class="p-2 border-b border-slate-100">
 				<input
@@ -92,7 +130,7 @@ onUnmounted(() => {
 					class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] outline-none"
 				/>
 			</div>
-			<div class="max-h-60 overflow-y-auto">
+			<div class="overflow-y-auto" :style="{ maxHeight: `${optionsMaxHeight}px` }">
 				<button
 					v-for="opt in filteredOptions"
 					:key="opt.value"
@@ -107,5 +145,5 @@ onUnmounted(() => {
 				</div>
 			</div>
 		</div>
-	</div>
+	</Teleport>
 </template>
