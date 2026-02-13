@@ -3,7 +3,7 @@
     "idABCConfigTareaCampana": 801,
     "idABCCatLineaNegocio": 1,
     "idABCCatCampana": 1,
-    "ingesta": "FTP",
+    "ingesta": "0126PET001TEST12",
     "carga": {
       "ejecucion": "Automatica",
       "dia": "Lunes",
@@ -27,7 +27,7 @@
     "idABCConfigTareaCampana": 802,
     "idABCCatLineaNegocio": 2,
     "idABCCatCampana": 2,
-    "ingesta": "API",
+    "ingesta": "0126PET001TEST123",
     "carga": {
       "ejecucion": "Automatica",
       "dia": "Jueves",

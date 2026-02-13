@@ -2,7 +2,7 @@
   {
     "idABCConfigTareaLinea": 501,
     "idABCCatLineaNegocio": 1,
-    "ingesta": "FTP",
+    "ingesta": "0126LC002TEST2",
     "carga": {
       "ejecucion": "Automatica",
       "dia": "Lunes",
@@ -25,7 +25,7 @@
   {
     "idABCConfigTareaLinea": 502,
     "idABCCatLineaNegocio": 2,
-    "ingesta": "API",
+    "ingesta": "0126LC002TEST21",
     "carga": {
       "ejecucion": "Automatica",
       "dia": "Martes",
