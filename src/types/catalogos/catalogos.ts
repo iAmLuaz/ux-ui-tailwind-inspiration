@@ -9,4 +9,11 @@ export interface CatalogoItem {
   fechaUltimaModificacion: string
 }
 
+export interface CatalogoGrupo {
+  codigo: CatalogoCodigo | string
+  nombre: string
+  registros: CatalogoItem[]
+}
+
 export type CatalogosResponse = CatalogoItem[]
+export type CatalogosGroupedResponse = CatalogoGrupo[]

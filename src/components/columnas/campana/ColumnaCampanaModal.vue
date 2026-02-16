@@ -52,11 +52,10 @@ const valItems = ref<any[]>([])
 
 async function fetchTipoOptions() {
 	try {
-		const [nmr, cdn, val] = await Promise.all([
-			catalogosService.getCatalogos('NMR'),
-			catalogosService.getCatalogos('CDN'),
-			catalogosService.getCatalogos('VAL')
-		])
+		const catalogos = await catalogosService.getCatalogosAgrupados()
+		const nmr = catalogos.find(group => group.codigo === 'NMR')?.registros ?? []
+		const cdn = catalogos.find(group => group.codigo === 'CDN')?.registros ?? []
+		const val = catalogos.find(group => group.codigo === 'VAL')?.registros ?? []
 		valItems.value = val || []
 		valOptions.value = (valItems.value || []).map(i => ({ label: i.nombre, value: i.id }))
 		cdnOptions.value = (cdn || []).map(i => ({ label: i.nombre, value: i.id }))
@@ -100,19 +99,46 @@ const isNumero = computed(() => {
 // 	return found ? found.label : `Mapeo ${id ?? ''}`
 // })
 
-const hasMapeoInList = computed(() => {
-	const id = props.selectedMapeoId ?? form.value.idABCConfigMapeoCampana ?? null
-	return props.mapeos.some(m => m.value == id)
+const lineaOptions = computed<Option[]>(() => {
+	const base = (props.lineas || []) as Option[]
+	const selectedId = props.selectedLineaId ?? form.value.lineaId ?? null
+	if (selectedId === null || selectedId === undefined) return base
+	if (base.some(l => l.value == selectedId)) return base
+	return [
+		{
+			label: props.selectedLineaNombre ?? base.find(l => l.value == selectedId)?.label ?? `Línea ${selectedId}`,
+			value: Number(selectedId)
+		},
+		...base
+	]
 })
 
-const hasLineaInList = computed(() => {
-	const id = props.selectedLineaId ?? form.value.lineaId ?? null
-	return (props.lineas || []).some(l => l.value == id)
+const campanaOptions = computed<Option[]>(() => {
+	const base = (props.campanas || []) as Option[]
+	const selectedId = props.selectedCampanaId ?? form.value.campanaId ?? null
+	if (selectedId === null || selectedId === undefined) return base
+	if (base.some(c => c.value == selectedId)) return base
+	return [
+		{
+			label: props.selectedCampanaNombre ?? base.find(c => c.value == selectedId)?.label ?? `Campaña ${selectedId}`,
+			value: Number(selectedId)
+		},
+		...base
+	]
 })
 
-const hasCampanaInList = computed(() => {
-	const id = props.selectedCampanaId ?? form.value.campanaId ?? null
-	return (props.campanas || []).some(c => c.value == id)
+const mapeoOptions = computed<Option[]>(() => {
+	const base = props.mapeos as Option[]
+	const selectedId = props.selectedMapeoId ?? form.value.idABCConfigMapeoCampana ?? null
+	if (selectedId === null || selectedId === undefined) return base
+	if (base.some(m => m.value == selectedId)) return base
+	return [
+		{
+			label: props.selectedMapeoNombre ?? base.find(m => m.value == selectedId)?.label ?? `Mapeo ${selectedId}`,
+			value: Number(selectedId)
+		},
+		...base
+	]
 })
 
 const availableColumnas = computed(() => {
@@ -278,52 +304,52 @@ async function save() {
 
 <template>
 	<div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-			<div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
-				<h3 class="text-lg font-bold text-white flex items-center gap-2">
+		<div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+			<div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
+				<h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
 					<!-- Agregar columna en el mapeo {{ mapeoNombre }} -->
 					Agregar columna
 				</h3>
-				<button
-					@click="$emit('close')"
-					:disabled="isLoading"
-					class="text-white/70 hover:text-white transition-colors text-2xl leading-none focus:outline-none cursor-pointer"
-				>
-					&times;
-				</button>
 			</div>
 
-			<div class="p-6 overflow-y-auto custom-scrollbar">
-				<form @submit.prevent="save" class="space-y-5">
+			<form @submit.prevent="save" class="flex flex-col min-h-0 flex-1">
+				<div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
+					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
 
 					<div class="grid grid-cols-2 gap-4">
 						
 						<div v-if="lineas && lineas.length">
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Línea</label>
-							<select v-model="form.lineaId" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
-								<option v-if="props.selectedLineaId && !hasLineaInList" :value="props.selectedLineaId">{{ props.selectedLineaNombre ?? (props.lineas || []).find(l => l.value == props.selectedLineaId)?.label ?? 'Línea ' + props.selectedLineaId }}</option>
-								<option v-for="o in lineas" :key="o.value" :value="o.value">{{ o.label }}</option>
-							</select>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Línea</label>
+							<SearchableSelect
+								v-model="form.lineaId"
+								:options="lineaOptions"
+								:disabled="true"
+								placeholder="Seleccione una opción"
+							/>
 						</div>
 
 						<div v-if="campanas && campanas.length">
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Campaña</label>
-							<select v-model="form.campanaId" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
-								<option v-if="props.selectedCampanaId && !hasCampanaInList" :value="props.selectedCampanaId">{{ props.selectedCampanaNombre ?? (props.campanas || []).find(c => c.value == props.selectedCampanaId)?.label ?? 'Campaña ' + props.selectedCampanaId }}</option>
-								<option v-for="o in campanas" :key="o.value" :value="o.value">{{ o.label }}</option>
-							</select>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Campaña</label>
+							<SearchableSelect
+								v-model="form.campanaId"
+								:options="campanaOptions"
+								:disabled="true"
+								placeholder="Seleccione una opción"
+							/>
 						</div>
 					</div>
 					<div>
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mapeo</label>
-						<select v-model="form.idABCConfigMapeoCampana" disabled aria-disabled="true" class="w-full px-4 py-2.5 border rounded-lg text-sm opacity-60 cursor-not-allowed bg-gray-100 border-gray-300">
-							<option v-if="props.selectedMapeoId && props.selectedMapeoNombre && !hasMapeoInList" :value="props.selectedMapeoId">{{ props.selectedMapeoNombre }}</option>
-							<option v-for="o in mapeos" :key="o.value" :value="o.value">{{ o.label }}</option>
-						</select>
+						<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mapeo</label>
+						<SearchableSelect
+							v-model="form.idABCConfigMapeoCampana"
+							:options="mapeoOptions"
+							:disabled="true"
+							placeholder="Seleccione una opción"
+						/>
 					</div>
 
 					<div>
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
+						<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
 							Columna <span class="text-red-500 ml-1">*</span>
 						</label>
 						<div class="relative">
@@ -337,7 +363,7 @@ async function save() {
 					</div>
 
 					<div>
-						<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Obligatorio</label>
+						<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Obligatorio</label>
 						<div class="flex items-center gap-3">
 							<label class="inline-flex items-center gap-2">
 								<input type="checkbox" v-model="form.obligatorio" class="h-4 w-4 accent-[#00357F]" />
@@ -350,29 +376,32 @@ async function save() {
 						<div>
 							<div class="grid grid-cols-2 gap-3">
 								<div>
-									<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Tipo valor</label>
-									<select v-model="form.valor.tipoSel" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
-										<option :value="null">Seleccione una opción</option>
-										<option v-for="o in valOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-									</select>
+									<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tipo valor</label>
+									<SearchableSelect
+										v-model="form.valor.tipoSel"
+										:options="valOptions"
+										placeholder="Seleccione una opción"
+									/>
 								</div>
 								<div>
 									<div v-if="isCadena">
-										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Subtipo cadena</label>
-										<select v-model="form.valor.cadena.tipoId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
-											<option :value="null">Seleccione una opción</option>
-											<option v-for="o in cdnOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-										</select>
+										<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subtipo cadena</label>
+										<SearchableSelect
+											v-model="form.valor.cadena.tipoId"
+											:options="cdnOptions"
+											placeholder="Seleccione una opción"
+										/>
 									</div>
 									<div v-else-if="isNumero">
-										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Subtipo número</label>
-										<select v-model="form.valor.numero.tipoId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm">
-											<option :value="null">Seleccione una opción</option>
-											<option v-for="o in nmrOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-										</select>
+										<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subtipo número</label>
+										<SearchableSelect
+											v-model="form.valor.numero.tipoId"
+											:options="nmrOptions"
+											placeholder="Seleccione una opción"
+										/>
 									</div>
 									<div v-else>
-										<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2 text-slate-400">Subtipo </label>
+										<label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Subtipo </label>
 										<div  class="flex items-start justify-start text-sm text-slate-400 bg-gray-50 border border-gray-200 rounded-lg p-2">
 											Elige un tipo
 										</div>
@@ -384,24 +413,24 @@ async function save() {
 
 					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 2">
 						<div>
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Mínimo (cadena)</label>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mínimo (cadena)</label>
 							<input type="number" maxlength="1" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 
 						<div>
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Máximo (cadena)</label>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Máximo (cadena)</label>
 							<input type="number" maxlength="4" placeholder="Ej. 10" v-model.number="form.valor.cadena.maximo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 					</div>
 
 					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 1">
 						<div>
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Enteros (número)</label>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Enteros (número)</label>
 							<input type="number" placeholder="Ej. 3" v-model.number="form.valor.numero.enteros" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 
 						<div v-if="form.valor.numero.tipoId === 2">
-							<label class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">Decimales (número)</label>
+							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Decimales (número)</label>
 							<input type="number" placeholder="Ej. 2" v-model.number="form.valor.numero.decimales" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
 						</div>
 					</div>
@@ -416,15 +445,33 @@ async function save() {
 						></textarea>
 					</div> -->
 
-					<div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">
-						<!-- <button
+					</div>
+				</div>
+
+				<div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
+					<button
+						v-if="mode === 'add'"
+						type="button"
+						title="Restaurar todo"
+						aria-label="Restaurar todo"
+						class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+						:disabled="isLoading"
+						@click="resetForm"
+					>
+						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+						</svg>
+					</button>
+					<div v-else></div>
+					<div class="flex items-center gap-3">
+						<button
 							type="button"
 							class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
 							@click="$emit('close')"
 							:disabled="isLoading"
 						>
 							Cancelar
-						</button> -->
+						</button>
 						<button
 							type="submit"
 							class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
@@ -437,8 +484,8 @@ async function save() {
 							{{ isLoading ? 'Guardando...' : 'Guardar' }}
 						</button>
 					</div>
-				</form>
-			</div>
+				</div>
+			</form>
 		</div>
 	</div>
 </template>

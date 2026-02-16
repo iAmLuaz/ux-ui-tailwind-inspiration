@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 
 interface Option {
   label: string
@@ -98,43 +99,32 @@ function handleSave() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-      <div class="px-6 py-4 bg-[#00357F] flex justify-between items-center shrink-0">
-        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+      <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
+        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
         </h3>
-        <button
-          @click="$emit('close')"
-          :disabled="isLoading"
-          class="text-white/70 hover:text-white transition-colors text-2xl leading-none focus:outline-none cursor-pointer"
-        >
-          &times;
-        </button>
       </div>
 
-      <div class="p-6 overflow-y-auto custom-scrollbar">
-        <form @submit.prevent="handleSave" class="space-y-5">
+      <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">
+        <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
+          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
           <div>
-            <label for="field-linea" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
+            <label for="field-linea" class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
               Linea de negocio <span class="text-red-500 ml-1">*</span>
             </label>
-            <select
-              id="field-linea"
-              v-model="formData.idABCCatLineaNegocio"
-              class="w-full pl-4 pr-10 py-2.5 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow appearance-none outline-none"
-              :class="isEditing ? 'bg-gray-100 cursor-not-allowed opacity-70' : 'bg-gray-50 cursor-pointer'"
-              required
+            <SearchableSelect
+              :model-value="formData.idABCCatLineaNegocio ?? null"
+              @update:model-value="(v) => (formData.idABCCatLineaNegocio = Number(v))"
+              :options="lineasDisponibles"
+              placeholder="Seleccione una opcion"
               :disabled="isEditing"
-            >
-              <option value="" disabled class="text-gray-400">Seleccione una opcion</option>
-              <option v-for="opt in lineasDisponibles" :key="opt.value" :value="opt.value">
-                {{ opt.label }}
-              </option>
-            </select>
+              :required="true"
+            />
           </div>
 
           <div>
-            <label for="field-nombre" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
+            <label for="field-nombre" class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
               Nombre <span class="text-red-500 ml-1">*</span>
             </label>
             <input
@@ -150,7 +140,7 @@ function handleSave() {
           </div>
 
           <div>
-            <label for="field-descripcion" class="block text-xs font-bold text-[#00357F] uppercase tracking-wider mb-2">
+            <label for="field-descripcion" class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
               Descripcion <span class="text-red-500 ml-1">*</span>
             </label>
             <textarea
@@ -175,21 +165,31 @@ function handleSave() {
             </label>
           </div>
 
-          <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-2">
-            <button
-              type="submit"
-              class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-              :disabled="isLoading || isDuplicateName"
-            >
-              <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isLoading ? 'Guardando...' : 'Guardar' }}
-            </button>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div class="shrink-0 flex justify-end gap-3 p-4 border-t border-gray-100 bg-white">
+          <button
+            type="button"
+            class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
+            @click="$emit('close')"
+            :disabled="isLoading"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+            :disabled="isLoading || isDuplicateName"
+          >
+            <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            {{ isLoading ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </template>

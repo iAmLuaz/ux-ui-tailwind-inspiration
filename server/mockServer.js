@@ -18,7 +18,7 @@ async function readJson(relPath) {
 }
 
 const store = {
-  catalogos: {},
+  catalogos: [],
   mapeosLinea: [],
   mapeosCampana: [],
   columnasLinea: [],
@@ -27,16 +27,60 @@ const store = {
   tareasCampana: []
 }
 
+const CATALOGOS_META = {
+  CDN: 'CADENA',
+  CMP: 'CAMPANA',
+  CLM: 'COLUMNA',
+  ROL: 'ROL',
+  NMR: 'NUMERO',
+  VAL: 'VALOR',
+  LNN: 'LINEA_NEGOCIO'
+}
+
+function normalizeCatalogText(value) {
+  const clean = String(value ?? '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return clean.replace(/\bCOSTUMER\b/gi, 'CUSTOMER')
+}
+
+function normalizeCatalogItem(item) {
+  return {
+    id: Number(item?.id ?? item?.idCatalogo ?? 0),
+    bolActivo: typeof item?.bolActivo === 'boolean' ? item.bolActivo : Number(item?.bolActivo ?? 1) === 1,
+    codigo: normalizeCatalogText(item?.codigo),
+    nombre: normalizeCatalogText(item?.nombre),
+    fecCreacion: item?.fecCreacion ?? item?.fechaCreacion ?? now(),
+    fecUltModificacion: item?.fecUltModificacion ?? item?.fechaUltimaModificacion ?? now()
+  }
+}
+
 async function loadCatalogos() {
   const base = 'api/catalogos'
-  const codes = ['LNN', 'CMP', 'CLM', 'VAL', 'CDN', 'NMR', 'ROL']
+  const codes = Object.keys(CATALOGOS_META)
+  const grouped = []
   for (const code of codes) {
     try {
-      store.catalogos[code] = await readJson(`${base}/${code}.json`)
+      const raw = await readJson(`${base}/${code}.json`)
+      let registros = Array.isArray(raw) ? raw : []
+      if (registros.length === 1 && Array.isArray(registros[0])) {
+        registros = registros[0]
+      }
+      grouped.push({
+        codigo: code,
+        nombre: CATALOGOS_META[code],
+        registros: (registros || []).map(normalizeCatalogItem)
+      })
     } catch {
-      store.catalogos[code] = []
+      grouped.push({
+        codigo: code,
+        nombre: CATALOGOS_META[code],
+        registros: []
+      })
     }
   }
+  store.catalogos = grouped
 }
 
 async function loadData() {
@@ -268,11 +312,15 @@ const server = http.createServer(async (req, res) => {
     const pathOnly = pathname.slice(API_PREFIX.length)
 
     if (req.method === 'GET') {
+      if (pathOnly === '/catalogos') {
+        return send(res, 200, store.catalogos)
+      }
+
       const catalogoParams = matchPath(pathOnly, '/catalogos/:codigo')
       if (catalogoParams) {
         const code = String(catalogoParams.codigo || '').toUpperCase()
-        const list = store.catalogos[code] || []
-        return send(res, 200, list)
+        const match = store.catalogos.find(c => String(c.codigo).toUpperCase() === code)
+        return send(res, 200, match?.registros || [])
       }
 
       if (pathOnly === '/lineas/mapeos') {

@@ -34,7 +34,8 @@ const lineasCatalogo = ref<Option[]>([])
 import type { CatalogoItem } from '@/types/catalogos/catalogos'
 
 async function fetchCatalogosColumnas() {
-	const list: CatalogoItem[] = await catalogosService.getCatalogos('CLM')
+	const catalogos = await catalogosService.getCatalogosAgrupados()
+	const list: CatalogoItem[] = catalogos.find(group => group.codigo === 'CLM')?.registros ?? []
 	columnasCatalogo.value = list
 		.filter((c: CatalogoItem) => c.bolActivo)
 		.map((c: CatalogoItem) => ({
@@ -44,7 +45,8 @@ async function fetchCatalogosColumnas() {
 }
 
 async function fetchCatalogosLineas() {
-	const list: CatalogoItem[] = await catalogosService.getCatalogos('LNN')
+	const catalogos = await catalogosService.getCatalogosAgrupados()
+	const list: CatalogoItem[] = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
 	lineasCatalogo.value = list
 		.filter((c: CatalogoItem) => c.bolActivo)
 		.map((c: CatalogoItem) => ({

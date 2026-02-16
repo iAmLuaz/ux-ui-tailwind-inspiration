@@ -9,10 +9,50 @@ import type {
 import type { BitacoraPayload } from '../types/bitacora'
 import { addToast } from '@/stores/toastStore'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL
-  || (import.meta.env.VITE_USE_MOCK === 'true'
-    ? 'http://localhost:3100/api'
-    : 'http://localhost:3000/api')
+type ApiDomain = 'catalogos' | 'mapeos' | 'tareas' | 'columnas' | 'default'
+
+const GLOBAL_USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true'
+const API_BASE_URL_REAL = import.meta.env.VITE_API_URL_REAL
+  || import.meta.env.VITE_API_URL
+  || 'http://localhost:3000/api'
+const API_BASE_URL_MOCK = import.meta.env.VITE_API_URL_MOCK
+  || 'http://localhost:3100/api'
+
+function parseEnvBoolean(value: unknown): boolean | undefined {
+  if (value === undefined || value === null || value === '') return undefined
+  const normalized = String(value).trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false
+  return undefined
+}
+
+function getEndpointDomain(endpoint: string): ApiDomain {
+  const path = String(endpoint || '').toLowerCase()
+  if (path.includes('/catalogos')) return 'catalogos'
+  if (path.includes('/columnas')) return 'columnas'
+  if (path.includes('/tareas')) return 'tareas'
+  if (path.includes('/mapeos')) return 'mapeos'
+  return 'default'
+}
+
+function shouldUseMockByDomain(domain: ApiDomain): boolean {
+  const domainEnvKey = {
+    catalogos: 'VITE_MOCK_CATALOGOS',
+    mapeos: 'VITE_MOCK_MAPEOS',
+    tareas: 'VITE_MOCK_TAREAS',
+    columnas: 'VITE_MOCK_COLUMNAS',
+    default: 'VITE_MOCK_DEFAULT'
+  }[domain]
+
+  const rawValue = (import.meta.env as Record<string, unknown>)[domainEnvKey]
+  const parsed = parseEnvBoolean(rawValue)
+  return parsed ?? GLOBAL_USE_MOCK
+}
+
+function resolveBaseUrl(endpoint: string): string {
+  const domain = getEndpointDomain(endpoint)
+  return shouldUseMockByDomain(domain) ? API_BASE_URL_MOCK : API_BASE_URL_REAL
+}
 const _shownLoadedToasts = new Set<string>()
 
 function getBrowserInfo() {
@@ -53,7 +93,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`
+  const url = `${resolveBaseUrl(endpoint)}${endpoint}`
 
   const headers = {
     'Content-Type': 'application/json',
@@ -164,7 +204,7 @@ export const http = {
 
 export const api = {
   // Catálogos
-  getCatalogos: (codigo: string) => http.get(`/catalogos/${encodeURIComponent(String(codigo))}`),
+  getCatalogos: () => http.get('/catalogos'),
 
   // Mapeo línea
   getAllMapeos: () => http.get('/lineas/mapeos'),

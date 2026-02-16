@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { catalogosService } from '../services/catalogos/catalogosService'
-import type { CatalogoCodigo, CatalogoItem } from '../types/catalogos/catalogos'
+import type { CatalogoCodigo, CatalogoGrupo, CatalogoItem } from '../types/catalogos/catalogos'
 import CatalogosTable from '@/components/catalogos/CatalogoTable.vue'
 
 const catalogosDisponibles = [
@@ -18,12 +18,19 @@ const selectedCodigo = ref<CatalogoCodigo>('ROL')
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 const items = ref<CatalogoItem[]>([])
+const catalogosAgrupados = ref<CatalogoGrupo[]>([])
+
+function syncItemsBySelection() {
+    const selected = catalogosAgrupados.value.find(group => group.codigo === selectedCodigo.value)
+    items.value = selected?.registros ?? []
+}
 
 async function fetchCatalogos() {
     isLoading.value = true
     error.value = null
     try {
-        items.value = await catalogosService.getCatalogos(selectedCodigo.value)
+        catalogosAgrupados.value = await catalogosService.getCatalogosAgrupados()
+        syncItemsBySelection()
     } catch (e: any) {
         error.value = e.message
     } finally {
@@ -47,13 +54,13 @@ onMounted(fetchCatalogos)
             <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4">
                 <div>
                     <h1 class="text-2xl font-bold text-[#00357F] tracking-tight">Catálogos</h1>
-                    <p class="text-sm text-slate-500 mt-1">Consulta de catálogos por código.</p>
+                    <p class="text-sm text-slate-500 mt-1">Consulta de catálogos generales.</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <select
                         v-model="selectedCodigo"
                         class="bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F]"
-                        @change="fetchCatalogos"
+                        @change="syncItemsBySelection"
                     >
                         <option
                             v-for="opt in catalogosDisponibles"

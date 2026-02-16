@@ -5,13 +5,13 @@ import TareaLineaTable from '@/components/tareas/linea/TareaLineaTable.vue'
 import TareaCampanaTable from '@/components/tareas/campana/TareaCampanaTable.vue'
 import TareaLineaModal from '@/components/tareas/linea/TareaLineaModal.vue'
 import TareaCampanaModal from '@/components/tareas/campana/TareaCampanaModal.vue'
+import TareaLineaDetailsModal from '@/components/tareas/linea/TareaLineaDetailsModal.vue'
+import TareaCampanaDetailsModal from '@/components/tareas/campana/TareaCampanaDetailsModal.vue'
 import { catalogosService } from '@/services/catalogos/catalogosService'
 import { tareaLineaService } from '@/services/tareas/linea/tareaLineaService'
 import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
 import { mapeoLineaService } from '@/services/mapeos/linea/mapeoLineaService'
 import { mapeoCampanaService } from '@/services/mapeos/campana/mapeoCampanaService'
-import type { TareaLineaData } from '@/types/tareas/linea'
-import type { TareaCampanaData } from '@/types/tareas/campana'
 import type { MapeoLineaData } from '@/types/mapeos/linea'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
 import type { TareaLineaFormModel } from '@/models/tareas/linea/tareaLinea.model'
@@ -32,8 +32,32 @@ interface Option {
   value: number
 }
 
-type TareaLineaRow = TareaLineaData
-type TareaCampanaRow = TareaCampanaData
+type TareaLineaRow = {
+  idABCConfigTareaLinea: number
+  idABCCatLineaNegocio: number
+  ingesta: string
+  bolActivo: boolean
+  carga?: { ejecucion?: string; dia?: string; hora?: string }
+  validacion?: { ejecucion?: string; dia?: string; hora?: string }
+  envio?: { ejecucion?: string; dia?: string; hora?: string }
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
+  [key: string]: any
+}
+
+type TareaCampanaRow = {
+  idABCConfigTareaCampana: number
+  idABCCatLineaNegocio: number
+  idABCCatCampana: number
+  ingesta: string
+  bolActivo: boolean
+  carga?: { ejecucion?: string; dia?: string; hora?: string }
+  validacion?: { ejecucion?: string; dia?: string; hora?: string }
+  envio?: { ejecucion?: string; dia?: string; hora?: string }
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
+  [key: string]: any
+}
 
 const lineasDisponibles = ref<Option[]>([])
 const campanasDisponibles = ref<Option[]>([])
@@ -71,6 +95,9 @@ const showModal = ref(false)
 const modalMode = ref<'add' | 'edit'>('add')
 const modalTab = ref<TabKey>('linea')
 const selectedItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
+const showDetailsModal = ref(false)
+const detailTab = ref<TabKey>('linea')
+const detailItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
 
 const normalizeString = (s: unknown) => {
   if (s === null || s === undefined) return ''
@@ -194,10 +221,9 @@ function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: b
 }
 
 async function fetchCatalogos() {
-  const [lineas, campanas] = await Promise.all([
-    catalogosService.getCatalogos('LNN'),
-    catalogosService.getCatalogos('CMP')
-  ])
+  const catalogos = await catalogosService.getCatalogosAgrupados()
+  const lineas = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
+  const campanas = catalogos.find(group => group.codigo === 'CMP')?.registros ?? []
   lineasDisponibles.value = mapCatalogosToOptions(lineas)
   campanasDisponibles.value = mapCatalogosToOptions(campanas)
 }
@@ -272,7 +298,16 @@ function handleSearchCampana(query: string) {
 const isCampanaRow = (item: TareaLineaRow | TareaCampanaRow): item is TareaCampanaRow =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
 
-function openDetails() {}
+function openDetails(item: TareaLineaRow | TareaCampanaRow) {
+  detailTab.value = activeTab.value
+  detailItem.value = item
+  showDetailsModal.value = true
+}
+
+function closeDetailsModal() {
+  showDetailsModal.value = false
+  detailItem.value = null
+}
 function openEdit(item: TareaLineaRow | TareaCampanaRow) {
   modalMode.value = 'edit'
   modalTab.value = activeTab.value
@@ -525,6 +560,23 @@ watch(
         :is-loading="isLoadingCampana"
         @save="handleSave"
         @close="closeModal"
+      />
+
+      <TareaLineaDetailsModal
+        v-if="detailTab === 'linea'"
+        :show="showDetailsModal"
+        :item="detailItem as TareaLineaRow | null"
+        :get-linea-label="getLineaLabel"
+        @close="closeDetailsModal"
+      />
+
+      <TareaCampanaDetailsModal
+        v-if="detailTab === 'campana'"
+        :show="showDetailsModal"
+        :item="detailItem as TareaCampanaRow | null"
+        :get-linea-label="getLineaLabel"
+        :get-campana-label="getCampanaLabel"
+        @close="closeDetailsModal"
       />
     </div>
   </div>

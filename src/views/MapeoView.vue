@@ -347,10 +347,9 @@ function openColumnasModal(m: MapeoLineaData | MapeoCampanaData) {
 
 async function fetchCatalogosBase() {
   try {
-    const [lineas, campanas] = await Promise.all([
-      catalogosService.getCatalogos('LNN'),
-      catalogosService.getCatalogos('CMP')
-    ])
+    const catalogos = await catalogosService.getCatalogosAgrupados()
+    const lineas = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
+    const campanas = catalogos.find(group => group.codigo === 'CMP')?.registros ?? []
     lineasDisponibles.value = mapCatalogosToOptions(lineas)
     campanasCatalogo.value = mapCatalogosToOptions(campanas)
 
