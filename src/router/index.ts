@@ -24,12 +24,12 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/tareas',
     name: 'tareas',
-    component: TareasMonitorView
+    component: TareasView
   },
   {
     path: '/tareas-monitor',
     name: 'tareas-monitor',
-    component: TareasView
+    component: TareasMonitorView
   },
   // {
   //   path: '/catalogos',

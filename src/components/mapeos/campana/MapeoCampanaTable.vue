@@ -107,7 +107,7 @@ const thSmallClass = 'px-4 py-3'
             </th>
             <th :class="thClass + ' relative'">
               <FilterDropdown
-                label="Campana"
+                label="Campaña"
                 header-label="Filtrar por campana"
                 :options="props.campanasDisponibles"
                 v-model="selectedCampanas"

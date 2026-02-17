@@ -211,7 +211,7 @@ function nextPageCampana() {
 const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
 const getCampanaLabel = (id?: number) => {
   if (id === undefined || id === null) return '-'
-  return campanasDisponibles.value.find(x => x.value === id)?.label ?? `Campana ${id}`
+  return campanasDisponibles.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
 }
 
 function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: boolean }[]) {

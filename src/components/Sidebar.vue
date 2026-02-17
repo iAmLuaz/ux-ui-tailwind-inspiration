@@ -47,7 +47,7 @@ const logoUrl = logo
 
           <li>
             <RouterLink 
-              to="/tareas-monitor" 
+              to="/tareas" 
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group text-blue-100 hover:text-white hover:bg-white/10"
               active-class="!bg-[#FFD100] !text-[#00357F] font-bold shadow-md"
             >
@@ -75,7 +75,7 @@ const logoUrl = logo
         <ul class="space-y-1">
           <li>
             <RouterLink 
-              to="/tareas" 
+              to="/tareas-monitor" 
               class="flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 group text-blue-100 hover:text-white hover:bg-white/10"
               active-class="!bg-[#FFD100] !text-[#00357F] font-bold shadow-md"
             >
@@ -91,7 +91,7 @@ const logoUrl = logo
 
       <div>
         <p class="px-3 text-[10px] font-bold text-blue-200/60 uppercase tracking-widest mb-2">
-              to="/tareas" 
+            Reportes
         </p>
         <ul class="space-y-1">
           <li>

@@ -30,7 +30,7 @@ onMounted(async () => {
 
 function getCampanaLabel(id?: number) {
   if (id === undefined || id === null) return '-'
-  return campanas.value.find(c => Number(c.id) === Number(id))?.nombre ?? `Campana ${id}`
+  return campanas.value.find(c => Number(c.id) === Number(id))?.nombre ?? `Campaña ${id}`
 }
 
 function formatTimestamp(value?: string) {
@@ -68,7 +68,7 @@ function formatTimestamp(value?: string) {
             <p class="mt-1 font-semibold text-slate-700">{{ getLineaLabel(item.idABCCatLineaNegocio) }}</p>
           </div>
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
-            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campana</span>
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Campaña</span>
             <p class="mt-1 font-semibold text-slate-700">{{ getCampanaLabel(item.idABCCatCampana) }}</p>
           </div>
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">

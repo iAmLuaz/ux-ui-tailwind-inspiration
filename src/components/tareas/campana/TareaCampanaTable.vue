@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Edit3, Search, Eye } from 'lucide-vue-next'
+import { Edit3, Search, Eye, CircleCheckBig, TriangleAlert } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
 import TableSearch from '@/components/TableSearch.vue'
 
@@ -103,6 +103,9 @@ const isConfigured = (t: TareaCampanaRow) =>
   isScheduleOk(t.validacion) &&
   isScheduleOk(t.envio)
 
+const getConfiguredSteps = (t: TareaCampanaRow) =>
+  [t.carga, t.validacion, t.envio].filter(isScheduleOk).length
+
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
 </script>
@@ -112,11 +115,11 @@ const thSmallClass = 'px-4 py-3'
     <div class="overflow-y-auto overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
-          <col class="w-[18%]" />
+          <col class="w-[14%]" />
           <col class="w-[18%]" />
           <col class="w-[22%]" />
-          <col class="w-[14%]" />
-          <col class="w-[14%]" />
+          <col class="w-[20%]" />
+          <col class="w-[12%]" />
           <col class="w-[14%]" />
         </colgroup>
         <thead>
@@ -135,7 +138,7 @@ const thSmallClass = 'px-4 py-3'
             </th>
             <th :class="thClass + ' relative'">
               <FilterDropdown
-                label="Campana"
+                label="Campaña"
                 header-label="Filtrar por campana"
                 :options="props.campanasDisponibles"
                 v-model="selectedCampanas"
@@ -222,14 +225,32 @@ const thSmallClass = 'px-4 py-3'
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
-                <span
-                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                <div
+                  class="inline-flex flex-col gap-1 px-2.5 py-1.5 rounded-lg border w-[185px]"
                   :class="isConfigured(t)
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                     : 'bg-amber-50 text-amber-700 border-amber-200'"
                 >
-                  {{ isConfigured(t) ? 'Configurado' : 'Pendiente' }}
-                </span>
+                  <div class="inline-flex items-center gap-1.5 text-xs font-semibold">
+                    <CircleCheckBig v-if="isConfigured(t)" class="w-3.5 h-3.5" />
+                    <TriangleAlert v-else class="w-3.5 h-3.5" />
+                    <span :class="isScheduleOk(t.carga) ? 'opacity-100' : 'opacity-25'">Cargar</span>
+                    <span class="opacity-40">,</span>
+                    <span :class="isScheduleOk(t.validacion) ? 'opacity-100' : 'opacity-25'">Validar</span>
+                    <span class="opacity-40">,</span>
+                    <span :class="isScheduleOk(t.envio) ? 'opacity-100' : 'opacity-25'">Enviar</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <div class="h-1.5 flex-1 rounded-full bg-white/70 overflow-hidden">
+                      <div
+                        class="h-full rounded-full"
+                        :class="isConfigured(t) ? 'bg-emerald-500' : 'bg-amber-500'"
+                        :style="{ width: `${(getConfiguredSteps(t) / 3) * 100}%` }"
+                      ></div>
+                    </div>
+                    <span class="text-[10px] font-bold">{{ getConfiguredSteps(t) }}/3</span>
+                  </div>
+                </div>
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">

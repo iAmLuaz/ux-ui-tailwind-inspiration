@@ -19,27 +19,24 @@ export interface TareaCampanaFormModel {
   idUsuario?: number | ''
 }
 
+const toSchedule = (ejecucion: string, dia: string, hora: string) => {
+  const isComplete = Boolean(ejecucion && dia && hora)
+  return {
+    ejecucion: isComplete ? ejecucion : null,
+    dia: isComplete ? dia : null,
+    hora: isComplete ? hora : null
+  }
+}
+
 export function toCreateTareaCampanaPayload(form: TareaCampanaFormModel): CreateTareaCampanaPayload {
   return {
     tarea: {
       idABCCatLineaNegocio: Number(form.idABCCatLineaNegocio ?? 0),
       idABCCatCampana: Number(form.idABCCatCampana ?? 0),
       ingesta: form.ingesta,
-      carga: {
-        ejecucion: form.ejecucionIngesta,
-        dia: form.diaIngesta,
-        hora: form.horaIngesta
-      },
-      validacion: {
-        ejecucion: form.ejecucionValidacion,
-        dia: form.diaValidacion,
-        hora: form.horaValidacion
-      },
-      envio: {
-        ejecucion: form.ejecucionEnvio,
-        dia: form.diaEnvio,
-        hora: form.horaEnvio
-      }
+      carga: toSchedule(form.ejecucionIngesta, form.diaIngesta, form.horaIngesta),
+      validacion: toSchedule(form.ejecucionValidacion, form.diaValidacion, form.horaValidacion),
+      envio: toSchedule(form.ejecucionEnvio, form.diaEnvio, form.horaEnvio)
     },
     idABCUsuario: Number(form.idUsuario ?? 1),
     idUsuario: form.idUsuario === '' ? undefined : Number(form.idUsuario ?? 1)
@@ -56,21 +53,9 @@ export function toUpdateTareaCampanaPayload(
       idABCCatLineaNegocio: Number(form.idABCCatLineaNegocio ?? 0),
       idABCCatCampana: Number(form.idABCCatCampana ?? 0),
       ingesta: form.ingesta,
-      carga: {
-        ejecucion: form.ejecucionIngesta,
-        dia: form.diaIngesta,
-        hora: form.horaIngesta
-      },
-      validacion: {
-        ejecucion: form.ejecucionValidacion,
-        dia: form.diaValidacion,
-        hora: form.horaValidacion
-      },
-      envio: {
-        ejecucion: form.ejecucionEnvio,
-        dia: form.diaEnvio,
-        hora: form.horaEnvio
-      }
+      carga: toSchedule(form.ejecucionIngesta, form.diaIngesta, form.horaIngesta),
+      validacion: toSchedule(form.ejecucionValidacion, form.diaValidacion, form.horaValidacion),
+      envio: toSchedule(form.ejecucionEnvio, form.diaEnvio, form.horaEnvio)
     },
     idUsuario: Number(form.idUsuario ?? 1)
   }

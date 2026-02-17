@@ -194,7 +194,7 @@ function nextPageCampana() {
 const getLineaLabel = (id?: number) => lineasDisponibles.value.find(x => x.value === id)?.label || 'N/A'
 const getCampanaLabel = (id?: number) => {
   if (id === undefined || id === null) return '-'
-  return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campana ${id}`
+  return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
 }
 const isCampanaRow = (item: MapeoLineaData | MapeoCampanaData): item is MapeoCampanaData =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')

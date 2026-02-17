@@ -129,7 +129,7 @@ function handleSave() {
 
           <div>
             <label for="field-campana" class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
-              Campana <span class="text-red-500 ml-1">*</span>
+              Campaña <span class="text-red-500 ml-1">*</span>
             </label>
             <SearchableSelect
               :model-value="formData.idABCCatCampana ?? null"

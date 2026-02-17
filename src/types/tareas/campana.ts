@@ -1,7 +1,7 @@
 export interface TareaSchedule {
-  ejecucion: string
-  dia: string
-  hora: string
+  ejecucion: string | null
+  dia: string | null
+  hora: string | null
 }
 
 export interface TareaCampanaData {
