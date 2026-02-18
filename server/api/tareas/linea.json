@@ -1,22 +1,18 @@
 [
   {
     "idABCConfigTareaLinea": 501,
-    "idABCCatLineaNegocio": 1,
+    "linea": {
+      "id": 1,
+      "campana": null
+    },
     "ingesta": "0126LC002TEST2",
-    "carga": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "20:00"
+    "tipo": {
+      "id": 1,
+      "nombre": "Ingesta"
     },
-    "validacion": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "21:00"
-    },
-    "envio": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "22:00"
+    "ejecucion": {
+      "id": 1,
+      "nombre": "Automatica"
     },
     "bolActivo": true,
     "fechaCreacion": "2025-01-10T00:00:00.000Z",
@@ -24,22 +20,18 @@
   },
   {
     "idABCConfigTareaLinea": 502,
-    "idABCCatLineaNegocio": 2,
+    "linea": {
+      "id": 2,
+      "campana": null
+    },
     "ingesta": "0126LC002TEST21",
-    "carga": {
-      "ejecucion": "Automatica",
-      "dia": "Martes",
-      "hora": "23:00"
+    "tipo": {
+      "id": 1,
+      "nombre": "Ingesta"
     },
-    "validacion": {
-      "ejecucion": "Automatica",
-      "dia": "Miercoles",
-      "hora": "00:00"
-    },
-    "envio": {
-      "ejecucion": "Automatica",
-      "dia": "Jueves",
-      "hora": "01:00"
+    "ejecucion": {
+      "id": 1,
+      "nombre": "Automatica"
     },
     "bolActivo": false,
     "fechaCreacion": "2025-01-12T00:00:00.000Z",

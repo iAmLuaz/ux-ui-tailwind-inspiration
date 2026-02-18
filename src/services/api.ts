@@ -253,6 +253,14 @@ export const api = {
     http.patch('/lineas/tareas/activar', payload),
   patchDesactivarTareaLinea: (payload: any) =>
     http.patch('/lineas/tareas/desactivar', payload),
+  getHorariosTareaLinea: (tareaId: string | number) =>
+    http.get(`/lineas/tareas/${tareaId}/horarios`),
+  postHorariosTareaLinea: (tareaId: string | number, payload: any) =>
+    http.post(`/lineas/tareas/${tareaId}/horarios`, payload),
+  patchActivarHorarioTareaLinea: (tareaId: string | number, payload: any) =>
+    http.patch(`/lineas/tareas/${tareaId}/horarios/activar`, payload),
+  patchDesactivarHorarioTareaLinea: (tareaId: string | number, payload: any) =>
+    http.patch(`/lineas/tareas/${tareaId}/horarios/desactivar`, payload),
 
   // Tareas campana
   getTareasCampana: () => http.get('/lineas/campanas/tareas'),
@@ -267,6 +275,14 @@ export const api = {
     http.patch('/lineas/campanas/tareas/activar', payload),
   patchDesactivarTareaCampana: (payload: any) =>
     http.patch('/lineas/campanas/tareas/desactivar', payload),
+  getHorariosTareaCampana: (tareaId: string | number) =>
+    http.get(`/campanas/tareas/${tareaId}/horarios`),
+  postHorariosTareaCampana: (tareaId: string | number, payload: any) =>
+    http.post(`/campanas/tareas/${tareaId}/horarios`, payload),
+  patchActivarHorarioTareaCampana: (tareaId: string | number, payload: any) =>
+    http.patch(`/campanas/tareas/${tareaId}/horarios/activar`, payload),
+  patchDesactivarHorarioTareaCampana: (tareaId: string | number, payload: any) =>
+    http.patch(`/campanas/tareas/${tareaId}/horarios/desactivar`, payload),
 
   // Columna mapeo (línea)
   getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),

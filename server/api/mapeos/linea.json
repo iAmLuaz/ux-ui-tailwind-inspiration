@@ -1,6 +1,11 @@
 [
     {
+        "idABCConfigMapeoLinea": 23,
         "idABCCatLineaNegocio": 3,
+        "linea": {
+            "id": 3,
+            "campana": null
+        },
         "bolActivo": false,
         "id": 23,
         "nombre": "0126LC002TEST2",
@@ -9,10 +14,16 @@
         "fechaUltimaModificacion": "2026-02-11T23:39:44.136+00:00",
         "columnas": 1,
         "validar": true,
+        "enviar": false,
         "envio": false
     },
     {
+        "idABCConfigMapeoLinea": 25,
         "idABCCatLineaNegocio": 1,
+        "linea": {
+            "id": 1,
+            "campana": null
+        },
         "bolActivo": true,
         "id": 25,
         "nombre": "0126LC002TEST21",
@@ -21,10 +32,16 @@
         "fechaUltimaModificacion": "2026-02-11T23:39:56.976+00:00",
         "columnas": 1,
         "validar": false,
+        "enviar": true,
         "envio": true
     },
     {
+        "idABCConfigMapeoLinea": 22,
         "idABCCatLineaNegocio": 1,
+        "linea": {
+            "id": 1,
+            "campana": null
+        },
         "bolActivo": true,
         "id": 22,
         "nombre": "0126LC002TEST1",
@@ -33,10 +50,16 @@
         "fechaUltimaModificacion": "2026-02-09T18:13:49.429+00:00",
         "columnas": 1,
         "validar": false,
+        "enviar": false,
         "envio": false
     },
     {
+        "idABCConfigMapeoLinea": 24,
         "idABCCatLineaNegocio": 1,
+        "linea": {
+            "id": 1,
+            "campana": null
+        },
         "bolActivo": false,
         "id": 24,
         "nombre": "0126LC002TEST1",
@@ -45,6 +68,7 @@
         "fechaUltimaModificacion": "2026-02-10T22:56:14.813+00:00",
         "columnas": 0,
         "validar": true,
+        "enviar": false,
         "envio": false
     }
 ]

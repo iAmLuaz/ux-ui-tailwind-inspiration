@@ -1,10 +1,50 @@
+export type Weekday = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'
+
 export interface TareaSchedule {
-  ejecucion: string | null
-  dia: string | null
-  hora: string | null
+  ejecucion?: string
+  dia?: Weekday
+  hora?: string
 }
 
-export type TareaScheduleCollection = TareaSchedule | TareaSchedule[]
+export interface TareaRefTipo {
+  id: number
+  nombre?: string
+}
+
+export interface TareaRefLinea {
+  id: number
+  campana: null
+}
+
+export interface TareaLineaConfig {
+  idABCConfigTareaLinea: number
+  linea: TareaRefLinea
+  ingesta: string
+  tipo: TareaRefTipo
+  ejecucion: TareaRefTipo
+  bolActivo: boolean
+  fechaCreacion: string
+  fechaUltimaModificacion: string
+}
+
+export interface TareaLineaHorario {
+  idABCConfigHorarioTareaLinea: number
+  idABCConfigTareaLinea: number
+  tarea?: { id: number }
+  tipoHorario?: TareaRefTipo
+  dia: {
+    id: number
+    nombre?: string
+    hora: {
+      id: number
+      nombre?: string
+    }
+  }
+  activo?: boolean
+  bolActivo?: boolean
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
+}
 
 export interface TareaLineaData {
   idABCConfigTareaLinea: number
@@ -16,16 +56,27 @@ export interface TareaLineaData {
   bolActivo: boolean
   fechaCreacion: string
   fechaUltimaModificacion: string
+  tarea?: TareaLineaConfig
+  horarios?: TareaLineaHorario[]
 }
 
 export interface CreateTareaLineaPayload {
   tarea: {
-    idABCCatLineaNegocio: number
+    linea: { id: number }
     ingesta: string
-    carga: TareaScheduleCollection
-    validacion: TareaScheduleCollection
-    envio: TareaScheduleCollection
+    tipo: { id: number }
+    ejecucion: { id: number }
+    bolActivo?: boolean
   }
+  horarios: Array<{
+    tarea?: { id: number }
+    tipoHorario?: { id: number; nombre?: string }
+    dia: {
+      id: number
+      hora: { id: number }
+    }
+    activo?: boolean
+  }>
   idABCUsuario: number
   idUsuario?: number
 }
@@ -33,13 +84,24 @@ export interface CreateTareaLineaPayload {
 export interface UpdateTareaLineaPayload {
   tarea: {
     id: number
-    idABCCatLineaNegocio: number
+    linea: { id: number }
     ingesta: string
-    carga: TareaScheduleCollection
-    validacion: TareaScheduleCollection
-    envio: TareaScheduleCollection
+    tipo: { id: number }
+    ejecucion: { id: number }
+    bolActivo?: boolean
   }
+  horarios: Array<{
+    tarea?: { id: number }
+    tipoHorario?: { id: number; nombre?: string }
+    dia: {
+      id: number
+      hora: { id: number }
+    }
+    activo?: boolean
+  }>
   idUsuario: number
+  horariosDesactivarIds?: number[]
+  horariosActivarIds?: number[]
 }
 
 export interface PatchTareaLineaPayload {

@@ -1,7 +1,15 @@
 [
     {
+        "idABCConfigMapeoCampana": 18,
+        "idABCConfigMapeoLinea": 18,
         "idABCCatLineaNegocio": 1,
         "idABCCatCampana": 1,
+        "linea": {
+            "id": 1,
+            "campana": {
+                "id": 1
+            }
+        },
         "bolActivo": true,
         "id": 18,
         "nombre": "0126PET001TEST12",
@@ -10,11 +18,20 @@
         "fechaUltimaModificacion": "2026-02-11T00:23:22.033+00:00",
         "columnas": 2,
         "validar": true,
+        "enviar": true,
         "envio": true
     },
     {
+        "idABCConfigMapeoCampana": 19,
+        "idABCConfigMapeoLinea": 19,
         "idABCCatLineaNegocio": 1,
         "idABCCatCampana": 5,
+        "linea": {
+            "id": 1,
+            "campana": {
+                "id": 5
+            }
+        },
         "bolActivo": true,
         "id": 19,
         "nombre": "0126PET001TEST123",
@@ -23,11 +40,20 @@
         "fechaUltimaModificacion": "2026-02-11T00:23:17.214+00:00",
         "columnas": 1,
         "validar": false,
+        "enviar": true,
         "envio": true
     },
     {
+        "idABCConfigMapeoCampana": 21,
+        "idABCConfigMapeoLinea": 21,
         "idABCCatLineaNegocio": 2,
         "idABCCatCampana": 4,
+        "linea": {
+            "id": 2,
+            "campana": {
+                "id": 4
+            }
+        },
         "bolActivo": true,
         "id": 21,
         "nombre": "xq",
@@ -36,11 +62,20 @@
         "fechaUltimaModificacion": "2026-02-11T23:51:41.546+00:00",
         "columnas": 0,
         "validar": true,
+        "enviar": false,
         "envio": false
     },
     {
+        "idABCConfigMapeoCampana": 20,
+        "idABCConfigMapeoLinea": 20,
         "idABCCatLineaNegocio": 2,
         "idABCCatCampana": 4,
+        "linea": {
+            "id": 2,
+            "campana": {
+                "id": 4
+            }
+        },
         "bolActivo": true,
         "id": 20,
         "nombre": "xq",
@@ -49,6 +84,7 @@
         "fechaUltimaModificacion": "2026-02-11T23:51:30.118+00:00",
         "columnas": 0,
         "validar": false,
+        "enviar": false,
         "envio": false
     }
 ]

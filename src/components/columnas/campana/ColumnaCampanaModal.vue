@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { catalogosService } from '@/services/catalogos/catalogosService'
 import { columnaService } from '@/services/columnas/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 import type { ColumnaCampanaModel } from '@/models/columnas/campana/columnaCampana.model'
 
 interface Option {
@@ -44,6 +45,9 @@ const form = ref<any>({
 		numero: { tipoId: null, enteros: null, decimales: null }
 	}
 })
+const initialFormSnapshot = ref('')
+const showActionConfirm = ref(false)
+const pendingAction = ref<'save' | 'cancel' | null>(null)
 
 const valOptions = ref<Option[]>([])
 const cdnOptions = ref<Option[]>([])
@@ -72,6 +76,14 @@ onMounted(() => {
 })
 
 const isEditing = computed(() => props.mode === 'edit')
+const isDirty = computed(() => serializeFormState(form.value) !== initialFormSnapshot.value)
+const confirmTitle = computed(() => (pendingAction.value === 'save' ? 'Confirmar guardado' : 'Descartar cambios'))
+const confirmMessage = computed(() =>
+	pendingAction.value === 'save'
+		? '¿Estás seguro de guardar los cambios de este registro?'
+		: 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
+)
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
 
 const selectedVal = computed(() => {
 	const id = form.value.valor.tipoSel
@@ -174,6 +186,72 @@ function resetForm() {
 	}
 }
 
+const serializeFormState = (value: any) => JSON.stringify(value)
+
+const restoreInitialInformation = () => {
+	if (!props.initialData) return
+
+	form.value.idABCConfigMapeoCampana = props.initialData.mapeoId
+	form.value.lineaId = props.selectedLineaId ?? form.value.lineaId
+	form.value.campanaId = props.selectedCampanaId ?? form.value.campanaId
+	form.value.idABCCatColumna = props.initialData.columnaId
+	form.value.regex = props.initialData.regex ?? ''
+	form.value.obligatorio = props.initialData.obligatorio ?? props.initialData.columna?.obligatorio ?? null
+	const v = props.initialData.valor ?? props.initialData.columna?.valor ?? null
+	if (v) {
+		form.value.valor.tipoSel = v.tipo?.id ?? null
+		form.value.valor.tipoId = v.tipo?.id ?? null
+		form.value.valor.cadena.tipoId = v.cadena?.tipo?.id ?? null
+		form.value.valor.cadena.minimo = v.cadena?.minimo ?? null
+		form.value.valor.cadena.maximo = v.cadena?.maximo ?? null
+		form.value.valor.numero.tipoId = v.numero?.tipo?.id ?? null
+		form.value.valor.numero.enteros = v.numero?.enteros ?? null
+		form.value.valor.numero.decimales = v.numero?.decimales ?? null
+	} else {
+		form.value.valor = {
+			tipoSel: null,
+			tipoId: null,
+			cadena: { tipoId: null, minimo: null, maximo: null },
+			numero: { tipoId: null, enteros: null, decimales: null }
+		}
+	}
+}
+
+const closeActionConfirm = () => {
+	showActionConfirm.value = false
+	pendingAction.value = null
+}
+
+const requestSave = async () => {
+	if (isEditing.value) {
+		pendingAction.value = 'save'
+		showActionConfirm.value = true
+		return
+	}
+
+	await save()
+}
+
+const requestCancel = () => {
+	if (isEditing.value && isDirty.value) {
+		pendingAction.value = 'cancel'
+		showActionConfirm.value = true
+		return
+	}
+
+	emit('close')
+}
+
+const confirmAction = async () => {
+	if (pendingAction.value === 'save') {
+		await save()
+	} else if (pendingAction.value === 'cancel') {
+		emit('close')
+	}
+
+	closeActionConfirm()
+}
+
 watch(
 	() => props.selectedMapeoId,
 	(v) => {
@@ -218,6 +296,7 @@ watch(
 
 		if (mode === 'add') {
 			resetForm()
+			initialFormSnapshot.value = serializeFormState(form.value)
 			return
 		}
 
@@ -249,6 +328,8 @@ watch(
 				}
 			}
 		}
+
+		initialFormSnapshot.value = serializeFormState(form.value)
 	},
 	{ immediate: true }
 )
@@ -312,7 +393,7 @@ async function save() {
 				</h3>
 			</div>
 
-			<form @submit.prevent="save" class="flex flex-col min-h-0 flex-1">
+			<form @submit.prevent="requestSave" class="flex flex-col min-h-0 flex-1">
 				<div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
 					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
 
@@ -449,25 +530,36 @@ async function save() {
 				</div>
 
 				<div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
-					<button
-						v-if="mode === 'add'"
-						type="button"
-						title="Restaurar todo"
-						aria-label="Restaurar todo"
-						class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-						:disabled="isLoading"
-						@click="resetForm"
-					>
-						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
-						</svg>
-					</button>
-					<div v-else></div>
+					<div>
+						<button
+							v-if="mode === 'add'"
+							type="button"
+							title="Restaurar todo"
+							aria-label="Restaurar todo"
+							class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+							:disabled="isLoading"
+							@click="resetForm"
+						>
+							<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+							</svg>
+						</button>
+
+						<button
+							v-else
+							type="button"
+							class="px-4 py-2.5 text-sm font-bold text-[#00357F] bg-white border border-[#00357F]/20 hover:bg-slate-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#00357F]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+							:disabled="isLoading"
+							@click="restoreInitialInformation"
+						>
+							Restaurar información
+						</button>
+					</div>
 					<div class="flex items-center gap-3">
 						<button
 							type="button"
 							class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
-							@click="$emit('close')"
+							@click="requestCancel"
 							:disabled="isLoading"
 						>
 							Cancelar
@@ -486,6 +578,16 @@ async function save() {
 					</div>
 				</div>
 			</form>
+
+			<FormActionConfirmModal
+				:show="showActionConfirm"
+				:title="confirmTitle"
+				:message="confirmMessage"
+				:confirm-text="confirmText"
+				:is-loading="isLoading"
+				@confirm="confirmAction"
+				@cancel="closeActionConfirm"
+			/>
 		</div>
 	</div>
 </template>

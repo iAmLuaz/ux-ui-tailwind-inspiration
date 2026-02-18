@@ -1,4 +1,29 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { formatHorarioLabel, getHorarioTypeName } from '@/composables/tareas/tareaScheduleUtils'
+
+interface HorarioItem {
+  idABCConfigHorarioTareaCampana?: number
+  tipoHorario?: {
+    id?: number
+    nombre?: string
+  }
+  dia?: {
+    id?: number
+    nombre?: string
+    hora?: {
+      id?: number
+      nombre?: string
+    }
+  }
+  hora?: {
+    id?: number
+    nombre?: string
+  }
+  activo?: boolean
+  bolActivo?: boolean
+}
+
 interface TareaCampanaRow {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
@@ -8,6 +33,11 @@ interface TareaCampanaRow {
   carga?: { ejecucion?: string; dia?: string; hora?: string }
   validacion?: { ejecucion?: string; dia?: string; hora?: string }
   envio?: { ejecucion?: string; dia?: string; hora?: string }
+  horarios?: HorarioItem[]
+  tarea?: {
+    tipo?: { id?: number; nombre?: string }
+    ejecucion?: { id?: number; nombre?: string }
+  }
   fechaCreacion?: string
   fechaUltimaModificacion?: string
 }
@@ -21,6 +51,18 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{ (e: 'close'): void }>()
+
+const horarios = computed(() => props.item?.horarios ?? [])
+
+const getHorarioActive = (horario: HorarioItem) => horario.activo ?? horario.bolActivo ?? true
+
+const getHorarioExecution = (horario: HorarioItem) => {
+  const stageId = Number(horario?.tipoHorario?.id ?? 0)
+  if (stageId === 1) return props.item?.carga?.ejecucion ?? '-'
+  if (stageId === 2) return props.item?.validacion?.ejecucion ?? '-'
+  if (stageId === 3) return props.item?.envio?.ejecucion ?? '-'
+  return '-'
+}
 
 function formatTimestamp(value?: string) {
   if (!value) return '—'
@@ -72,55 +114,39 @@ function formatTimestamp(value?: string) {
 
           <div class="grid grid-cols-1 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Carga</p>
-              <div class="grid grid-cols-3 gap-2">
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Ejecución</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.carga?.ejecucion || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Día</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.carga?.dia || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Hora</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.carga?.hora || '-' }}</span>
-                </div>
+              <div class="flex items-center justify-between mb-2">
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Horarios configurados</p>
+                <span class="text-[10px] font-bold text-slate-500">{{ horarios.length }}</span>
               </div>
-            </div>
 
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Validación</p>
-              <div class="grid grid-cols-3 gap-2">
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Ejecución</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.validacion?.ejecucion || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Día</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.validacion?.dia || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Hora</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.validacion?.hora || '-' }}</span>
-                </div>
-              </div>
-            </div>
+              <div v-if="!horarios.length" class="text-xs text-slate-500">Sin horarios configurados.</div>
 
-            <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-2">Envío</p>
-              <div class="grid grid-cols-3 gap-2">
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Ejecución</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.envio?.ejecucion || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Día</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.envio?.dia || '-' }}</span>
-                </div>
-                <div class="p-2 rounded-lg border border-slate-100 shadow-sm bg-white">
-                  <span class="block text-[10px] text-slate-400 uppercase font-medium">Hora</span>
-                  <span class="text-sm font-semibold text-slate-700">{{ item.envio?.hora || '-' }}</span>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="(horario, index) in horarios"
+                  :key="horario.idABCConfigHorarioTareaCampana ?? index"
+                  class="p-2 rounded-lg border border-slate-200 bg-white flex items-center justify-between gap-3"
+                >
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Etapa</span>
+                      <span class="text-sm font-semibold text-slate-700">{{ getHorarioTypeName(horario) }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Tipo de ejecución</span>
+                      <span class="text-sm font-semibold text-slate-700">{{ getHorarioExecution(horario) }}</span>
+                    </div>
+                    <div class="flex flex-col">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase">Fecha / hora</span>
+                      <span class="text-sm font-semibold text-slate-700">{{ formatHorarioLabel(horario) }}</span>
+                    </div>
+                  </div>
+                  <span
+                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    :class="getHorarioActive(horario) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'"
+                  >
+                    {{ getHorarioActive(horario) ? 'Activo' : 'Inactivo' }}
+                  </span>
                 </div>
               </div>
             </div>

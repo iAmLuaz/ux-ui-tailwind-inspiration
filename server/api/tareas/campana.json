@@ -1,23 +1,20 @@
 [
   {
     "idABCConfigTareaCampana": 801,
-    "idABCCatLineaNegocio": 1,
-    "idABCCatCampana": 1,
+    "linea": {
+      "id": 1,
+      "campana": {
+        "id": 1
+      }
+    },
     "ingesta": "0126PET001TEST12",
-    "carga": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "20:00"
+    "tipo": {
+      "id": 1,
+      "nombre": "Ingesta"
     },
-    "validacion": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "21:00"
-    },
-    "envio": {
-      "ejecucion": "Automatica",
-      "dia": "Lunes",
-      "hora": "22:00"
+    "ejecucion": {
+      "id": 1,
+      "nombre": "Automatica"
     },
     "bolActivo": true,
     "fechaCreacion": "2025-01-15T00:00:00.000Z",
@@ -25,23 +22,20 @@
   },
   {
     "idABCConfigTareaCampana": 802,
-    "idABCCatLineaNegocio": 2,
-    "idABCCatCampana": 2,
+    "linea": {
+      "id": 2,
+      "campana": {
+        "id": 2
+      }
+    },
     "ingesta": "0126PET001TEST123",
-    "carga": {
-      "ejecucion": "Automatica",
-      "dia": "Jueves",
-      "hora": "23:00"
+    "tipo": {
+      "id": 1,
+      "nombre": "Ingesta"
     },
-    "validacion": {
-      "ejecucion": "Automatica",
-      "dia": "Viernes",
-      "hora": "00:00"
-    },
-    "envio": {
-      "ejecucion": "Automatica",
-      "dia": "Viernes",
-      "hora": "01:00"
+    "ejecucion": {
+      "id": 1,
+      "nombre": "Automatica"
     },
     "bolActivo": true,
     "fechaCreacion": "2025-01-16T00:00:00.000Z",

@@ -1,92 +1,154 @@
 import type {
   CreateTareaCampanaPayload,
+  Weekday,
   UpdateTareaCampanaPayload
 } from '@/types/tareas/campana'
+import type { WeekdayValue } from '@/composables/tareas/tareaScheduleUtils'
 
 export interface TareaCampanaFormModel {
   idABCCatLineaNegocio?: number | ''
   idABCCatCampana?: number | ''
   ingesta: string
   ejecucionIngesta: string
-  diaIngesta: string
+  diaIngesta: WeekdayValue
   horaIngesta: string
-  cargaSlots?: Array<{ dia: string; hora: string }>
+  cargaSlots?: Array<{ dia: WeekdayValue; hora: string }>
   ejecucionValidacion: string
-  diaValidacion: string
+  diaValidacion: WeekdayValue
   horaValidacion: string
-  validacionSlots?: Array<{ dia: string; hora: string }>
+  validacionSlots?: Array<{ dia: WeekdayValue; hora: string }>
   ejecucionEnvio: string
-  diaEnvio: string
+  diaEnvio: WeekdayValue
   horaEnvio: string
-  envioSlots?: Array<{ dia: string; hora: string }>
+  envioSlots?: Array<{ dia: WeekdayValue; hora: string; activo?: boolean }>
+  horariosDesactivarIds?: number[]
+  horariosActivarIds?: number[]
   idUsuario?: number | ''
 }
 
-const toSchedule = (ejecucion: string, dia: string, hora: string) => {
-  const isComplete = Boolean(ejecucion && dia && hora)
+const weekdayIdByName: Record<Weekday, number> = {
+  Lunes: 1,
+  Martes: 2,
+  Miércoles: 3,
+  Jueves: 4,
+  Viernes: 5
+}
+
+const executionIdByName: Record<string, number> = {
+  Automatica: 1,
+  Manual: 2
+}
+
+function resolveExecutionId(value: string): number {
+  const normalized = String(value ?? '').trim()
+  return executionIdByName[normalized] ?? 1
+}
+
+function resolveHoraId(value: string): number {
+  const [hours = '0', minutes = '0'] = String(value ?? '').split(':')
+  const h = Number(hours)
+  const m = Number(minutes)
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0
+  return h * 100 + m
+}
+
+function toHorarioByType(typeId: 1 | 2 | 3, dia: Weekday, hora: string, tareaId?: number) {
+  const horario = {
+    dia: {
+      id: weekdayIdByName[dia] ?? 0,
+      hora: { id: resolveHoraId(hora) }
+    },
+    activo: true,
+    tipoHorario: {
+      id: typeId,
+      nombre: typeId === 1 ? 'Carga' : typeId === 2 ? 'Validación' : 'Envío'
+    }
+  }
+
+  if (!tareaId) return horario
   return {
-    ejecucion: isComplete ? ejecucion : null,
-    dia: isComplete ? dia : null,
-    hora: isComplete ? hora : null
+    tarea: { id: tareaId },
+    ...horario
   }
 }
 
-const normalizeSlots = (slots: Array<{ dia: string; hora: string }> | undefined, dia: string, hora: string) => {
-  const list = Array.isArray(slots) ? slots.filter(item => item?.dia && item?.hora) : []
+const normalizeSlots = (slots: Array<{ dia: WeekdayValue; hora: string; activo?: boolean }> | undefined, dia: WeekdayValue, hora: string) => {
+  const list = Array.isArray(slots)
+    ? slots.filter(item => item?.dia && item?.hora && (item.activo ?? true) !== false)
+    : []
   if (dia && hora && !list.some(item => item.dia === dia && item.hora === hora)) {
     list.unshift({ dia, hora })
   }
-  return list
+  return list.filter((item): item is { dia: Weekday; hora: string } => Boolean(item.dia))
 }
-
-const buildScheduleList = (ejecucion: string, slots: Array<{ dia: string; hora: string }>) => {
-  return slots.map(slot => toSchedule(ejecucion, slot.dia, slot.hora))
-}
-
-const at = <T>(list: T[], index: number): T | null => (index >= 0 && index < list.length ? list[index] : null)
 
 export function toCreateTareaCampanaPayloads(form: TareaCampanaFormModel): CreateTareaCampanaPayload[] {
   const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
   const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
   const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
 
-  const cargaList = buildScheduleList(form.ejecucionIngesta, cargaSlots)
-  const validacionList = buildScheduleList(form.ejecucionValidacion, validacionSlots)
-  const envioList = buildScheduleList(form.ejecucionEnvio, envioSlots)
-  const maxItems = Math.max(cargaList.length, validacionList.length, envioList.length, 1)
+  const horarios = [
+    ...cargaSlots.map(slot => toHorarioByType(1, slot.dia, slot.hora)),
+    ...validacionSlots.map(slot => toHorarioByType(2, slot.dia, slot.hora)),
+    ...envioSlots.map(slot => toHorarioByType(3, slot.dia, slot.hora))
+  ]
 
-  return Array.from({ length: maxItems }, (_, index) => ({
+  return [{
     tarea: {
-      idABCCatLineaNegocio: Number(form.idABCCatLineaNegocio ?? 0),
-      idABCCatCampana: Number(form.idABCCatCampana ?? 0),
+      linea: {
+        id: Number(form.idABCCatLineaNegocio ?? 0),
+        campana: {
+          id: Number(form.idABCCatCampana ?? 0)
+        }
+      },
       ingesta: form.ingesta,
-      carga: at(cargaList, index) ?? at(cargaList, 0) ?? toSchedule('', '', ''),
-      validacion: at(validacionList, index) ?? toSchedule('', '', ''),
-      envio: at(envioList, index) ?? toSchedule('', '', '')
+      tipo: { id: 1 },
+      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) },
+      bolActivo: true
     },
+    horarios,
     idABCUsuario: Number(form.idUsuario ?? 1),
     idUsuario: form.idUsuario === '' ? undefined : Number(form.idUsuario ?? 1)
-  }))
+  }]
 }
 
 export function toCreateTareaCampanaPayload(form: TareaCampanaFormModel): CreateTareaCampanaPayload {
-  return toCreateTareaCampanaPayloads(form)[0]
+  const [payload] = toCreateTareaCampanaPayloads(form)
+  return payload!
 }
 
 export function toUpdateTareaCampanaPayload(
   form: TareaCampanaFormModel,
   tareaId: number
 ): UpdateTareaCampanaPayload {
+  const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
+  const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
+  const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
+
   return {
     tarea: {
       id: tareaId,
-      idABCCatLineaNegocio: Number(form.idABCCatLineaNegocio ?? 0),
-      idABCCatCampana: Number(form.idABCCatCampana ?? 0),
+      linea: {
+        id: Number(form.idABCCatLineaNegocio ?? 0),
+        campana: {
+          id: Number(form.idABCCatCampana ?? 0)
+        }
+      },
       ingesta: form.ingesta,
-      carga: toSchedule(form.ejecucionIngesta, form.diaIngesta, form.horaIngesta),
-      validacion: toSchedule(form.ejecucionValidacion, form.diaValidacion, form.horaValidacion),
-      envio: toSchedule(form.ejecucionEnvio, form.diaEnvio, form.horaEnvio)
+      tipo: { id: 1 },
+      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) }
     },
-    idUsuario: Number(form.idUsuario ?? 1)
+    horarios: [
+      ...cargaSlots.map(slot => toHorarioByType(1, slot.dia, slot.hora, tareaId)),
+      ...validacionSlots.map(slot => toHorarioByType(2, slot.dia, slot.hora, tareaId)),
+      ...envioSlots.map(slot => toHorarioByType(3, slot.dia, slot.hora, tareaId))
+    ],
+    idUsuario: Number(form.idUsuario ?? 1),
+    horariosDesactivarIds: Array.isArray(form.horariosDesactivarIds)
+      ? form.horariosDesactivarIds.map(Number).filter(id => !Number.isNaN(id) && id > 0)
+      : [],
+    horariosActivarIds: Array.isArray(form.horariosActivarIds)
+      ? form.horariosActivarIds.map(Number).filter(id => !Number.isNaN(id) && id > 0)
+      : []
   }
 }

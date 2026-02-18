@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 
 interface Option {
   label: string
@@ -39,6 +40,9 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const formData = ref<MapeoCampanaFormData>(initializeFormData())
+const initialFormSnapshot = ref('')
+const showActionConfirm = ref(false)
+const pendingAction = ref<'save' | 'cancel' | null>(null)
 
 const isEditing = computed(() => props.mode === 'edit')
 const normalizeName = (value: string) =>
@@ -54,11 +58,19 @@ const isDuplicateName = computed(() => {
   if (!name) return false
   return props.existingMapeos.some(item => normalizeName(item.nombre || '') === name)
 })
+const isDirty = computed(() => serializeFormState(formData.value) !== initialFormSnapshot.value)
+const confirmTitle = computed(() => (pendingAction.value === 'save' ? 'Confirmar guardado' : 'Descartar cambios'))
+const confirmMessage = computed(() =>
+  pendingAction.value === 'save'
+    ? '¿Estás seguro de guardar los cambios de este registro?'
+    : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
+)
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
 
 watch(
   () => [props.initialData, props.mode],
   () => {
-    formData.value = initializeFormData()
+    setInitialFormState()
   }
 )
 
@@ -66,10 +78,58 @@ watch(
   () => props.show,
   (isOpen) => {
     if (isOpen) {
-      formData.value = initializeFormData()
+      setInitialFormState()
     }
   }
 )
+
+const serializeFormState = (value: MapeoCampanaFormData) => JSON.stringify(value)
+
+const setInitialFormState = () => {
+  formData.value = initializeFormData()
+  initialFormSnapshot.value = serializeFormState(formData.value)
+}
+
+const restoreInitialInformation = () => {
+  formData.value = initializeFormData()
+}
+
+const closeActionConfirm = () => {
+  showActionConfirm.value = false
+  pendingAction.value = null
+}
+
+const requestSave = () => {
+  if (isDuplicateName.value) return
+
+  if (isEditing.value) {
+    pendingAction.value = 'save'
+    showActionConfirm.value = true
+    return
+  }
+
+  emit('save', formData.value)
+}
+
+const requestCancel = () => {
+  if (isEditing.value && isDirty.value) {
+    pendingAction.value = 'cancel'
+    showActionConfirm.value = true
+    return
+  }
+
+  emit('close')
+}
+
+const confirmAction = () => {
+  if (pendingAction.value === 'save') {
+    emit('save', formData.value)
+  } else if (pendingAction.value === 'cancel') {
+    emit('close')
+  }
+
+  closeActionConfirm()
+}
 
 function initializeFormData(): MapeoCampanaFormData {
   if (props.initialData) {
@@ -98,8 +158,7 @@ function initializeFormData(): MapeoCampanaFormData {
 }
 
 function handleSave() {
-  if (isDuplicateName.value) return
-  emit('save', formData.value)
+  requestSave()
 }
 </script>
 
@@ -188,28 +247,51 @@ function handleSave() {
           </div>
         </div>
 
-        <div class="shrink-0 flex justify-end gap-3 p-4 border-t border-gray-100 bg-white">
+        <div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
           <button
+            v-if="mode === 'edit'"
             type="button"
-            class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
-            @click="$emit('close')"
+            class="px-4 py-2.5 text-sm font-bold text-[#00357F] bg-white border border-[#00357F]/20 hover:bg-slate-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#00357F]/20 disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="isLoading"
+            @click="restoreInitialInformation"
           >
-            Cancelar
+            Restaurar información
           </button>
-          <button
-            type="submit"
-            class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-            :disabled="isLoading || isDuplicateName"
-          >
-            <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ isLoading ? 'Guardando...' : 'Guardar' }}
-          </button>
+          <div v-else></div>
+
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
+              @click="requestCancel"
+              :disabled="isLoading"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
+              :disabled="isLoading || isDuplicateName"
+            >
+              <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ isLoading ? 'Guardando...' : 'Guardar' }}
+            </button>
+          </div>
         </div>
       </form>
+
+      <FormActionConfirmModal
+        :show="showActionConfirm"
+        :title="confirmTitle"
+        :message="confirmMessage"
+        :confirm-text="confirmText"
+        :is-loading="isLoading"
+        @confirm="confirmAction"
+        @cancel="closeActionConfirm"
+      />
     </div>
   </div>
 </template>

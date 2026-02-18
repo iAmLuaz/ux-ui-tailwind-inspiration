@@ -1,10 +1,54 @@
+export type Weekday = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'
+
 export interface TareaSchedule {
-  ejecucion: string | null
-  dia: string | null
-  hora: string | null
+  ejecucion?: string
+  dia?: Weekday
+  hora?: string
 }
 
-export type TareaScheduleCollection = TareaSchedule | TareaSchedule[]
+export interface TareaRefTipo {
+  id: number
+  nombre?: string
+}
+
+export interface TareaRefCampana {
+  id: number
+}
+
+export interface TareaRefLinea {
+  id: number
+  campana: TareaRefCampana
+}
+
+export interface TareaCampanaConfig {
+  idABCConfigTareaCampana: number
+  linea: TareaRefLinea
+  ingesta: string
+  tipo: TareaRefTipo
+  ejecucion: TareaRefTipo
+  bolActivo: boolean
+  fechaCreacion: string
+  fechaUltimaModificacion: string
+}
+
+export interface TareaCampanaHorario {
+  idABCConfigHorarioTareaCampana: number
+  idABCConfigTareaCampana: number
+  tarea?: { id: number }
+  tipoHorario?: TareaRefTipo
+  dia: {
+    id: number
+    nombre?: string
+    hora: {
+      id: number
+      nombre?: string
+    }
+  }
+  activo?: boolean
+  bolActivo?: boolean
+  fechaCreacion?: string
+  fechaUltimaModificacion?: string
+}
 
 export interface TareaCampanaData {
   idABCConfigTareaCampana: number
@@ -17,17 +61,32 @@ export interface TareaCampanaData {
   bolActivo: boolean
   fechaCreacion: string
   fechaUltimaModificacion: string
+  tarea?: TareaCampanaConfig
+  horarios?: TareaCampanaHorario[]
 }
 
 export interface CreateTareaCampanaPayload {
   tarea: {
-    idABCCatLineaNegocio: number
-    idABCCatCampana: number
+    linea: {
+      id: number
+      campana: {
+        id: number
+      }
+    }
     ingesta: string
-    carga: TareaScheduleCollection
-    validacion: TareaScheduleCollection
-    envio: TareaScheduleCollection
+    tipo: { id: number }
+    ejecucion: { id: number }
+    bolActivo?: boolean
   }
+  horarios: Array<{
+    tarea?: { id: number }
+    tipoHorario?: { id: number; nombre?: string }
+    dia: {
+      id: number
+      hora: { id: number }
+    }
+    activo?: boolean
+  }>
   idABCUsuario: number
   idUsuario?: number
 }
@@ -35,14 +94,29 @@ export interface CreateTareaCampanaPayload {
 export interface UpdateTareaCampanaPayload {
   tarea: {
     id: number
-    idABCCatLineaNegocio: number
-    idABCCatCampana: number
+    linea: {
+      id: number
+      campana: {
+        id: number
+      }
+    }
     ingesta: string
-    carga: TareaScheduleCollection
-    validacion: TareaScheduleCollection
-    envio: TareaScheduleCollection
+    tipo: { id: number }
+    ejecucion: { id: number }
+    bolActivo?: boolean
   }
+  horarios: Array<{
+    tarea?: { id: number }
+    tipoHorario?: { id: number; nombre?: string }
+    dia: {
+      id: number
+      hora: { id: number }
+    }
+    activo?: boolean
+  }>
   idUsuario: number
+  horariosDesactivarIds?: number[]
+  horariosActivarIds?: number[]
 }
 
 export interface PatchTareaCampanaPayload {

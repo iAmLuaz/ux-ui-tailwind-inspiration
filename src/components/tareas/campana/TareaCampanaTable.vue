@@ -1,8 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Edit3, Search, Eye, CircleCheckBig, TriangleAlert } from 'lucide-vue-next'
+import { Edit3, Search, Eye } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
 import TableSearch from '@/components/TableSearch.vue'
+
+interface HorarioItem {
+  tipoHorario?: {
+    id?: number
+    nombre?: string
+  }
+  dia?: {
+    id?: number
+    nombre?: string
+    hora?: {
+      id?: number
+      nombre?: string
+    }
+  }
+  hora?: {
+    id?: number
+    nombre?: string
+  }
+}
 
 export interface TareaCampanaRow {
   idABCConfigTareaCampana: number
@@ -24,6 +43,11 @@ export interface TareaCampanaRow {
     ejecucion?: string
     dia?: string
     hora?: string
+  }
+  horarios?: HorarioItem[]
+  tarea?: {
+    tipo?: { nombre?: string }
+    ejecucion?: { nombre?: string }
   }
 }
 
@@ -98,13 +122,38 @@ const statusOptions = [
 const isScheduleOk = (schedule?: { ejecucion?: string; dia?: string; hora?: string }) =>
   Boolean(schedule?.ejecucion && schedule?.dia && schedule?.hora)
 
-const isConfigured = (t: TareaCampanaRow) =>
-  isScheduleOk(t.carga) &&
-  isScheduleOk(t.validacion) &&
-  isScheduleOk(t.envio)
+const countStageHorarios = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
+  const horarios = t.horarios ?? []
+  const countByType = horarios.filter(h =>
+    Number(h?.tipoHorario?.id ?? 0) === stageId &&
+    (h as any)?.activo !== false &&
+    (h as any)?.bolActivo !== false
+  ).length
+  if (countByType > 0) return countByType
 
-const getConfiguredSteps = (t: TareaCampanaRow) =>
-  [t.carga, t.validacion, t.envio].filter(isScheduleOk).length
+  if (stageId === 1 && isScheduleOk(t.carga)) return 1
+  if (stageId === 2 && isScheduleOk(t.validacion)) return 1
+  if (stageId === 3 && isScheduleOk(t.envio)) return 1
+  return 0
+}
+
+const getStageInfo = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
+  const count = countStageHorarios(t, stageId)
+  const configured = count > 0
+  return { count, configured }
+}
+
+const getStageVisual = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
+  const stage = getStageInfo(t, stageId)
+  return {
+    ...stage,
+    label: stage.configured ? `${stage.count} fecha${stage.count === 1 ? '' : 's'}` : 'Sin fechas',
+    containerClass: stage.configured
+      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-700'
+      : 'bg-rose-50/70 border-rose-200 text-rose-700',
+    iconWrapClass: stage.configured ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+  }
+}
 
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
@@ -116,11 +165,13 @@ const thSmallClass = 'px-4 py-3'
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
           <col class="w-[14%]" />
-          <col class="w-[18%]" />
-          <col class="w-[22%]" />
+          <col class="w-[16%]" />
           <col class="w-[20%]" />
-          <col class="w-[12%]" />
-          <col class="w-[14%]" />
+          <col class="w-[11%]" />
+          <col class="w-[11%]" />
+          <col class="w-[11%]" />
+          <col class="w-[8%]" />
+          <col class="w-[9%]" />
         </colgroup>
         <thead>
           <tr class="border-b border-slate-200 bg-slate-50/50 text-xs text-slate-500 font-semibold tracking-wider">
@@ -169,7 +220,11 @@ const thSmallClass = 'px-4 py-3'
               />
             </th>
 
-            <th :class="thSmallClass + ' text-left'">Configurado</th>
+            <th :class="thSmallClass + ' text-left'">Carga</th>
+
+            <th :class="thSmallClass + ' text-left'">Validar</th>
+
+            <th :class="thSmallClass + ' text-left'">Enviar</th>
 
             <th :class="thSmallClass + ' relative'">
               <FilterDropdown
@@ -225,32 +280,57 @@ const thSmallClass = 'px-4 py-3'
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
-                <div
-                  class="inline-flex flex-col gap-1 px-2.5 py-1.5 rounded-lg border w-[185px]"
-                  :class="isConfigured(t)
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'"
-                >
-                  <div class="inline-flex items-center gap-1.5 text-xs font-semibold">
-                    <CircleCheckBig v-if="isConfigured(t)" class="w-3.5 h-3.5" />
-                    <TriangleAlert v-else class="w-3.5 h-3.5" />
-                    <span :class="isScheduleOk(t.carga) ? 'opacity-100' : 'opacity-25'">Cargar</span>
-                    <span class="opacity-40">,</span>
-                    <span :class="isScheduleOk(t.validacion) ? 'opacity-100' : 'opacity-25'">Validar</span>
-                    <span class="opacity-40">,</span>
-                    <span :class="isScheduleOk(t.envio) ? 'opacity-100' : 'opacity-25'">Enviar</span>
+                <template v-for="stage in [getStageVisual(t, 1)]" :key="`carga-${t.idABCConfigTareaCampana}`">
+                  <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[11px] font-semibold" :class="stage.containerClass">
+                    <span class="h-5 w-5 rounded-full inline-flex items-center justify-center" :class="stage.iconWrapClass">
+                      <svg v-if="stage.configured" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <svg v-else class="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="10" cy="10" r="6.5"></circle>
+                        <path d="M10 6.7V10.3"></path>
+                        <circle cx="10" cy="13.3" r="0.8" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                    </span>
+                    <span>{{ stage.label }}</span>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <div class="h-1.5 flex-1 rounded-full bg-white/70 overflow-hidden">
-                      <div
-                        class="h-full rounded-full"
-                        :class="isConfigured(t) ? 'bg-emerald-500' : 'bg-amber-500'"
-                        :style="{ width: `${(getConfiguredSteps(t) / 3) * 100}%` }"
-                      ></div>
-                    </div>
-                    <span class="text-[10px] font-bold">{{ getConfiguredSteps(t) }}/3</span>
+                </template>
+              </td>
+
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
+                <template v-for="stage in [getStageVisual(t, 2)]" :key="`validar-${t.idABCConfigTareaCampana}`">
+                  <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[11px] font-semibold" :class="stage.containerClass">
+                    <span class="h-5 w-5 rounded-full inline-flex items-center justify-center" :class="stage.iconWrapClass">
+                      <svg v-if="stage.configured" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <svg v-else class="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="10" cy="10" r="6.5"></circle>
+                        <path d="M10 6.7V10.3"></path>
+                        <circle cx="10" cy="13.3" r="0.8" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                    </span>
+                    <span>{{ stage.label }}</span>
                   </div>
-                </div>
+                </template>
+              </td>
+
+              <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
+                <template v-for="stage in [getStageVisual(t, 3)]" :key="`enviar-${t.idABCConfigTareaCampana}`">
+                  <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[11px] font-semibold" :class="stage.containerClass">
+                    <span class="h-5 w-5 rounded-full inline-flex items-center justify-center" :class="stage.iconWrapClass">
+                      <svg v-if="stage.configured" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <svg v-else class="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="10" cy="10" r="6.5"></circle>
+                        <path d="M10 6.7V10.3"></path>
+                        <circle cx="10" cy="13.3" r="0.8" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                    </span>
+                    <span>{{ stage.label }}</span>
+                  </div>
+                </template>
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">

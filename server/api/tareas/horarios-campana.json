@@ -1,0 +1,119 @@
+[
+  {
+    "idABCConfigHorarioTareaCampana": 1801,
+    "tarea": { "id": 801 },
+    "tipoHorario": { "id": 1, "nombre": "Carga" },
+    "dia": {
+      "id": 1,
+      "nombre": "Lunes",
+      "hora": { "id": 2000, "nombre": "20:00" }
+    },
+    "activo": true,
+    "fechaCreacion": "1768827600000",
+    "fechaUltimaModificacion": "1769000400000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1802,
+    "tarea": { "id": 801 },
+    "tipoHorario": { "id": 1, "nombre": "Carga" },
+    "dia": {
+      "id": 2,
+      "nombre": "Martes",
+      "hora": { "id": 2100, "nombre": "21:00" }
+    },
+    "activo": true,
+    "fechaCreacion": "1768914000000",
+    "fechaUltimaModificacion": "1769000400000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1803,
+    "tarea": { "id": 801 },
+    "tipoHorario": { "id": 2, "nombre": "Validación" },
+    "dia": {
+      "id": 3,
+      "nombre": "Miércoles",
+      "hora": { "id": 2230, "nombre": "22:30" }
+    },
+    "activo": false,
+    "fechaCreacion": "1769000400000",
+    "fechaUltimaModificacion": "1769086800000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1804,
+    "tarea": { "id": 801 },
+    "tipoHorario": { "id": 3, "nombre": "Envío" },
+    "dia": {
+      "id": 5,
+      "nombre": "Viernes",
+      "hora": { "id": 30, "nombre": "00:30" }
+    },
+    "activo": true,
+    "fechaCreacion": "1769086800000",
+    "fechaUltimaModificacion": "1769173200000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1805,
+    "tarea": { "id": 802 },
+    "tipoHorario": { "id": 1, "nombre": "Carga" },
+    "dia": {
+      "id": 2,
+      "nombre": "Martes",
+      "hora": { "id": 2300, "nombre": "23:00" }
+    },
+    "activo": true,
+    "fechaCreacion": "1768827600000",
+    "fechaUltimaModificacion": "1769000400000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1806,
+    "tarea": { "id": 802 },
+    "tipoHorario": { "id": 1, "nombre": "Carga" },
+    "dia": {
+      "id": 3,
+      "nombre": "Miércoles",
+      "hora": { "id": 0, "nombre": "00:00" }
+    },
+    "activo": true,
+    "fechaCreacion": "1769000400000",
+    "fechaUltimaModificacion": "1769086800000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1807,
+    "tarea": { "id": 802 },
+    "tipoHorario": { "id": 2, "nombre": "Validación" },
+    "dia": {
+      "id": 4,
+      "nombre": "Jueves",
+      "hora": { "id": 115, "nombre": "01:15" }
+    },
+    "activo": true,
+    "fechaCreacion": "1769086800000",
+    "fechaUltimaModificacion": "1769173200000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1808,
+    "tarea": { "id": 802 },
+    "tipoHorario": { "id": 3, "nombre": "Envío" },
+    "dia": {
+      "id": 5,
+      "nombre": "Viernes",
+      "hora": { "id": 145, "nombre": "01:45" }
+    },
+    "activo": false,
+    "fechaCreacion": "1769173200000",
+    "fechaUltimaModificacion": "1769259600000"
+  },
+  {
+    "idABCConfigHorarioTareaCampana": 1809,
+    "tarea": { "id": 802 },
+    "tipoHorario": { "id": 3, "nombre": "Envío" },
+    "dia": {
+      "id": 5,
+      "nombre": "Viernes",
+      "hora": { "id": 215, "nombre": "02:15" }
+    },
+    "activo": true,
+    "fechaCreacion": "1769263200000",
+    "fechaUltimaModificacion": "1769349600000"
+  }
+]
