@@ -51,7 +51,7 @@ function formatTimestamp(value?: string) {
         <div v-else class="space-y-4 text-sm">
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
             <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Linea</span>
-            <p class="mt-1 font-semibold text-slate-700">{{ props.getLineaLabel(item.idABCCatLineaNegocio) }}</p>
+            <p class="mt-1 font-semibold text-slate-700">{{ props.getLineaLabel(item.linea?.id) }}</p>
           </div>
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
             <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Mapeo</span>
@@ -75,7 +75,7 @@ function formatTimestamp(value?: string) {
               <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Enviar</span>
 
               <label class="inline-flex items-center gap-2 mt-3">
-                <input type="checkbox" :checked="Boolean(item.envio)" disabled class="h-4 w-4 accent-[#00357F]" />
+                <input type="checkbox" :checked="Boolean((item as any).enviar ?? (item as any).envio)" disabled class="h-4 w-4 accent-[#00357F]" />
               </label>
             </div>
           </div>

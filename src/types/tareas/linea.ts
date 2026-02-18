@@ -4,6 +4,8 @@ export interface TareaSchedule {
   hora: string | null
 }
 
+export type TareaScheduleCollection = TareaSchedule | TareaSchedule[]
+
 export interface TareaLineaData {
   idABCConfigTareaLinea: number
   idABCCatLineaNegocio: number
@@ -20,9 +22,9 @@ export interface CreateTareaLineaPayload {
   tarea: {
     idABCCatLineaNegocio: number
     ingesta: string
-    carga: TareaSchedule
-    validacion: TareaSchedule
-    envio: TareaSchedule
+    carga: TareaScheduleCollection
+    validacion: TareaScheduleCollection
+    envio: TareaScheduleCollection
   }
   idABCUsuario: number
   idUsuario?: number
@@ -33,9 +35,9 @@ export interface UpdateTareaLineaPayload {
     id: number
     idABCCatLineaNegocio: number
     ingesta: string
-    carga: TareaSchedule
-    validacion: TareaSchedule
-    envio: TareaSchedule
+    carga: TareaScheduleCollection
+    validacion: TareaScheduleCollection
+    envio: TareaScheduleCollection
   }
   idUsuario: number
 }

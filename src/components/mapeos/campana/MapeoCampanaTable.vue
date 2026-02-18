@@ -182,12 +182,12 @@ const thSmallClass = 'px-4 py-3'
             <tr class="hover:bg-blue-50/30 transition-colors text-sm">
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                  {{ props.getLineaLabel(m.idABCCatLineaNegocio) }}
+                  {{ props.getLineaLabel(m.linea?.id) }}
                 </span>
               </td>
 
               <td class="px-4 py-2.5 text-slate-600" @dblclick="emit('viewDetails', m)">
-                {{ props.getCampanaLabel(m.idABCCatCampana) }}
+                {{ props.getCampanaLabel(m.linea?.campana?.id) }}
               </td>
 
               <td class="px-4 py-2.5 font-semibold text-slate-700" @dblclick="emit('viewDetails', m)">{{ m.nombre }}</td>
@@ -214,7 +214,7 @@ const thSmallClass = 'px-4 py-3'
                 <div class="flex justify-center">
                   <input
                     type="checkbox"
-                    :checked="(m as any).envio ?? false"
+                    :checked="(m as any).enviar ?? (m as any).envio ?? false"
                     disabled
                     class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
                   />

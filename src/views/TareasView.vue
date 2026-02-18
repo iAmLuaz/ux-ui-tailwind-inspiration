@@ -16,8 +16,8 @@ import type { MapeoLineaData } from '@/types/mapeos/linea'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
 import type { TareaLineaFormModel } from '@/models/tareas/linea/tareaLinea.model'
 import type { TareaCampanaFormModel } from '@/models/tareas/campana/tareaCampana.model'
-import { toCreateTareaLineaPayload, toUpdateTareaLineaPayload } from '@/models/tareas/linea/tareaLinea.model'
-import { toCreateTareaCampanaPayload, toUpdateTareaCampanaPayload } from '@/models/tareas/campana/tareaCampana.model'
+import { toCreateTareaLineaPayloads, toUpdateTareaLineaPayload } from '@/models/tareas/linea/tareaLinea.model'
+import { toCreateTareaCampanaPayloads, toUpdateTareaCampanaPayload } from '@/models/tareas/campana/tareaCampana.model'
 
 const tabs = [
   { key: 'linea', label: 'Lineas de negocio', icon: Layers },
@@ -363,7 +363,10 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
       const campanaId = Number(payload.idABCCatCampana ?? selectedFiltersCampana.campanas[0] ?? 0)
 
       if (modalMode.value === 'add') {
-        await tareaCampanaService.create(lineaId, campanaId, toCreateTareaCampanaPayload(payload))
+        const payloads = toCreateTareaCampanaPayloads(payload)
+        for (const record of payloads) {
+          await tareaCampanaService.create(lineaId, campanaId, record)
+        }
       } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
         await tareaCampanaService.update(
           toUpdateTareaCampanaPayload(payload, selectedItem.value.idABCConfigTareaCampana)
@@ -377,7 +380,10 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
       const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersLinea.lineas[0] ?? 0)
 
       if (modalMode.value === 'add') {
-        await tareaLineaService.create(lineaId, toCreateTareaLineaPayload(payload))
+        const payloads = toCreateTareaLineaPayloads(payload)
+        for (const record of payloads) {
+          await tareaLineaService.create(lineaId, record)
+        }
       } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
         await tareaLineaService.update(
           toUpdateTareaLineaPayload(payload, selectedItem.value.idABCConfigTareaLinea)

@@ -28,7 +28,7 @@ export const mapeoLineaService = {
       mapeo: payload.mapeo ?? payload.mapeos ?? {},
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1,
       validar: payload.validar ?? payload.mapeo?.validar ?? false,
-      envio: payload.envio ?? payload.mapeo?.envio ?? false
+      enviar: payload.enviar ?? payload.envio ?? payload.mapeo?.enviar ?? payload.mapeo?.envio ?? false
     }
     return apiClient.createMapeoLinea(lineaId, normalized).then(res => {
       api
@@ -50,7 +50,7 @@ export const mapeoLineaService = {
       mapeo: mapeoData,
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1,
       validar: payload.validar ?? mapeoData.validar ?? false,
-      envio: payload.envio ?? mapeoData.envio ?? false
+      enviar: payload.enviar ?? payload.envio ?? mapeoData.enviar ?? mapeoData.envio ?? false
     }
     return apiClient.updateMapeoLinea(normalized).then(res => {
       api

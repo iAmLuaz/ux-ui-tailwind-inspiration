@@ -8,3 +8,12 @@ export interface FieldConfig {
 }
 
 export type FieldsConfig = Record<string, FieldConfig>
+
+export interface MapeoCampanaRef {
+  id: number
+}
+
+export interface MapeoLineaRef {
+  id: number
+  campana: MapeoCampanaRef | null
+}

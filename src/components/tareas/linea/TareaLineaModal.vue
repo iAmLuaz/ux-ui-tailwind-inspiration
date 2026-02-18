@@ -8,6 +8,11 @@ interface Option {
   value: number | string
 }
 
+interface ScheduleSlot {
+  dia: string
+  hora: string
+}
+
 export interface TareaLineaFormData {
   idABCCatLineaNegocio?: number | ''
   ingesta: string
@@ -15,14 +20,17 @@ export interface TareaLineaFormData {
   ejecucionIngesta: string
   diaIngesta: string
   horaIngesta: string
+  cargaSlots?: ScheduleSlot[]
   validacion: string
   ejecucionValidacion: string
   diaValidacion: string
   horaValidacion: string
+  validacionSlots?: ScheduleSlot[]
   envio: string
   ejecucionEnvio: string
   diaEnvio: string
   horaEnvio: string
+  envioSlots?: ScheduleSlot[]
   idUsuario?: number | ''
 }
 
@@ -51,6 +59,66 @@ const pad2 = (value: number) => String(value).padStart(2, '0')
 const formatDateIso = (value: Date) => `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`
 const todayIso = formatDateIso(new Date())
 const isIsoDate = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value)
+const normalizeText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+const weekdayToIndex: Record<string, number> = {
+  domingo: 0,
+  lunes: 1,
+  martes: 2,
+  miercoles: 3,
+  jueves: 4,
+  viernes: 5,
+  sabado: 6
+}
+const getNextWeekdayIso = (weekdayIndex: number) => {
+  const baseDate = new Date()
+  baseDate.setHours(0, 0, 0, 0)
+  const currentWeekday = baseDate.getDay()
+  const offset = (weekdayIndex - currentWeekday + 7) % 7
+  baseDate.setDate(baseDate.getDate() + offset)
+  return formatDateIso(baseDate)
+}
+const normalizeDateInputValue = (value: unknown): string => {
+  if (value === null || value === undefined) return ''
+  const raw = String(value).trim()
+  if (!raw) return ''
+
+  if (isIsoDate(raw)) return raw
+
+  const isoDateTimeMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})T/)
+  if (isoDateTimeMatch) {
+    const [, year, month, day] = isoDateTimeMatch
+    return `${year}-${month}-${day}`
+  }
+
+  const ymdMatch = raw.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/)
+  if (ymdMatch) {
+    const [, year, monthRaw, dayRaw] = ymdMatch
+    return `${year}-${pad2(Number(monthRaw))}-${pad2(Number(dayRaw))}`
+  }
+
+  const dmyMatch = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/)
+  if (dmyMatch) {
+    const [, dayRaw, monthRaw, year] = dmyMatch
+    return `${year}-${pad2(Number(monthRaw))}-${pad2(Number(dayRaw))}`
+  }
+
+  const weekday = weekdayToIndex[normalizeText(raw)]
+  if (weekday !== undefined) {
+    return getNextWeekdayIso(weekday)
+  }
+
+  const parsed = new Date(raw)
+  if (!Number.isNaN(parsed.getTime())) {
+    return formatDateIso(parsed)
+  }
+
+  return ''
+}
 const toDateTimeMs = (date: string, time: string): number | null => {
   if (!isIsoDate(date) || !time) return null
   const [yearRaw, monthRaw, dayRaw] = date.split('-')
@@ -94,19 +162,19 @@ const allMapeoOptions = computed(() =>
   props.mapeosLinea.map(m => ({
     label: getMapeoLabel(m),
     value: getMapeoLabel(m),
-    idLinea: Number(m.idABCCatLineaNegocio ?? 0)
+    idLinea: Number(m.linea?.id ?? m.idABCCatLineaNegocio ?? 0)
   }))
 )
 
 const filteredMapeoOptions = computed(() => {
   const lineaId = Number(formData.value.idABCCatLineaNegocio ?? 0)
   const list = lineaId
-    ? props.mapeosLinea.filter(m => Number(m.idABCCatLineaNegocio) === lineaId)
+    ? props.mapeosLinea.filter(m => Number(m.linea?.id ?? m.idABCCatLineaNegocio ?? 0) === lineaId)
     : props.mapeosLinea
   return list.map(m => ({
     label: getMapeoLabel(m),
     value: getMapeoLabel(m),
-    idLinea: Number(m.idABCCatLineaNegocio ?? 0)
+    idLinea: Number(m.linea?.id ?? m.idABCCatLineaNegocio ?? 0)
   }))
 })
 
@@ -144,21 +212,38 @@ const isScheduleComplete = (ejecucion: string, dia: string, hora: string) =>
   Boolean(ejecucion && dia && hora)
 
 const hasCargaConfig = computed(() =>
+  (formData.value.cargaSlots?.length ?? 0) > 0 ||
   isScheduleComplete(formData.value.ejecucionIngesta, formData.value.diaIngesta, formData.value.horaIngesta)
 )
 const hasValidacionConfig = computed(() =>
+  (formData.value.validacionSlots?.length ?? 0) > 0 ||
   isScheduleComplete(formData.value.ejecucionValidacion, formData.value.diaValidacion, formData.value.horaValidacion)
 )
 const hasEnvioConfig = computed(() =>
+  (formData.value.envioSlots?.length ?? 0) > 0 ||
   isScheduleComplete(formData.value.ejecucionEnvio, formData.value.diaEnvio, formData.value.horaEnvio)
 )
 const isValidacionSectionEnabled = computed(() => hasCargaConfig.value && isValidacionStarted.value)
 const isEnvioSectionEnabled = computed(() => hasValidacionConfig.value && isEnvioStarted.value)
 const canStartValidacion = computed(() => hasCargaConfig.value && !isValidacionStarted.value)
 const canStartEnvio = computed(() => hasValidacionConfig.value && isValidacionStarted.value && !isEnvioStarted.value)
-const minDiaIngesta = computed(() => todayIso)
-const minDiaValidacion = computed(() => formData.value.diaIngesta || todayIso)
-const minDiaEnvio = computed(() => formData.value.diaValidacion || formData.value.diaIngesta || todayIso)
+const minDiaIngesta = computed(() =>
+  isEditing.value ? (formData.value.diaIngesta || todayIso) : todayIso
+)
+const minDiaValidacion = computed(() => {
+  const base = formData.value.diaIngesta || todayIso
+  if (isEditing.value && formData.value.diaValidacion) {
+    return formData.value.diaValidacion < base ? formData.value.diaValidacion : base
+  }
+  return base
+})
+const minDiaEnvio = computed(() => {
+  const base = formData.value.diaValidacion || formData.value.diaIngesta || todayIso
+  if (isEditing.value && formData.value.diaEnvio) {
+    return formData.value.diaEnvio < base ? formData.value.diaEnvio : base
+  }
+  return base
+})
 const validacionHoraOptions = computed(() => {
   if (formData.value.diaValidacion && formData.value.diaValidacion === formData.value.diaIngesta && formData.value.horaIngesta) {
     const cargaMs = toDateTimeMs(formData.value.diaIngesta, formData.value.horaIngesta)
@@ -184,7 +269,7 @@ const scheduleValidationError = computed(() => {
   const validacionDia = formData.value.diaValidacion
   const envioDia = formData.value.diaEnvio
 
-  if (cargaDia && cargaDia < todayIso) {
+  if (!isEditing.value && cargaDia && cargaDia < todayIso) {
     return 'La fecha de carga no puede ser anterior a hoy.'
   }
   if (isValidacionStarted.value && validacionDia && validacionDia < minDiaValidacion.value) {
@@ -262,12 +347,14 @@ const clearEnvioConfig = () => {
   formData.value.ejecucionEnvio = 'Automatica'
   formData.value.diaEnvio = ''
   formData.value.horaEnvio = ''
+  formData.value.envioSlots = []
 }
 
 const clearValidacionConfig = () => {
   formData.value.ejecucionValidacion = 'Automatica'
   formData.value.diaValidacion = ''
   formData.value.horaValidacion = ''
+  formData.value.validacionSlots = []
   clearEnvioConfig()
 }
 
@@ -279,6 +366,50 @@ const startValidacionConfig = () => {
 const startEnvioConfig = () => {
   if (!canStartEnvio.value) return
   isEnvioStarted.value = true
+}
+
+const addScheduleSlot = (kind: 'carga' | 'validacion' | 'envio') => {
+  const slot =
+    kind === 'carga'
+      ? { dia: formData.value.diaIngesta, hora: formData.value.horaIngesta }
+      : kind === 'validacion'
+        ? { dia: formData.value.diaValidacion, hora: formData.value.horaValidacion }
+        : { dia: formData.value.diaEnvio, hora: formData.value.horaEnvio }
+
+  if (!slot.dia || !slot.hora) return
+
+  if (kind === 'carga') {
+    const list = formData.value.cargaSlots ?? []
+    if (!list.some(item => item.dia === slot.dia && item.hora === slot.hora)) {
+      formData.value.cargaSlots = [...list, slot]
+    }
+  } else if (kind === 'validacion') {
+    const list = formData.value.validacionSlots ?? []
+    if (!list.some(item => item.dia === slot.dia && item.hora === slot.hora)) {
+      formData.value.validacionSlots = [...list, slot]
+    }
+  } else {
+    const list = formData.value.envioSlots ?? []
+    if (!list.some(item => item.dia === slot.dia && item.hora === slot.hora)) {
+      formData.value.envioSlots = [...list, slot]
+    }
+  }
+}
+
+const removeScheduleSlot = (kind: 'carga' | 'validacion' | 'envio', index: number) => {
+  if (kind === 'carga') {
+    const list = [...(formData.value.cargaSlots ?? [])]
+    list.splice(index, 1)
+    formData.value.cargaSlots = list
+  } else if (kind === 'validacion') {
+    const list = [...(formData.value.validacionSlots ?? [])]
+    list.splice(index, 1)
+    formData.value.validacionSlots = list
+  } else {
+    const list = [...(formData.value.envioSlots ?? [])]
+    list.splice(index, 1)
+    formData.value.envioSlots = list
+  }
 }
 
 const ConfigField = defineComponent({
@@ -563,21 +694,37 @@ const resetAllForm = () => {
 
 function initializeFormData(): TareaLineaFormData {
   if (props.initialData) {
+    const diaIngesta = normalizeDateInputValue(props.initialData.carga?.dia ?? props.initialData.diaIngesta)
+    const horaIngesta = String(props.initialData.carga?.hora ?? props.initialData.horaIngesta ?? '')
+    const diaValidacion = normalizeDateInputValue(props.initialData.validacion?.dia ?? props.initialData.diaValidacion)
+    const horaValidacion = String(props.initialData.validacion?.hora ?? props.initialData.horaValidacion ?? '')
+    const diaEnvio = normalizeDateInputValue(props.initialData.envio?.dia ?? props.initialData.diaEnvio)
+    const horaEnvio = String(props.initialData.envio?.hora ?? props.initialData.horaEnvio ?? '')
+
     return {
       idABCCatLineaNegocio: props.initialData.idABCCatLineaNegocio ?? '',
       ingesta: props.initialData.ingesta ?? '',
       carga: 'Carga',
       ejecucionIngesta: props.initialData.carga?.ejecucion ?? 'Automatica',
-      diaIngesta: props.initialData.carga?.dia ?? '',
-      horaIngesta: props.initialData.carga?.hora ?? '',
+      diaIngesta,
+      horaIngesta,
+      cargaSlots: diaIngesta && horaIngesta
+        ? [{ dia: diaIngesta, hora: horaIngesta }]
+        : [],
       validacion: 'Validacion',
       ejecucionValidacion: props.initialData.validacion?.ejecucion ?? 'Automatica',
-      diaValidacion: props.initialData.validacion?.dia ?? '',
-      horaValidacion: props.initialData.validacion?.hora ?? '',
+      diaValidacion,
+      horaValidacion,
+      validacionSlots: diaValidacion && horaValidacion
+        ? [{ dia: diaValidacion, hora: horaValidacion }]
+        : [],
       envio: 'Envio',
       ejecucionEnvio: props.initialData.envio?.ejecucion ?? 'Automatica',
-      diaEnvio: props.initialData.envio?.dia ?? '',
-      horaEnvio: props.initialData.envio?.hora ?? '',
+      diaEnvio,
+      horaEnvio,
+      envioSlots: diaEnvio && horaEnvio
+        ? [{ dia: diaEnvio, hora: horaEnvio }]
+        : [],
       idUsuario: props.initialData.idUsuario ?? props.initialData.idABCUsuario ?? 1
     }
   }
@@ -589,14 +736,17 @@ function initializeFormData(): TareaLineaFormData {
     ejecucionIngesta: 'Automatica',
     diaIngesta: '',
     horaIngesta: '',
+    cargaSlots: [],
     validacion: 'Validacion',
     ejecucionValidacion: 'Automatica',
     diaValidacion: '',
     horaValidacion: '',
+    validacionSlots: [],
     envio: 'Envio',
     ejecucionEnvio: 'Automatica',
     diaEnvio: '',
     horaEnvio: '',
+    envioSlots: [],
     idUsuario: 1
   }
 }
@@ -692,6 +842,16 @@ function handleSave() {
                       required
                     />
                   </div>
+                  <div class="mt-3 flex items-center justify-between gap-3">
+                    <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md border border-[#00357F]/25 text-[#00357F] hover:bg-[#00357F]/5" @click="addScheduleSlot('carga')">Agregar horario</button>
+                    <span class="text-[11px] text-slate-500">{{ (formData.cargaSlots?.length ?? 0) }} horarios agregados</span>
+                  </div>
+                  <div v-if="formData.cargaSlots?.length" class="mt-2 flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in formData.cargaSlots" :key="`carga-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs border border-slate-200">
+                      {{ slot.dia }} {{ slot.hora }}
+                      <button type="button" class="text-slate-500 hover:text-red-600" @click="removeScheduleSlot('carga', index)">×</button>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -735,6 +895,16 @@ function handleSave() {
                       required
                     />
                   </div>
+                  <div class="mt-3 flex items-center justify-between gap-3">
+                    <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md border border-[#00357F]/25 text-[#00357F] hover:bg-[#00357F]/5 disabled:opacity-50" :disabled="!isValidacionSectionEnabled" @click="addScheduleSlot('validacion')">Agregar horario</button>
+                    <span class="text-[11px] text-slate-500">{{ (formData.validacionSlots?.length ?? 0) }} horarios agregados</span>
+                  </div>
+                  <div v-if="formData.validacionSlots?.length" class="mt-2 flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in formData.validacionSlots" :key="`validacion-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs border border-slate-200">
+                      {{ slot.dia }} {{ slot.hora }}
+                      <button type="button" class="text-slate-500 hover:text-red-600" @click="removeScheduleSlot('validacion', index)">×</button>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -777,6 +947,16 @@ function handleSave() {
                       :disabled="!isEnvioSectionEnabled || !formData.diaEnvio"
                       required
                     />
+                  </div>
+                  <div class="mt-3 flex items-center justify-between gap-3">
+                    <button type="button" class="px-3 py-1.5 text-xs font-semibold rounded-md border border-[#00357F]/25 text-[#00357F] hover:bg-[#00357F]/5 disabled:opacity-50" :disabled="!isEnvioSectionEnabled" @click="addScheduleSlot('envio')">Agregar horario</button>
+                    <span class="text-[11px] text-slate-500">{{ (formData.envioSlots?.length ?? 0) }} horarios agregados</span>
+                  </div>
+                  <div v-if="formData.envioSlots?.length" class="mt-2 flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in formData.envioSlots" :key="`envio-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-2 py-1 rounded bg-slate-100 text-slate-700 text-xs border border-slate-200">
+                      {{ slot.dia }} {{ slot.hora }}
+                      <button type="button" class="text-slate-500 hover:text-red-600" @click="removeScheduleSlot('envio', index)">×</button>
+                    </span>
                   </div>
                 </div>
               </div>

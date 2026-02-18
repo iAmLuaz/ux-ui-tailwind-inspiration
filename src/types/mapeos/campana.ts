@@ -1,7 +1,10 @@
+import type { MapeoLineaRef } from './shared'
+
 export interface MapeoCampanaData {
   idABCConfigMapeoLinea: number
-  idABCCatLineaNegocio: number
-  idABCCatCampana: number
+  linea: MapeoLineaRef
+  idABCCatLineaNegocio?: number
+  idABCCatCampana?: number
   idABCUsuario: number
   nombre: string
   descripcion: string
@@ -9,7 +12,7 @@ export interface MapeoCampanaData {
   bolDictaminacion?: boolean | null
   idABCUsuarioUltModificacion?: number
   validar?: boolean
-  envio?: boolean
+  enviar?: boolean
   columnas?: number | any[]
   fechaCreacion: string
   fechaUltimaModificacion: string
@@ -20,7 +23,7 @@ export interface CreateMapeoCampanaPayload {
     nombre: string
     descripcion: string
     validar?: boolean
-    envio?: boolean
+    enviar?: boolean
   }
   idABCUsuario: number
   idUsuario?: number
@@ -32,7 +35,7 @@ export interface UpdateMapeoCampanaPayload {
     nombre: string
     descripcion: string
     validar?: boolean
-    envio?: boolean
+    enviar?: boolean
   }
   idUsuario: number
 }

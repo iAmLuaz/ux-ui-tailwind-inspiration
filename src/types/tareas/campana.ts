@@ -4,6 +4,8 @@ export interface TareaSchedule {
   hora: string | null
 }
 
+export type TareaScheduleCollection = TareaSchedule | TareaSchedule[]
+
 export interface TareaCampanaData {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
@@ -22,9 +24,9 @@ export interface CreateTareaCampanaPayload {
     idABCCatLineaNegocio: number
     idABCCatCampana: number
     ingesta: string
-    carga: TareaSchedule
-    validacion: TareaSchedule
-    envio: TareaSchedule
+    carga: TareaScheduleCollection
+    validacion: TareaScheduleCollection
+    envio: TareaScheduleCollection
   }
   idABCUsuario: number
   idUsuario?: number
@@ -36,9 +38,9 @@ export interface UpdateTareaCampanaPayload {
     idABCCatLineaNegocio: number
     idABCCatCampana: number
     ingesta: string
-    carga: TareaSchedule
-    validacion: TareaSchedule
-    envio: TareaSchedule
+    carga: TareaScheduleCollection
+    validacion: TareaScheduleCollection
+    envio: TareaScheduleCollection
   }
   idUsuario: number
 }

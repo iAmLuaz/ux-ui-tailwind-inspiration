@@ -122,8 +122,9 @@ function matchesSearch(nameValue: string, query: string) {
 const filteredMapeosLinea = computed(() => {
   return allMapeosLinea.value.filter(item => {
     const matchSearch = matchesSearch(item.nombre || '', searchQueryLinea.value || '')
+    const lineaId = Number(item.linea?.id ?? item.idABCCatLineaNegocio ?? 0)
     const matchLinea = selectedFiltersLinea.lineas.length
-      ? selectedFiltersLinea.lineas.includes(item.idABCCatLineaNegocio)
+      ? selectedFiltersLinea.lineas.includes(lineaId)
       : true
     const matchStatus = selectedFiltersLinea.status.length
       ? selectedFiltersLinea.status.includes(item.bolActivo)
@@ -135,14 +136,16 @@ const filteredMapeosLinea = computed(() => {
 const filteredMapeosCampana = computed(() => {
   return allMapeosCampana.value.filter(item => {
     const matchSearch = matchesSearch(item.nombre || '', searchQueryCampana.value || '')
+    const lineaId = Number(item.linea?.id ?? item.idABCCatLineaNegocio ?? 0)
+    const campanaId = Number(item.linea?.campana?.id ?? item.idABCCatCampana ?? 0)
     const matchLinea = selectedFiltersCampana.lineas.length
-      ? selectedFiltersCampana.lineas.includes(item.idABCCatLineaNegocio)
+      ? selectedFiltersCampana.lineas.includes(lineaId)
       : true
     const matchStatus = selectedFiltersCampana.status.length
       ? selectedFiltersCampana.status.includes(item.bolActivo)
       : true
     const matchCampana = selectedFiltersCampana.campanas.length
-      ? selectedFiltersCampana.campanas.includes(item.idABCCatCampana)
+      ? selectedFiltersCampana.campanas.includes(campanaId)
       : true
     return matchSearch && matchLinea && matchStatus && matchCampana
   })
@@ -197,7 +200,7 @@ const getCampanaLabel = (id?: number) => {
   return campanasCatalogo.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
 }
 const isCampanaRow = (item: MapeoLineaData | MapeoCampanaData): item is MapeoCampanaData =>
-  Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
+  Boolean(item?.linea?.campana)
 const campanasDisponibles = computed(() => campanasCatalogo.value)
 
 const showModal = ref(false)
@@ -337,10 +340,13 @@ function openColumnasModal(m: MapeoLineaData | MapeoCampanaData) {
     const candidate = (m as any).idABCConfigMapeoCampana ?? (m as any).idABCConfigMapeoLinea ?? (m as any).idABCConfigMapeo ?? (m as any).id ?? null
     mapeoIdForModal.value = candidate !== null && candidate !== undefined ? Number(candidate) : null
   }
-  lineaIdForModal.value = (m as any).idABCCatLineaNegocio ?? null
-  campanaIdForModal.value = (m as any).idABCCatCampana ?? null
-  lineaNombreForModal.value = getLineaLabel((m as any).idABCCatLineaNegocio)
-  campanaNombreForModal.value = isCampanaRow(m) ? getCampanaLabel((m as any).idABCCatCampana) : null
+  const lineaId = Number((m as any).linea?.id ?? (m as any).idABCCatLineaNegocio ?? 0)
+  const campanaIdRaw = (m as any).linea?.campana?.id ?? (m as any).idABCCatCampana
+  const campanaId = campanaIdRaw === null || campanaIdRaw === undefined ? null : Number(campanaIdRaw)
+  lineaIdForModal.value = lineaId || null
+  campanaIdForModal.value = campanaId
+  lineaNombreForModal.value = getLineaLabel(lineaId)
+  campanaNombreForModal.value = campanaId !== null ? getCampanaLabel(campanaId) : null
   columnasTab.value = isCampanaRow(m) ? 'campana' : 'linea'
   showColumnasModal.value = true
 }

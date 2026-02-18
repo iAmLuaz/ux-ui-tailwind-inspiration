@@ -26,7 +26,7 @@ export const mapeoCampanaService = {
       mapeo: payload.mapeo ?? payload.mapeos ?? {},
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1,
       validar: payload.validar ?? payload.mapeo?.validar ?? false,
-      envio: payload.envio ?? payload.mapeo?.envio ?? false
+      enviar: payload.enviar ?? payload.envio ?? payload.mapeo?.enviar ?? payload.mapeo?.envio ?? false
     }
     return apiClient.createMapeoCampana(lineaId, campanaId, normalized).then(res => {
       api
@@ -48,7 +48,7 @@ export const mapeoCampanaService = {
       mapeo: mapeoData,
       idUsuario: payload.idUsuario ?? payload.idABCUsuario ?? 1,
       validar: payload.validar ?? mapeoData.validar ?? false,
-      envio: payload.envio ?? mapeoData.envio ?? false
+      enviar: payload.enviar ?? payload.envio ?? mapeoData.enviar ?? mapeoData.envio ?? false
     }
     return apiClient.updateMapeoCampana(normalized).then(res => {
       api

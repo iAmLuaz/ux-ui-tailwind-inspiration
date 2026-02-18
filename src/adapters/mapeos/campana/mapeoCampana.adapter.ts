@@ -9,7 +9,13 @@ export function normalizeMapeoCampana(item: any): MapeoCampanaData {
   if (campanaMapeoId) {
     base.idABCConfigMapeoLinea = campanaMapeoId
   }
-  base.idABCCatCampana = Number(item?.idABCCatCampana ?? item?.id_campana ?? 0)
+  const campanaId = Number(item?.linea?.campana?.id ?? item?.idABCCatCampana ?? item?.id_campana ?? 0)
+  base.linea = {
+    id: Number(base.linea?.id ?? item?.linea?.id ?? item?.idABCCatLineaNegocio ?? 0),
+    campana: campanaId ? { id: campanaId } : null
+  }
+  base.idABCCatLineaNegocio = base.linea.id
+  base.idABCCatCampana = campanaId
   return base
 }
 

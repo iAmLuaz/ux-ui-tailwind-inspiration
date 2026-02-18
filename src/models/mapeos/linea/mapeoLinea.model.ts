@@ -8,7 +8,7 @@ export interface MapeoLineaFormModel {
   nombre: string
   descripcion: string
   validar?: boolean
-  envio?: boolean
+  enviar?: boolean
   idUsuario?: number | ''
 }
 
@@ -18,7 +18,7 @@ export function toCreateMapeoLineaPayload(form: MapeoLineaFormModel): CreateMape
       nombre: form.nombre,
       descripcion: form.descripcion,
       validar: form.validar,
-      envio: form.envio
+      enviar: form.enviar
     },
     idABCUsuario: Number(form.idUsuario ?? 1),
     idUsuario: form.idUsuario === '' ? undefined : Number(form.idUsuario ?? 1)
@@ -35,7 +35,7 @@ export function toUpdateMapeoLineaPayload(
       nombre: form.nombre,
       descripcion: form.descripcion,
       validar: form.validar,
-      envio: form.envio
+      enviar: form.enviar
     },
     idUsuario: Number(form.idUsuario ?? 1)
   }

@@ -12,7 +12,7 @@ export interface MapeoLineaFormData {
   nombre: string
   descripcion: string
   validar?: boolean
-  envio?: boolean
+  enviar?: boolean
   idUsuario?: number | ''
 }
 
@@ -71,12 +71,13 @@ watch(
 
 function initializeFormData(): MapeoLineaFormData {
   if (props.initialData) {
+    const lineaId = props.initialData.linea?.id ?? props.initialData.idABCCatLineaNegocio ?? ''
     return {
-      idABCCatLineaNegocio: props.initialData.idABCCatLineaNegocio ?? '',
+      idABCCatLineaNegocio: lineaId,
       nombre: props.initialData.nombre ?? '',
       descripcion: props.initialData.descripcion ?? '',
       validar: props.initialData.validar ?? false,
-      envio: props.initialData.envio ?? false,
+      enviar: props.initialData.enviar ?? props.initialData.envio ?? false,
       idUsuario: props.initialData.idUsuario ?? props.initialData.idABCUsuario ?? 1
     }
   }
@@ -86,7 +87,7 @@ function initializeFormData(): MapeoLineaFormData {
     nombre: '',
     descripcion: '',
     validar: false,
-    envio: false,
+    enviar: false,
     idUsuario: 1
   }
 }
@@ -160,7 +161,7 @@ function handleSave() {
             </label>
 
             <label class="flex items-center gap-2">
-              <input type="checkbox" v-model="formData.envio" class="w-4 h-4" />
+              <input type="checkbox" v-model="formData.enviar" class="w-4 h-4" />
               <span class="text-sm font-medium text-gray-700">Enviar</span>
             </label>
           </div>

@@ -1,6 +1,9 @@
+import type { MapeoLineaRef } from './shared'
+
 export interface MapeoLineaData {
   idABCConfigMapeoLinea: number
-  idABCCatLineaNegocio: number
+  linea: MapeoLineaRef
+  idABCCatLineaNegocio?: number
   idABCUsuario: number
   nombre: string
   descripcion: string
@@ -8,7 +11,7 @@ export interface MapeoLineaData {
   bolDictaminacion?: boolean | null
   idABCUsuarioUltModificacion?: number
   validar?: boolean
-  envio?: boolean
+  enviar?: boolean
   columnas?: number | any[]
   fechaCreacion: string
   fechaUltimaModificacion: string
@@ -19,7 +22,7 @@ export interface CreateMapeoLineaPayload {
     nombre: string
     descripcion: string
     validar?: boolean
-    envio?: boolean
+    enviar?: boolean
   }
   idABCUsuario: number
   idUsuario?: number
@@ -31,7 +34,7 @@ export interface UpdateMapeoLineaPayload {
     nombre: string
     descripcion: string
     validar?: boolean
-    envio?: boolean
+    enviar?: boolean
   }
   idUsuario: number
 }
