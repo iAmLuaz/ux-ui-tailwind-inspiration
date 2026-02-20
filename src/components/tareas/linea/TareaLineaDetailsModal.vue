@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatHorarioLabel, getHorarioTypeName } from '@/composables/tareas/tareaScheduleUtils'
+import { formatHorarioLabel, formatHourToAmPm } from '@/composables/tareas/tareaScheduleUtils'
 
 interface HorarioItem {
   idABCConfigHorarioTareaLinea?: number
@@ -29,9 +29,9 @@ interface TareaLineaRow {
   idABCCatLineaNegocio: number
   ingesta?: string
   bolActivo: boolean
-  carga?: { ejecucion?: string; dia?: string; hora?: string }
-  validacion?: { ejecucion?: string; dia?: string; hora?: string }
-  envio?: { ejecucion?: string; dia?: string; hora?: string }
+  carga?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  validacion?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  envio?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
   horarios?: HorarioItem[]
   tarea?: {
     tipo?: { id?: number; nombre?: string }
@@ -52,15 +52,59 @@ const emit = defineEmits<{ (e: 'close'): void }>()
 
 const horarios = computed(() => props.item?.horarios ?? [])
 
+type StageKey = 'carga' | 'validacion' | 'envio'
+
+const STAGE_CONFIG: Array<{ key: StageKey; id: number; label: string }> = [
+  { key: 'carga', id: 1, label: 'Carga' },
+  { key: 'validacion', id: 2, label: 'Validación' },
+  { key: 'envio', id: 3, label: 'Envío' }
+]
+
 const getHorarioActive = (horario: HorarioItem) => horario.activo ?? horario.bolActivo ?? true
 
-const getHorarioExecution = (horario: HorarioItem) => {
-  const stageId = Number(horario?.tipoHorario?.id ?? 0)
-  if (stageId === 1) return props.item?.carga?.ejecucion ?? '-'
-  if (stageId === 2) return props.item?.validacion?.ejecucion ?? '-'
-  if (stageId === 3) return props.item?.envio?.ejecucion ?? '-'
-  return '-'
+const getStageSchedule = (key: StageKey) => {
+  return props.item?.[key] ?? {}
 }
+
+const getStageExecution = (key: StageKey) => String(getStageSchedule(key)?.ejecucion ?? '-').trim() || '-'
+
+const formatLegacySchedule = (key: StageKey) => {
+  const schedule = getStageSchedule(key)
+  const day = String(schedule?.dia ?? '').trim()
+  const hourRaw = String(schedule?.hora ?? '').trim()
+  if (!day || !hourRaw) return ''
+  return `${day} · ${formatHourToAmPm(hourRaw)}`
+}
+
+const stageDetails = computed(() => {
+  const source = horarios.value
+
+  return STAGE_CONFIG.map(stage => {
+    const stageHorarios = source
+      .filter(horario => Number(horario?.tipoHorario?.id ?? 0) === stage.id)
+      .map(horario => ({
+        label: formatHorarioLabel(horario),
+        active: getHorarioActive(horario)
+      }))
+
+    if (!stageHorarios.length) {
+      const fallback = formatLegacySchedule(stage.key)
+      if (fallback) {
+        stageHorarios.push({
+          label: fallback,
+          active: Boolean(props.item?.bolActivo)
+        })
+      }
+    }
+
+    return {
+      ...stage,
+      execution: getStageExecution(stage.key),
+      horarios: stageHorarios,
+      activeCount: stageHorarios.filter(entry => entry.active).length
+    }
+  })
+})
 
 function formatTimestamp(value?: string) {
   if (!value) return '—'
@@ -107,39 +151,39 @@ function formatTimestamp(value?: string) {
 
           <div class="grid grid-cols-1 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Horarios configurados</p>
-                <span class="text-[10px] font-bold text-slate-500">{{ horarios.length }}</span>
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Tareas y horarios por etapa</p>
+                <span class="text-[10px] font-bold text-slate-500">{{ horarios.length }} horarios</span>
               </div>
 
-              <div v-if="!horarios.length" class="text-xs text-slate-500">Sin horarios configurados.</div>
-
-              <div v-else class="space-y-2">
+              <div class="space-y-2.5">
                 <div
-                  v-for="(horario, index) in horarios"
-                  :key="horario.idABCConfigHorarioTareaLinea ?? index"
-                  class="p-2 rounded-lg border border-slate-200 bg-white flex items-center justify-between gap-3"
+                  v-for="stage in stageDetails"
+                  :key="stage.key"
+                  class="p-2.5 rounded-lg border border-slate-200 bg-white"
                 >
-                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 flex-1">
-                    <div class="flex flex-col">
-                      <span class="text-[10px] font-bold text-slate-500 uppercase">Etapa</span>
-                      <span class="text-sm font-semibold text-slate-700">{{ getHorarioTypeName(horario) }}</span>
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <p class="text-sm font-bold text-slate-700">{{ stage.label }}</p>
+                      <p class="text-xs text-slate-500 mt-0.5">Tipo de ejecución: <span class="font-semibold text-slate-700">{{ stage.execution }}</span></p>
                     </div>
-                    <div class="flex flex-col">
-                      <span class="text-[10px] font-bold text-slate-500 uppercase">Tipo de ejecución</span>
-                      <span class="text-sm font-semibold text-slate-700">{{ getHorarioExecution(horario) }}</span>
-                    </div>
-                    <div class="flex flex-col">
-                      <span class="text-[10px] font-bold text-slate-500 uppercase">Fecha / hora</span>
-                      <span class="text-sm font-semibold text-slate-700">{{ formatHorarioLabel(horario) }}</span>
-                    </div>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      {{ stage.activeCount }} activos
+                    </span>
                   </div>
-                  <span
-                    class="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    :class="getHorarioActive(horario) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'"
-                  >
-                    {{ getHorarioActive(horario) ? 'Activo' : 'Inactivo' }}
-                  </span>
+
+                  <div v-if="stage.horarios.length" class="mt-2 flex flex-wrap gap-2">
+                    <span
+                      v-for="(horario, index) in stage.horarios"
+                      :key="`${stage.key}-${index}`"
+                      class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border"
+                      :class="horario.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+                    >
+                      {{ horario.label }}
+                      <span class="font-semibold">{{ horario.active ? 'Activo' : 'Inactivo' }}</span>
+                    </span>
+                  </div>
+                  <p v-else class="mt-2 text-xs text-slate-500">Sin horarios configurados.</p>
                 </div>
               </div>
             </div>

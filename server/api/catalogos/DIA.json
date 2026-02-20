@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "bolActivo": true,
+    "codigo": "LUN",
+    "nombre": "Lunes",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 2,
+    "bolActivo": true,
+    "codigo": "MAR",
+    "nombre": "Martes",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 3,
+    "bolActivo": true,
+    "codigo": "MIE",
+    "nombre": "Miércoles",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 4,
+    "bolActivo": true,
+    "codigo": "JUE",
+    "nombre": "Jueves",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 5,
+    "bolActivo": true,
+    "codigo": "VIE",
+    "nombre": "Viernes",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 6,
+    "bolActivo": true,
+    "codigo": "SAB",
+    "nombre": "Sábado",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  },
+  {
+    "id": 7,
+    "bolActivo": true,
+    "codigo": "DOM",
+    "nombre": "Domingo",
+    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
+    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
+  }
+]

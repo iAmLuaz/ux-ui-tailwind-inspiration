@@ -36,7 +36,11 @@ const CATALOGOS_META = {
   ROL: 'ROL',
   NMR: 'NUMERO',
   VAL: 'VALOR',
-  LNN: 'LINEA_NEGOCIO'
+  LNN: 'LINEA_NEGOCIO',
+  DIA: 'DIA',
+  HRS: 'HORA',
+  EJE: 'EJECUCION',
+  ACT: 'ACTIVIDAD'
 }
 
 function normalizeCatalogText(value) {
@@ -116,27 +120,76 @@ async function loadData() {
 
   store.columnasLinea = remappedLineaColumnas.map(item => normalizeColumnaLineaSeed(item))
   store.columnasCampana = remappedCampanaColumnas.map(item => normalizeColumnaCampanaSeed(item))
-  store.tareasLinea = Array.isArray(tareasLineaRaw)
+  const tareasLineaSeed = Array.isArray(tareasLineaRaw)
     ? tareasLineaRaw
     : Array.isArray(tareasLineaRaw?.tareas)
       ? tareasLineaRaw.tareas
       : []
-  store.horariosTareaLinea = Array.isArray(horariosLineaRaw)
+  store.tareasLinea = tareasLineaSeed.map(item => {
+    const id = Number(item?.idABCConfigTareaLinea ?? item?.id ?? 0)
+    const lineaId = Number(item?.linea?.id ?? item?.idABCCatLineaNegocio ?? 0)
+    return {
+      ...buildTareaLineaRecord(lineaId, { tarea: item }),
+      id,
+      idABCConfigTareaLinea: id,
+      fechaCreacion: item?.fechaCreacion ?? now(),
+      fechaUltimaModificacion: item?.fechaUltimaModificacion ?? now()
+    }
+  })
+
+  const horariosLineaSeed = Array.isArray(horariosLineaRaw)
     ? horariosLineaRaw
     : Array.isArray(tareasLineaRaw?.horarios)
       ? tareasLineaRaw.horarios
       : []
+  store.horariosTareaLinea = horariosLineaSeed.map(item => {
+    const id = Number(item?.idABCConfigHorarioTareaLinea ?? item?.id ?? 0)
+    const tareaId = Number(item?.tarea?.id ?? item?.idABCConfigTareaLinea ?? 0)
+    return buildHorarioRecord(
+      item,
+      'idABCConfigHorarioTareaLinea',
+      'idABCConfigTareaLinea',
+      tareaId,
+      id,
+      Number(item?.tipoHorario?.id ?? item?.tipo?.id ?? 1)
+    )
+  })
 
-  store.tareasCampana = Array.isArray(tareasCampanaRaw)
+  const tareasCampanaSeed = Array.isArray(tareasCampanaRaw)
     ? tareasCampanaRaw
     : Array.isArray(tareasCampanaRaw?.tareas)
       ? tareasCampanaRaw.tareas
       : []
-  store.horariosTareaCampana = Array.isArray(horariosCampanaRaw)
+  store.tareasCampana = tareasCampanaSeed.map(item => {
+    const id = Number(item?.idABCConfigTareaCampana ?? item?.id ?? 0)
+    const lineaId = Number(item?.linea?.id ?? item?.idABCCatLineaNegocio ?? 0)
+    const campanaId = Number(item?.linea?.catCampana?.id ?? item?.linea?.campana?.id ?? item?.idABCCatCampana ?? 0)
+    return {
+      ...buildTareaCampanaRecord(lineaId, campanaId, { tarea: item }),
+      id,
+      idABCConfigTareaCampana: id,
+      fechaCreacion: item?.fechaCreacion ?? now(),
+      fechaUltimaModificacion: item?.fechaUltimaModificacion ?? now()
+    }
+  })
+
+  const horariosCampanaSeed = Array.isArray(horariosCampanaRaw)
     ? horariosCampanaRaw
     : Array.isArray(tareasCampanaRaw?.horarios)
       ? tareasCampanaRaw.horarios
       : []
+  store.horariosTareaCampana = horariosCampanaSeed.map(item => {
+    const id = Number(item?.idABCConfigHorarioTareaCampana ?? item?.id ?? 0)
+    const tareaId = Number(item?.tarea?.id ?? item?.idABCConfigTareaCampana ?? 0)
+    return buildHorarioRecord(
+      item,
+      'idABCConfigHorarioTareaCampana',
+      'idABCConfigTareaCampana',
+      tareaId,
+      id,
+      Number(item?.tipoHorario?.id ?? item?.tipo?.id ?? 1)
+    )
+  })
 
   await loadCatalogos()
   console.log('[mock-server] data loaded', {
@@ -403,6 +456,28 @@ function matchPath(urlPath, pattern) {
   return params
 }
 
+function normalizeBooleanFlag(value, fallback = false) {
+  if (typeof value === 'boolean') return value
+  if (value === undefined || value === null || value === '') return fallback
+  const normalized = String(value).trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false
+  return fallback
+}
+
+function resolveMapeoPayload(body) {
+  const raw = body?.mapeo ?? body ?? {}
+  const validarRaw = raw?.validar ?? body?.validar
+  const envioRaw = raw?.enviar ?? raw?.envio ?? body?.enviar ?? body?.envio
+
+  return {
+    ...raw,
+    validar: normalizeBooleanFlag(validarRaw, false),
+    enviar: normalizeBooleanFlag(envioRaw, false),
+    envio: normalizeBooleanFlag(envioRaw, false)
+  }
+}
+
 function buildColumnaLineaRecord(mapeoId, payload) {
   const columnaId = Number(payload?.columna?.tipo?.id ?? payload?.columnaId ?? 0)
   const bolActivo = payload?.columna?.bolActivo ?? true
@@ -545,7 +620,9 @@ const weekdayNameById = {
   2: 'Martes',
   3: 'Miércoles',
   4: 'Jueves',
-  5: 'Viernes'
+  5: 'Viernes',
+  6: 'Sábado',
+  7: 'Domingo'
 }
 
 const scheduleTypeNameById = {
@@ -582,6 +659,7 @@ function buildHorarioRecord(baseHorario, idKey, parentIdKey, parentId, nextHorar
   const diaId = Number(baseHorario?.dia?.id ?? 0)
   const horaId = Number(baseHorario?.dia?.hora?.id ?? baseHorario?.hora?.id ?? 0)
   const typeId = Number(baseHorario?.tipoHorario?.id ?? baseHorario?.tipo?.id ?? fallbackTypeId)
+  const activeFlag = baseHorario?.activo ?? baseHorario?.bolActivo ?? true
   return {
     [idKey]: nextHorarioId,
     [parentIdKey]: Number(parentId),
@@ -598,10 +676,18 @@ function buildHorarioRecord(baseHorario, idKey, parentIdKey, parentId, nextHorar
         nombre: baseHorario?.dia?.hora?.nombre ?? baseHorario?.hora?.nombre ?? resolveHoraNombre(baseHorario?.dia?.hora ?? baseHorario?.hora)
       }
     },
-    activo: baseHorario?.activo ?? baseHorario?.bolActivo ?? true,
+    activo: activeFlag,
+    bolActivo: activeFlag,
     fechaCreacion: baseHorario?.fechaCreacion ?? now(),
     fechaUltimaModificacion: now()
   }
+}
+
+function horarioSignature(horario, fallbackTypeId = 0) {
+  const typeId = Number(horario?.tipoHorario?.id ?? horario?.tipo?.id ?? fallbackTypeId ?? 0)
+  const dayId = Number(horario?.dia?.id ?? 0)
+  const hourId = Number(horario?.dia?.hora?.id ?? horario?.hora?.id ?? 0)
+  return `${typeId}|${dayId}|${hourId}`
 }
 
 function buildTareaLineaHorarios(tareaId, payload) {
@@ -796,7 +882,7 @@ const server = http.createServer(async (req, res) => {
         const body = await parseBody(req)
         const lineaId = Number(lineasCreateParams.lineaId)
         const next = nextId(store.mapeosLinea, 'idABCConfigMapeoLinea')
-        const base = body.mapeo ?? body
+        const base = resolveMapeoPayload(body)
         const record = normalizeMapeoLineaRecord({
           idABCConfigMapeoLinea: next,
           idABCCatLineaNegocio: Number(base.idABCCatLineaNegocio ?? lineaId),
@@ -805,7 +891,8 @@ const server = http.createServer(async (req, res) => {
           descripcion: base.descripcion ?? '',
           bolActivo: base.bolActivo ?? true,
           validar: base.validar ?? false,
-          envio: base.envio ?? false,
+          enviar: base.enviar ?? base.envio ?? false,
+          envio: base.envio ?? base.enviar ?? false,
           columnas: 0,
           fechaCreacion: now(),
           fechaUltimaModificacion: now()
@@ -820,7 +907,7 @@ const server = http.createServer(async (req, res) => {
         const lineaId = Number(campanaCreateParams.lineaId)
         const campanaId = Number(campanaCreateParams.campanaId)
         const next = nextId(store.mapeosCampana, 'idABCConfigMapeoCampana')
-        const base = body.mapeo ?? body
+        const base = resolveMapeoPayload(body)
         const record = normalizeMapeoCampanaRecord({
           idABCConfigMapeoCampana: next,
           idABCConfigMapeoLinea: next,
@@ -831,7 +918,8 @@ const server = http.createServer(async (req, res) => {
           descripcion: base.descripcion ?? '',
           bolActivo: base.bolActivo ?? true,
           validar: base.validar ?? false,
-          envio: base.envio ?? false,
+          enviar: base.enviar ?? base.envio ?? false,
+          envio: base.envio ?? base.enviar ?? false,
           columnas: 0,
           fechaCreacion: now(),
           fechaUltimaModificacion: now()
@@ -873,6 +961,7 @@ const server = http.createServer(async (req, res) => {
         const tareaId = Number(horariosLineaCreate.tareaId)
         const currentTask = findTareaLinea(tareaId)
         if (!currentTask) return send(res, 404, { message: 'Not found' })
+        const stageTypeId = Number(currentTask?.tipo?.id ?? 1)
 
         const incoming = Array.isArray(body?.horarios)
           ? body.horarios
@@ -880,15 +969,35 @@ const server = http.createServer(async (req, res) => {
             ? body
             : [body?.horario ?? body]
 
+        const existingSignatures = new Set(
+          store.horariosTareaLinea
+            .filter(h => Number(h?.tarea?.id ?? h?.idABCConfigTareaLinea) === tareaId)
+            .map(h => horarioSignature(h, stageTypeId))
+        )
+
+        const uniqueIncoming = []
+        const localSignatures = new Set()
+        for (const horario of incoming) {
+          const signature = horarioSignature(horario, stageTypeId)
+          if (signature.endsWith('|0|0')) continue
+          if (existingSignatures.has(signature) || localSignatures.has(signature)) continue
+          localSignatures.add(signature)
+          uniqueIncoming.push(horario)
+        }
+
+        if (!uniqueIncoming.length) {
+          return send(res, 200, [])
+        }
+
         let nextHorarioId = nextId(store.horariosTareaLinea, 'idABCConfigHorarioTareaLinea')
-        const created = incoming.map((horario, index) => {
+        const created = uniqueIncoming.map((horario) => {
           const record = buildHorarioRecord(
             horario,
             'idABCConfigHorarioTareaLinea',
             'idABCConfigTareaLinea',
             tareaId,
             nextHorarioId,
-            (index % 3) + 1
+            stageTypeId
           )
           nextHorarioId += 1
           return record
@@ -904,6 +1013,7 @@ const server = http.createServer(async (req, res) => {
         const tareaId = Number(horariosCampanaCreate.tareaId)
         const currentTask = findTareaCampana(tareaId)
         if (!currentTask) return send(res, 404, { message: 'Not found' })
+        const stageTypeId = Number(currentTask?.tipo?.id ?? 1)
 
         const incoming = Array.isArray(body?.horarios)
           ? body.horarios
@@ -911,15 +1021,35 @@ const server = http.createServer(async (req, res) => {
             ? body
             : [body?.horario ?? body]
 
+        const existingSignatures = new Set(
+          store.horariosTareaCampana
+            .filter(h => Number(h?.tarea?.id ?? h?.idABCConfigTareaCampana) === tareaId)
+            .map(h => horarioSignature(h, stageTypeId))
+        )
+
+        const uniqueIncoming = []
+        const localSignatures = new Set()
+        for (const horario of incoming) {
+          const signature = horarioSignature(horario, stageTypeId)
+          if (signature.endsWith('|0|0')) continue
+          if (existingSignatures.has(signature) || localSignatures.has(signature)) continue
+          localSignatures.add(signature)
+          uniqueIncoming.push(horario)
+        }
+
+        if (!uniqueIncoming.length) {
+          return send(res, 200, [])
+        }
+
         let nextHorarioId = nextId(store.horariosTareaCampana, 'idABCConfigHorarioTareaCampana')
-        const created = incoming.map((horario, index) => {
+        const created = uniqueIncoming.map((horario) => {
           const record = buildHorarioRecord(
             horario,
             'idABCConfigHorarioTareaCampana',
             'idABCConfigTareaCampana',
             tareaId,
             nextHorarioId,
-            (index % 3) + 1
+            stageTypeId
           )
           nextHorarioId += 1
           return record
@@ -968,7 +1098,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'PUT') {
       if (pathOnly === '/lineas/mapeos') {
         const body = await parseBody(req)
-        const payload = body.mapeo ?? body
+        const payload = resolveMapeoPayload(body)
         const id = Number(payload.id ?? payload.idABCConfigMapeoLinea)
         const current = findMapeoLinea(id)
         if (!current) return send(res, 404, { message: 'Not found' })
@@ -1025,7 +1155,7 @@ const server = http.createServer(async (req, res) => {
 
       if (pathOnly === '/lineas/campanas/mapeos') {
         const body = await parseBody(req)
-        const payload = body.mapeo ?? body
+        const payload = resolveMapeoPayload(body)
         const id = Number(payload.id ?? payload.idABCConfigMapeoCampana ?? payload.idABCConfigMapeoLinea)
         const current = findMapeoCampana(id)
         if (!current) return send(res, 404, { message: 'Not found' })

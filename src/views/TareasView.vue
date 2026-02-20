@@ -7,6 +7,7 @@ import TareaLineaModal from '@/components/tareas/linea/TareaLineaModal.vue'
 import TareaCampanaModal from '@/components/tareas/campana/TareaCampanaModal.vue'
 import TareaLineaDetailsModal from '@/components/tareas/linea/TareaLineaDetailsModal.vue'
 import TareaCampanaDetailsModal from '@/components/tareas/campana/TareaCampanaDetailsModal.vue'
+import TareaSaveProgressOverlay from '@/components/tareas/shared/TareaSaveProgressOverlay.vue'
 import { catalogosService } from '@/services/catalogos/catalogosService'
 import { tareaLineaService } from '@/services/tareas/linea/tareaLineaService'
 import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
@@ -169,6 +170,10 @@ const selectedItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
 const showDetailsModal = ref(false)
 const detailTab = ref<TabKey>('linea')
 const detailItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
+const showSaveProgress = ref(false)
+const saveProgressCompleted = ref(0)
+const saveProgressTotal = ref(1)
+const saveProgressAction = ref('')
 
 const normalizeString = (s: unknown) => {
   if (s === null || s === undefined) return ''
@@ -554,10 +559,44 @@ function shouldUpdateStageTask(
   return currentExecutionId !== nextExecutionId
 }
 
+const stageActionLabel = (stage: 'carga' | 'validacion' | 'envio') => {
+  if (stage === 'carga') return 'carga'
+  if (stage === 'validacion') return 'validación'
+  return 'envío'
+}
+
+function startSaveProgress(totalActions: number) {
+  saveProgressTotal.value = Math.max(1, totalActions)
+  saveProgressCompleted.value = 0
+  saveProgressAction.value = 'Preparando acciones...'
+  showSaveProgress.value = true
+}
+
+function updateSaveProgressAction(action: string) {
+  saveProgressAction.value = action
+}
+
+function completeSaveProgressStep() {
+  saveProgressCompleted.value = Math.min(saveProgressCompleted.value + 1, saveProgressTotal.value)
+}
+
+function stopSaveProgress() {
+  showSaveProgress.value = false
+  saveProgressCompleted.value = 0
+  saveProgressTotal.value = 1
+  saveProgressAction.value = ''
+}
+
+type SaveAction = {
+  label: string
+  run: () => Promise<void>
+}
+
 async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel) {
   const wasAdd = modalMode.value === 'add'
   try {
     error.value = null
+    const actions: SaveAction[] = []
 
     if (modalTab.value === 'campana') {
       isLoadingCampana.value = true
@@ -568,7 +607,12 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
       if (modalMode.value === 'add') {
         const payloads = toCreateTareaCampanaPayloads(payload, actividadTipoIds.value)
         for (const record of payloads) {
-          await tareaCampanaService.create(lineaId, campanaId, record)
+          const stageId = Number(record?.tarea?.tipo?.id ?? 0)
+          const stage = stageId === 1 ? 'carga' : stageId === 2 ? 'validacion' : 'envio'
+          actions.push({
+            label: `Agregando ${stageActionLabel(stage)}`,
+            run: () => tareaCampanaService.create(lineaId, campanaId, record).then(() => undefined)
+          })
         }
       } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
         const operations = toUpdateTareaCampanaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
@@ -588,22 +632,42 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           )
 
           if (requiresTaskPut) {
-            await tareaCampanaService.update(payloadByStage)
+            actions.push({
+              label: `Actualizando ${stageActionLabel(entry.stage)}`,
+              run: () => tareaCampanaService.update(payloadByStage).then(() => undefined)
+            })
             continue
           }
 
           const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
           if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
-            await tareaCampanaService.syncHorarios(stageTaskId, payloadByStage)
+            actions.push({
+              label: `Sincronizando horarios de ${stageActionLabel(entry.stage)}`,
+              run: () => tareaCampanaService.syncHorarios(stageTaskId, payloadByStage).then(() => undefined)
+            })
           }
         }
 
         for (const entry of operations.create) {
-          await tareaCampanaService.create(lineaId, campanaId, entry.payload)
+          actions.push({
+            label: `Agregando ${stageActionLabel(entry.stage)}`,
+            run: () => tareaCampanaService.create(lineaId, campanaId, entry.payload).then(() => undefined)
+          })
         }
       }
 
-      await fetchTareasCampana()
+      actions.push({
+        label: 'Actualizando tabla de campañas',
+        run: () => fetchTareasCampana()
+      })
+
+      startSaveProgress(actions.length)
+      for (const action of actions) {
+        updateSaveProgressAction(action.label)
+        await action.run()
+        completeSaveProgressStep()
+      }
+
       closeModal()
     } else {
       isLoadingLinea.value = true
@@ -613,7 +677,12 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
       if (modalMode.value === 'add') {
         const payloads = toCreateTareaLineaPayloads(payload, actividadTipoIds.value)
         for (const record of payloads) {
-          await tareaLineaService.create(lineaId, record)
+          const stageId = Number(record?.tarea?.tipo?.id ?? 0)
+          const stage = stageId === 1 ? 'carga' : stageId === 2 ? 'validacion' : 'envio'
+          actions.push({
+            label: `Agregando ${stageActionLabel(stage)}`,
+            run: () => tareaLineaService.create(lineaId, record).then(() => undefined)
+          })
         }
       } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
         const operations = toUpdateTareaLineaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
@@ -633,22 +702,42 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           )
 
           if (requiresTaskPut) {
-            await tareaLineaService.update(payloadByStage)
+            actions.push({
+              label: `Actualizando ${stageActionLabel(entry.stage)}`,
+              run: () => tareaLineaService.update(payloadByStage).then(() => undefined)
+            })
             continue
           }
 
           const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
           if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
-            await tareaLineaService.syncHorarios(stageTaskId, payloadByStage)
+            actions.push({
+              label: `Sincronizando horarios de ${stageActionLabel(entry.stage)}`,
+              run: () => tareaLineaService.syncHorarios(stageTaskId, payloadByStage).then(() => undefined)
+            })
           }
         }
 
         for (const entry of operations.create) {
-          await tareaLineaService.create(lineaId, entry.payload)
+          actions.push({
+            label: `Agregando ${stageActionLabel(entry.stage)}`,
+            run: () => tareaLineaService.create(lineaId, entry.payload).then(() => undefined)
+          })
         }
       }
 
-      await fetchTareasLinea()
+      actions.push({
+        label: 'Actualizando tabla de líneas',
+        run: () => fetchTareasLinea()
+      })
+
+      startSaveProgress(actions.length)
+      for (const action of actions) {
+        updateSaveProgressAction(action.label)
+        await action.run()
+        completeSaveProgressStep()
+      }
+
       closeModal()
     }
 
@@ -660,6 +749,7 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
   } catch (e: any) {
     error.value = e.message
   } finally {
+    stopSaveProgress()
     isLoadingLinea.value = false
     isLoadingCampana.value = false
   }
@@ -854,6 +944,14 @@ watch(
         :get-linea-label="getLineaLabel"
         :get-campana-label="getCampanaLabel"
         @close="closeDetailsModal"
+      />
+
+      <TareaSaveProgressOverlay
+        :show="showSaveProgress"
+        title="Guardando configuración de tareas"
+        :current-action="saveProgressAction"
+        :completed="saveProgressCompleted"
+        :total="saveProgressTotal"
       />
     </div>
   </div>
