@@ -15,6 +15,7 @@ import {
 export interface TareaCampanaFormData {
   idABCCatLineaNegocio?: number | ''
   idABCCatCampana?: number | ''
+  idMapeo?: number | ''
   ingesta: string
   carga: string
   ejecucionIngesta: string
@@ -63,6 +64,7 @@ const allMapeoOptions = computed(() =>
   props.mapeosCampana.map(m => ({
     label: getMapeoLabel(m),
     value: getMapeoLabel(m),
+    idMapeo: Number(m.idABCConfigMapeoLinea ?? 0),
     idLinea: Number(m.linea?.id ?? m.idABCCatLineaNegocio ?? 0),
     idCampana: Number(m.linea?.campana?.id ?? m.idABCCatCampana ?? 0)
   }))
@@ -81,6 +83,7 @@ const filteredMapeoOptions = computed(() => {
   return list.map(m => ({
     label: getMapeoLabel(m),
     value: getMapeoLabel(m),
+    idMapeo: Number(m.idABCConfigMapeoLinea ?? 0),
     idLinea: Number(m.linea?.id ?? m.idABCCatLineaNegocio ?? 0),
     idCampana: Number(m.linea?.campana?.id ?? m.idABCCatCampana ?? 0)
   }))
@@ -130,8 +133,7 @@ const ingestaHelper = computed(() => {
   return 'Puedes seleccionar una ingesta primero y se autocompletara la linea y campaña.'
 })
 const canSave = computed(() =>
-  Boolean(formData.value.ingesta) &&
-  isScheduleReady.value
+  isScheduleReady.value && Number(formData.value.idMapeo ?? 0) > 0
 )
 const isDirty = computed(() => serializeFormState(formData.value) !== initialFormSnapshot.value)
 const confirmTitle = computed(() => (pendingAction.value === 'save' ? 'Confirmar guardado' : 'Descartar cambios'))
@@ -194,6 +196,7 @@ watch(
 
     if (currentIngesta) {
       formData.value.ingesta = ''
+      formData.value.idMapeo = ''
     }
     if (isAutoMapped.value) {
       isAutoMapped.value = false
@@ -215,12 +218,16 @@ watch(
     if (match) {
       const nextLineaId = match.idLinea || ''
       const nextCampanaId = match.idCampana || ''
+      const nextMapeoId = match.idMapeo || ''
 
       if (formData.value.idABCCatLineaNegocio !== nextLineaId) {
         formData.value.idABCCatLineaNegocio = nextLineaId
       }
       if (formData.value.idABCCatCampana !== nextCampanaId) {
         formData.value.idABCCatCampana = nextCampanaId
+      }
+      if (formData.value.idMapeo !== nextMapeoId) {
+        formData.value.idMapeo = nextMapeoId
       }
 
       const nextAutoMapped = !isEditing.value
@@ -233,11 +240,15 @@ watch(
     if (isAutoMapped.value) {
       isAutoMapped.value = false
     }
+    if (formData.value.idMapeo) {
+      formData.value.idMapeo = ''
+    }
   }
 )
 
 const resetHeaderSelection = () => {
   formData.value.ingesta = ''
+  formData.value.idMapeo = ''
   formData.value.idABCCatLineaNegocio = ''
   formData.value.idABCCatCampana = ''
   isAutoMapped.value = false
@@ -327,28 +338,35 @@ function initializeFormData(): TareaCampanaFormData {
     const validacionSlots = toScheduleSlotsByType(2)
     const envioSlots = toScheduleSlotsByType(3)
 
-    const diaIngesta = cargaSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.carga?.dia ?? props.initialData.diaIngesta)
-    const horaIngesta = cargaSlots[0]?.hora ?? String(props.initialData.carga?.hora ?? props.initialData.horaIngesta ?? '')
-    const diaValidacion = validacionSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.validacion?.dia ?? props.initialData.diaValidacion)
-    const horaValidacion = validacionSlots[0]?.hora ?? String(props.initialData.validacion?.hora ?? props.initialData.horaValidacion ?? '')
-    const diaEnvio = envioSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.envio?.dia ?? props.initialData.diaEnvio)
-    const horaEnvio = envioSlots[0]?.hora ?? String(props.initialData.envio?.hora ?? props.initialData.horaEnvio ?? '')
+    const isEditMode = props.mode === 'edit'
+    const diaIngesta = isEditMode ? '' : (cargaSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.carga?.dia ?? props.initialData.diaIngesta))
+    const horaIngesta = isEditMode ? '' : (cargaSlots[0]?.hora ?? String(props.initialData.carga?.hora ?? props.initialData.horaIngesta ?? ''))
+    const diaValidacion = isEditMode ? '' : (validacionSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.validacion?.dia ?? props.initialData.diaValidacion))
+    const horaValidacion = isEditMode ? '' : (validacionSlots[0]?.hora ?? String(props.initialData.validacion?.hora ?? props.initialData.horaValidacion ?? ''))
+    const diaEnvio = isEditMode ? '' : (envioSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.envio?.dia ?? props.initialData.diaEnvio))
+    const horaEnvio = isEditMode ? '' : (envioSlots[0]?.hora ?? String(props.initialData.envio?.hora ?? props.initialData.horaEnvio ?? ''))
 
     return {
       idABCCatLineaNegocio: props.initialData.idABCCatLineaNegocio ?? '',
       idABCCatCampana: props.initialData.idABCCatCampana ?? '',
+      idMapeo: Number(
+        props.initialData.tarea?.mapeo?.id
+        ?? props.initialData.asignacion?.mapeo?.id
+        ?? props.initialData.mapeo?.id
+        ?? 0
+      ) || '',
       ingesta: props.initialData.ingesta ?? '',
       carga: 'Carga',
       ejecucionIngesta: props.initialData.carga?.ejecucion ?? 'Automatica',
       diaIngesta,
       horaIngesta,
       cargaSlots,
-      validacion: 'Validacion',
+      validacion: 'Validación',
       ejecucionValidacion: props.initialData.validacion?.ejecucion ?? 'Automatica',
       diaValidacion,
       horaValidacion,
       validacionSlots,
-      envio: 'Envio',
+      envio: 'Envío',
       ejecucionEnvio: props.initialData.envio?.ejecucion ?? 'Automatica',
       diaEnvio,
       horaEnvio,
@@ -362,18 +380,19 @@ function initializeFormData(): TareaCampanaFormData {
   return {
     idABCCatLineaNegocio: '',
     idABCCatCampana: '',
+    idMapeo: '',
     ingesta: '',
     carga: 'Carga',
     ejecucionIngesta: 'Automatica',
     diaIngesta: '',
     horaIngesta: '',
     cargaSlots: [],
-    validacion: 'Validacion',
+    validacion: 'Validación',
     ejecucionValidacion: 'Automatica',
     diaValidacion: '',
     horaValidacion: '',
     validacionSlots: [],
-    envio: 'Envio',
+    envio: 'Envío',
     ejecucionEnvio: 'Automatica',
     diaEnvio: '',
     horaEnvio: '',
@@ -460,6 +479,22 @@ function handleSave() {
             @update:schedule-ready="isScheduleReady = $event"
           />
 
+          <div v-if="mode === 'edit'" class="flex justify-end">
+            <button
+              type="button"
+              title="Restaurar información"
+              aria-label="Restaurar información"
+              class="group relative h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="isLoading"
+              @click="restoreInitialInformation"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+              </svg>
+              <span class="pointer-events-none absolute right-0 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Restaurar información</span>
+            </button>
+          </div>
+
           </div>
         </div>
 
@@ -477,16 +512,6 @@ function handleSave() {
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
               </svg>
-            </button>
-
-            <button
-              v-else
-              type="button"
-              class="px-4 py-2.5 text-sm font-bold text-[#00357F] bg-white border border-[#00357F]/20 hover:bg-slate-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#00357F]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="isLoading"
-              @click="restoreInitialInformation"
-            >
-              Restaurar información
             </button>
           </div>
 

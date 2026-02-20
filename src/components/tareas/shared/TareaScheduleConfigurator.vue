@@ -56,12 +56,12 @@ const normalizeScheduleData = (value?: Partial<TareaScheduleModel>): TareaSchedu
   diaIngesta: value?.diaIngesta ?? '',
   horaIngesta: value?.horaIngesta ?? '',
   cargaSlots: [...(value?.cargaSlots ?? [])],
-  validacion: value?.validacion ?? 'Validacion',
+  validacion: value?.validacion ?? 'Validación',
   ejecucionValidacion: value?.ejecucionValidacion ?? 'Automatica',
   diaValidacion: value?.diaValidacion ?? '',
   horaValidacion: value?.horaValidacion ?? '',
   validacionSlots: [...(value?.validacionSlots ?? [])],
-  envio: value?.envio ?? 'Envio',
+  envio: value?.envio ?? 'Envío',
   ejecucionEnvio: value?.ejecucionEnvio ?? 'Automatica',
   diaEnvio: value?.diaEnvio ?? '',
   horaEnvio: value?.horaEnvio ?? '',
@@ -124,20 +124,66 @@ const isEnvioSectionEnabled = computed(() => hasValidacionSlots.value)
 const primaryCargaSlot = computed(() => (localData.value.cargaSlots ?? []).find(isSlotActive) ?? null)
 const primaryValidacionSlot = computed(() => (localData.value.validacionSlots ?? []).find(isSlotActive) ?? null)
 const primaryEnvioSlot = computed(() => (localData.value.envioSlots ?? []).find(isSlotActive) ?? null)
+const getUsedDaysByKind = (kind: 'carga' | 'validacion' | 'envio') =>
+  new Set(
+    getSlotsByKind(kind)
+      .map(slot => String(slot.dia || '').trim())
+      .filter(Boolean)
+  )
+
+const filterUsedDays = (kind: 'carga' | 'validacion' | 'envio', options: WeekdayValue[]) => {
+  const used = getUsedDaysByKind(kind)
+  const currentValue =
+    kind === 'carga'
+      ? localData.value.diaIngesta
+      : kind === 'validacion'
+        ? localData.value.diaValidacion
+        : localData.value.diaEnvio
+
+  return options.filter(option => option === currentValue || !used.has(option))
+}
+
+const cargaDayOptions = computed(() => filterUsedDays('carga', weekdayOptions))
+const validacionDayOptions = computed(() => filterUsedDays('validacion', weekdayOptions))
+const envioDayOptions = computed(() => filterUsedDays('envio', weekdayOptions))
+
+const getUsedHoursByKind = (kind: 'carga' | 'validacion' | 'envio') =>
+  new Set(
+    getSlotsByKind(kind)
+      .filter(isSlotActive)
+      .map(slot => String(slot.hora || '').trim())
+      .filter(Boolean)
+  )
+
+const filterUsedHours = (kind: 'carga' | 'validacion' | 'envio', options: string[]) => {
+  const used = getUsedHoursByKind(kind)
+  const currentValue =
+    kind === 'carga'
+      ? localData.value.horaIngesta
+      : kind === 'validacion'
+        ? localData.value.horaValidacion
+        : localData.value.horaEnvio
+
+  return options.filter(option => option === currentValue || !used.has(option))
+}
+
 const validacionHoraOptions = computed(() => {
   const cargaBase = primaryCargaSlot.value
   if (cargaBase && localData.value.diaValidacion && localData.value.diaValidacion === cargaBase.dia && cargaBase.hora) {
     const diff = (option: string) => compareWeekdayTime(cargaBase.dia, cargaBase.hora, localData.value.diaValidacion, option)
-    return horaOptions.filter(option => {
+    const constrained = horaOptions.filter(option => {
       const delta = diff(option)
       return delta !== null && delta > 0
     })
+    return filterUsedHours('validacion', constrained)
   }
-  return horaOptions
+  return filterUsedHours('validacion', horaOptions)
 })
 
+const cargaHoraOptions = computed(() => filterUsedHours('carga', horaOptions))
+
 const horaOptionsAmPm = computed(() =>
-  horaOptions.map(option => ({ label: formatHourToAmPm(option), value: option }))
+  cargaHoraOptions.value.map(option => ({ label: formatHourToAmPm(option), value: option }))
 )
 
 const validacionHoraOptionsAmPm = computed(() =>
@@ -151,12 +197,13 @@ const envioHoraOptions = computed(() => {
   const validacionBase = primaryValidacionSlot.value
   if (validacionBase && localData.value.diaEnvio && localData.value.diaEnvio === validacionBase.dia && validacionBase.hora) {
     const diff = (option: string) => compareWeekdayTime(validacionBase.dia, validacionBase.hora, localData.value.diaEnvio, option)
-    return horaOptions.filter(option => {
+    const constrained = horaOptions.filter(option => {
       const delta = diff(option)
       return delta !== null && delta > 0
     })
+    return filterUsedHours('envio', constrained)
   }
-  return horaOptions
+  return filterUsedHours('envio', horaOptions)
 })
 const scheduleValidationError = computed(() => {
   const carga = primaryCargaSlot.value
@@ -258,14 +305,28 @@ const addScheduleSlot = (kind: 'carga' | 'validacion' | 'envio') => {
     return
   }
 
+  const duplicateDayExists = currentSlots.some(existing => existing.dia === slot.dia)
+  if (duplicateDayExists) {
+    const etapa = kind === 'carga' ? 'Carga' : kind === 'validacion' ? 'Validación' : 'Envío'
+    duplicateScheduleError.value = `Ese día ya está configurado en ${etapa}.`
+    addToast(duplicateScheduleError.value, 'warning', 3000)
+    return
+  }
+
   duplicateScheduleError.value = ''
 
   if (kind === 'carga') {
     localData.value.cargaSlots = appendScheduleSlot(localData.value.cargaSlots, slot)
+    localData.value.diaIngesta = ''
+    localData.value.horaIngesta = ''
   } else if (kind === 'validacion') {
     localData.value.validacionSlots = appendScheduleSlot(localData.value.validacionSlots, slot)
+    localData.value.diaValidacion = ''
+    localData.value.horaValidacion = ''
   } else {
     localData.value.envioSlots = appendScheduleSlot(localData.value.envioSlots, slot)
+    localData.value.diaEnvio = ''
+    localData.value.horaEnvio = ''
   }
 }
 
@@ -310,6 +371,13 @@ const removeScheduleSlot = (kind: 'carga' | 'validacion' | 'envio', index: numbe
   } else {
     localData.value.envioSlots = deleteScheduleSlot(localData.value.envioSlots, index)
   }
+}
+
+const getSlotActionLabel = (slot: ScheduleSlot) => {
+  if (slot.persisted && props.mode === 'edit') {
+    return isSlotActive(slot) ? 'Desactivar' : 'Activar'
+  }
+  return 'Eliminar'
 }
 
 watch(
@@ -407,6 +475,30 @@ watch(envioHoraOptions, (options) => {
     localData.value.horaEnvio = ''
   }
 })
+
+watch(cargaHoraOptions, (options) => {
+  if (localData.value.horaIngesta && !options.includes(localData.value.horaIngesta)) {
+    localData.value.horaIngesta = ''
+  }
+})
+
+watch(cargaDayOptions, (options) => {
+  if (localData.value.diaIngesta && !options.includes(localData.value.diaIngesta)) {
+    localData.value.diaIngesta = ''
+  }
+})
+
+watch(validacionDayOptions, (options) => {
+  if (localData.value.diaValidacion && !options.includes(localData.value.diaValidacion)) {
+    localData.value.diaValidacion = ''
+  }
+})
+
+watch(envioDayOptions, (options) => {
+  if (localData.value.diaEnvio && !options.includes(localData.value.diaEnvio)) {
+    localData.value.diaEnvio = ''
+  }
+})
 </script>
 <template>
   <div>
@@ -421,7 +513,7 @@ watch(envioHoraOptions, (options) => {
             <span v-else class="font-bold text-sm">1</span>
           </div>
 
-          <div class="relative flex-grow bg-white p-5 rounded-xl shadow-sm border border-gray-200 group hover:border-[#00357F]/30 transition-all">
+          <div class="relative flex-grow bg-white p-5 rounded-xl shadow-sm border border-gray-200 hover:border-[#00357F]/30 transition-all">
             <span v-if="hasCargaConfig" class="absolute -top-2.5 right-4 text-[10px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold border border-blue-200 shadow-sm">Configurado</span>
 
             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -445,7 +537,7 @@ watch(envioHoraOptions, (options) => {
 
               <div class="flex flex-col md:flex-row items-end gap-3 mb-3">
                 <div class="flex-grow w-full">
-                  <ConfigField label="Día" v-model="localData.diaIngesta" :options="weekdayOptions" required />
+                  <ConfigField label="Día" v-model="localData.diaIngesta" :options="cargaDayOptions" required />
                 </div>
                 <div class="w-full md:w-1/3">
                   <ConfigField
@@ -458,10 +550,11 @@ watch(envioHoraOptions, (options) => {
                 </div>
                 <div class="w-full md:w-auto flex-shrink-0">
                   <button type="button" 
-                    class="h-[42px] w-full md:w-auto px-4 py-2 text-sm font-semibold rounded-md border border-[#00357F] text-[#00357F] bg-white hover:bg-[#00357F]/5 transition-colors disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 mb-[1px]" 
+                    class="group relative h-[42px] w-full md:w-auto px-3 py-2 text-sm font-bold rounded-md border border-[#FFD100] text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 transition-all disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 disabled:bg-slate-200 mb-[1px] inline-flex items-center justify-center" 
                     :disabled="!localData.diaIngesta || !localData.horaIngesta" 
                     @click="addScheduleSlot('carga')">
-                    Agregar horario
+                    <span class="text-base leading-none">+</span>
+                    <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Agregar horario</span>
                   </button>
                 </div>
               </div>
@@ -477,8 +570,24 @@ watch(envioHoraOptions, (options) => {
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
                       {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
-                      <button type="button" class="ml-1 text-slate-400 hover:text-red-600 font-bold text-[11px] leading-none" @click="removeScheduleSlot('carga', index)">
-                        {{ slot.persisted && mode === 'edit' ? (isSlotActive(slot) ? 'Desactivar' : 'Activar') : '×' }}
+                      <button
+                        type="button"
+                        class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
+                        :aria-label="getSlotActionLabel(slot)"
+                        :title="getSlotActionLabel(slot)"
+                        @click="removeScheduleSlot('carga', index)"
+                      >
+                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                          <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                        </svg>
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
+                        </svg>
+                        <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
                     </span>
                  </div>
@@ -525,7 +634,7 @@ watch(envioHoraOptions, (options) => {
 
               <div class="flex flex-col md:flex-row items-end gap-3 mb-3">
                 <div class="flex-grow w-full">
-                   <ConfigField label="Día" v-model="localData.diaValidacion" :options="weekdayOptions" :disabled="!isValidacionSectionEnabled" required />
+                   <ConfigField label="Día" v-model="localData.diaValidacion" :options="validacionDayOptions" :disabled="!isValidacionSectionEnabled" required />
                 </div>
                 <div class="w-full md:w-1/3">
                   <ConfigField
@@ -538,10 +647,11 @@ watch(envioHoraOptions, (options) => {
                 </div>
                 <div class="w-full md:w-auto flex-shrink-0">
                   <button type="button" 
-                    class="h-[42px] w-full md:w-auto px-4 py-2 text-sm font-semibold rounded-md border border-[#00357F] text-[#00357F] bg-white hover:bg-[#00357F]/5 transition-colors disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 mb-[1px]" 
+                    class="group relative h-[42px] w-full md:w-auto px-3 py-2 text-sm font-bold rounded-md border border-[#FFD100] text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 transition-all disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 disabled:bg-slate-200 mb-[1px] inline-flex items-center justify-center" 
                     :disabled="!isValidacionSectionEnabled || !localData.diaValidacion || !localData.horaValidacion" 
                     @click="addScheduleSlot('validacion')">
-                    Agregar horario
+                    <span class="text-base leading-none">+</span>
+                    <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Agregar horario</span>
                   </button>
                 </div>
               </div>
@@ -556,8 +666,24 @@ watch(envioHoraOptions, (options) => {
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
                       {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
-                      <button type="button" class="ml-1 text-slate-400 hover:text-red-600 font-bold text-[11px] leading-none" @click="removeScheduleSlot('validacion', index)">
-                        {{ slot.persisted && mode === 'edit' ? (isSlotActive(slot) ? 'Desactivar' : 'Activar') : '×' }}
+                      <button
+                        type="button"
+                        class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
+                        :aria-label="getSlotActionLabel(slot)"
+                        :title="getSlotActionLabel(slot)"
+                        @click="removeScheduleSlot('validacion', index)"
+                      >
+                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                          <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                        </svg>
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
+                        </svg>
+                        <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
                     </span>
                  </div>
@@ -603,7 +729,7 @@ watch(envioHoraOptions, (options) => {
 
               <div class="flex flex-col md:flex-row items-end gap-3 mb-3">
                 <div class="flex-grow w-full">
-                  <ConfigField label="Día" v-model="localData.diaEnvio" :options="weekdayOptions" :disabled="!isEnvioSectionEnabled" required />
+                  <ConfigField label="Día" v-model="localData.diaEnvio" :options="envioDayOptions" :disabled="!isEnvioSectionEnabled" required />
                 </div>
                 <div class="w-full md:w-1/3">
                   <ConfigField
@@ -616,10 +742,11 @@ watch(envioHoraOptions, (options) => {
                 </div>
                 <div class="w-full md:w-auto flex-shrink-0">
                   <button type="button" 
-                    class="h-[42px] w-full md:w-auto px-4 py-2 text-sm font-semibold rounded-md border border-[#00357F] text-[#00357F] bg-white hover:bg-[#00357F]/5 transition-colors disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 mb-[1px]" 
+                    class="group relative h-[42px] w-full md:w-auto px-3 py-2 text-sm font-bold rounded-md border border-[#FFD100] text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 transition-all disabled:opacity-50 disabled:border-slate-300 disabled:text-slate-400 disabled:bg-slate-200 mb-[1px] inline-flex items-center justify-center" 
                     :disabled="!isEnvioSectionEnabled || !localData.diaEnvio || !localData.horaEnvio" 
                     @click="addScheduleSlot('envio')">
-                    Agregar horario
+                    <span class="text-base leading-none">+</span>
+                    <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Agregar horario</span>
                   </button>
                 </div>
               </div>
@@ -633,8 +760,24 @@ watch(envioHoraOptions, (options) => {
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
                       {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
-                      <button type="button" class="ml-1 text-slate-400 hover:text-red-600 font-bold text-[11px] leading-none" @click="removeScheduleSlot('envio', index)">
-                        {{ slot.persisted && mode === 'edit' ? (isSlotActive(slot) ? 'Desactivar' : 'Activar') : '×' }}
+                      <button
+                        type="button"
+                        class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
+                        :aria-label="getSlotActionLabel(slot)"
+                        :title="getSlotActionLabel(slot)"
+                        @click="removeScheduleSlot('envio', index)"
+                      >
+                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                          <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+                        </svg>
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
+                        </svg>
+                        <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
                     </span>
                  </div>

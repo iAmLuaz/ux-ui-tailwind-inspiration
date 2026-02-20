@@ -7,6 +7,7 @@ import type { WeekdayValue } from '@/composables/tareas/tareaScheduleUtils'
 
 export interface TareaLineaFormModel {
   idABCCatLineaNegocio?: number | ''
+  idMapeo?: number | ''
   ingesta: string
   ejecucionIngesta: string
   diaIngesta: WeekdayValue
@@ -85,6 +86,7 @@ export function toCreateTareaLineaPayloads(form: TareaLineaFormModel): CreateTar
   const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
   const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
   const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
+  const mapeoId = Number(form.idMapeo ?? 0)
 
   const horarios = [
     ...cargaSlots.map(slot => toHorarioByType(1, slot.dia, slot.hora)),
@@ -94,13 +96,9 @@ export function toCreateTareaLineaPayloads(form: TareaLineaFormModel): CreateTar
 
   return [{
     tarea: {
-      linea: {
-        id: Number(form.idABCCatLineaNegocio ?? 0)
-      },
-      ingesta: form.ingesta,
+      mapeo: { id: mapeoId },
       tipo: { id: 1 },
-      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) },
-      bolActivo: true
+      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) }
     },
     horarios,
     idABCUsuario: Number(form.idUsuario ?? 1),
@@ -120,14 +118,15 @@ export function toUpdateTareaLineaPayload(
   const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
   const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
   const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
+  const mapeoId = Number(form.idMapeo ?? 0)
 
   return {
     tarea: {
       id: tareaId,
+      ...(mapeoId > 0 ? { mapeo: { id: mapeoId } } : {}),
       linea: {
         id: Number(form.idABCCatLineaNegocio ?? 0)
       },
-      ingesta: form.ingesta,
       tipo: { id: 1 },
       ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) }
     },

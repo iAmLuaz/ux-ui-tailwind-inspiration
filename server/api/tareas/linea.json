@@ -1,40 +1,107 @@
 [
   {
-    "idABCConfigTareaLinea": 501,
+    "bolActivo": false,
+    "id": 7,
     "linea": {
-      "id": 1,
-      "campana": null
+      "id": 1
     },
-    "ingesta": "0126LC002TEST2",
+    "asignacion": {
+      "mapeo": {
+        "id": 3001,
+        "nombre": "MAPEO_LINEA_1_CLIENTES"
+      }
+    },
     "tipo": {
-      "id": 1,
-      "nombre": "Ingesta"
+      "id": 2
     },
     "ejecucion": {
-      "id": 1,
-      "nombre": "Automatica"
+      "id": 2
     },
-    "bolActivo": true,
-    "fechaCreacion": "2025-01-10T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-10T00:00:00.000Z"
+    "fechaCreacion": "2026-02-19T00:18:31.376+00:00",
+    "fechaUltimaModificacion": "2026-02-19T16:09:43.740+00:00"
   },
   {
-    "idABCConfigTareaLinea": 502,
+    "bolActivo": true,
+    "id": 8,
     "linea": {
-      "id": 2,
-      "campana": null
+      "id": 1
     },
-    "ingesta": "0126LC002TEST21",
+    "asignacion": {
+      "mapeo": {
+        "id": 3002,
+        "nombre": "MAPEO_LINEA_1_CONTRATOS"
+      }
+    },
     "tipo": {
-      "id": 1,
-      "nombre": "Ingesta"
+      "id": 1
     },
     "ejecucion": {
-      "id": 1,
-      "nombre": "Automatica"
+      "id": 1
     },
+    "fechaCreacion": "2026-02-19T16:09:57.100+00:00",
+    "fechaUltimaModificacion": "2026-02-19T16:09:57.100+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 9,
+    "linea": {
+      "id": 2
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 3003,
+        "nombre": "MAPEO_LINEA_2_POLIZAS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 2
+    },
+    "fechaCreacion": "2026-02-18T10:25:11.500+00:00",
+    "fechaUltimaModificacion": "2026-02-19T09:10:12.100+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 10,
+    "linea": {
+      "id": 3
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 3004,
+        "nombre": "MAPEO_LINEA_3_SINIESTROS"
+      }
+    },
+    "tipo": {
+      "id": 2
+    },
+    "ejecucion": {
+      "id": 1
+    },
+    "fechaCreacion": "2026-02-17T22:12:00.000+00:00",
+    "fechaUltimaModificacion": "2026-02-19T11:00:00.000+00:00"
+  },
+  {
     "bolActivo": false,
-    "fechaCreacion": "2025-01-12T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-12T00:00:00.000Z"
+    "id": 11,
+    "linea": {
+      "id": 2
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 3005,
+        "nombre": "MAPEO_LINEA_2_MOVIMIENTOS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 2
+    },
+    "fechaCreacion": "2026-02-15T08:40:00.000+00:00",
+    "fechaUltimaModificacion": "2026-02-16T12:30:00.000+00:00"
   }
 ]

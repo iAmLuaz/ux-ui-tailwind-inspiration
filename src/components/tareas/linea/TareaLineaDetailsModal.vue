@@ -27,7 +27,7 @@ interface HorarioItem {
 interface TareaLineaRow {
   idABCConfigTareaLinea: number
   idABCCatLineaNegocio: number
-  ingesta: string
+  ingesta?: string
   bolActivo: boolean
   carga?: { ejecucion?: string; dia?: string; hora?: string }
   validacion?: { ejecucion?: string; dia?: string; hora?: string }

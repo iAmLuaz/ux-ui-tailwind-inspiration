@@ -31,6 +31,30 @@ function toExecutionName(value: unknown): string {
   return 'Automatica'
 }
 
+function resolveIngestaName(tarea: any, item: any): string {
+  const value =
+    tarea?.mapeo?.nombre
+    ?? tarea?.mapeo?.descripcion
+    ?? tarea?.ingesta
+    ?? tarea?.asignacion?.mapeo?.nombre
+    ?? tarea?.asignacion?.mapeo?.descripcion
+    ?? tarea?.asignacion?.ingesta?.nombre
+    ?? tarea?.asignacion?.nombreMapeo
+    ?? tarea?.mapeo?.nombre
+    ?? tarea?.mapeo?.descripcion
+    ?? tarea?.nombreMapeo
+    ?? item?.ingesta
+    ?? item?.asignacion?.mapeo?.nombre
+    ?? item?.asignacion?.mapeo?.descripcion
+    ?? item?.asignacion?.ingesta?.nombre
+    ?? item?.asignacion?.nombreMapeo
+    ?? item?.mapeo?.nombre
+    ?? item?.mapeo?.descripcion
+    ?? item?.nombreMapeo
+    ?? ''
+  return String(value)
+}
+
 function normalizeHorarios(item: any) {
   const rawHorarios = Array.isArray(item?.horarios)
     ? item.horarios
@@ -90,7 +114,7 @@ export function normalizeTareaLinea(item: any): TareaLineaData {
   return {
     idABCConfigTareaLinea: Number(tarea?.idABCConfigTareaLinea ?? tarea?.id ?? item?.idABCConfigTareaLinea ?? item?.id ?? 0),
     idABCCatLineaNegocio: Number(tarea?.linea?.id ?? tarea?.idABCCatLineaNegocio ?? item?.idABCCatLineaNegocio ?? item?.idLinea ?? 0),
-    ingesta: String(tarea?.ingesta ?? item?.ingesta ?? ''),
+    ingesta: resolveIngestaName(tarea, item),
     carga: {
       ejecucion: executionName,
       dia: cargaStage.dia,

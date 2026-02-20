@@ -35,7 +35,7 @@ interface Option {
 type TareaLineaRow = {
   idABCConfigTareaLinea: number
   idABCCatLineaNegocio: number
-  ingesta: string
+  ingesta?: string
   bolActivo: boolean
   carga?: { ejecucion?: string; dia?: string; hora?: string }
   validacion?: { ejecucion?: string; dia?: string; hora?: string }
@@ -49,7 +49,7 @@ type TareaCampanaRow = {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
   idABCCatCampana: number
-  ingesta: string
+  ingesta?: string
   bolActivo: boolean
   carga?: { ejecucion?: string; dia?: string; hora?: string }
   validacion?: { ejecucion?: string; dia?: string; hora?: string }
@@ -132,8 +132,8 @@ function matchesSearch(nameValue: string, query: string) {
   return qTokens.every(token => nameWords.some(w => w.includes(token)))
 }
 
-function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: string } }) {
-  return `${item.ingesta ?? ''} ${item.carga?.ejecucion ?? ''}`.trim()
+function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: string }; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number }) {
+  return `${item.ingesta ?? ''} ${item.carga?.ejecucion ?? ''} ${item.idABCConfigTareaLinea ?? ''} ${item.idABCConfigTareaCampana ?? ''}`.trim()
 }
 
 const filteredTareasLinea = computed(() => {

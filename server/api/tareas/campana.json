@@ -1,44 +1,194 @@
 [
   {
-    "idABCConfigTareaCampana": 801,
+    "bolActivo": false,
+    "id": 1,
     "linea": {
-      "id": 1,
-      "campana": {
+      "catCampana": {
         "id": 1
+      },
+      "id": 1
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4001,
+        "nombre": "MAPEO_CAMPANA_1_CLIENTES"
       }
     },
-    "ingesta": "0126PET001TEST12",
     "tipo": {
-      "id": 1,
-      "nombre": "Ingesta"
+      "id": 1
     },
     "ejecucion": {
-      "id": 1,
-      "nombre": "Automatica"
+      "id": 1
     },
-    "bolActivo": true,
-    "fechaCreacion": "2025-01-15T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-15T00:00:00.000Z"
+    "fechaCreacion": "2026-02-19T15:50:14.517+00:00",
+    "fechaUltimaModificacion": "2026-02-19T16:14:40.823+00:00"
   },
   {
-    "idABCConfigTareaCampana": 802,
+    "bolActivo": true,
+    "id": 2,
     "linea": {
-      "id": 2,
-      "campana": {
-        "id": 2
+      "catCampana": {
+        "id": 1
+      },
+      "id": 1
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4002,
+        "nombre": "MAPEO_CAMPANA_1_CONTRATOS"
       }
     },
-    "ingesta": "0126PET001TEST123",
     "tipo": {
-      "id": 1,
-      "nombre": "Ingesta"
+      "id": 2
     },
     "ejecucion": {
-      "id": 1,
-      "nombre": "Automatica"
+      "id": 2
     },
+    "fechaCreacion": "2026-02-19T15:50:17.614+00:00",
+    "fechaUltimaModificacion": "2026-02-19T16:10:07.987+00:00"
+  },
+  {
     "bolActivo": true,
-    "fechaCreacion": "2025-01-16T00:00:00.000Z",
-    "fechaUltimaModificacion": "2025-01-16T00:00:00.000Z"
+    "id": 3,
+    "linea": {
+      "catCampana": {
+        "id": 1
+      },
+      "id": 1
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4003,
+        "nombre": "MAPEO_CAMPANA_1_SINIESTROS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 1
+    },
+    "fechaCreacion": "2026-02-19T15:50:18.559+00:00",
+    "fechaUltimaModificacion": "2026-02-19T15:50:18.559+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 4,
+    "linea": {
+      "catCampana": {
+        "id": 1
+      },
+      "id": 1
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4004,
+        "nombre": "MAPEO_CAMPANA_1_FINANZAS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 1
+    },
+    "fechaCreacion": "2026-02-19T15:50:21.271+00:00",
+    "fechaUltimaModificacion": "2026-02-19T15:50:21.271+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 5,
+    "linea": {
+      "catCampana": {
+        "id": 1
+      },
+      "id": 1
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4005,
+        "nombre": "MAPEO_CAMPANA_1_ALERTAS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 1
+    },
+    "fechaCreacion": "2026-02-19T15:50:22.146+00:00",
+    "fechaUltimaModificacion": "2026-02-19T15:50:22.146+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 6,
+    "linea": {
+      "catCampana": {
+        "id": 2
+      },
+      "id": 2
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4006,
+        "nombre": "MAPEO_CAMPANA_2_CLIENTES"
+      }
+    },
+    "tipo": {
+      "id": 2
+    },
+    "ejecucion": {
+      "id": 1
+    },
+    "fechaCreacion": "2026-02-18T10:00:00.000+00:00",
+    "fechaUltimaModificacion": "2026-02-19T14:00:00.000+00:00"
+  },
+  {
+    "bolActivo": false,
+    "id": 7,
+    "linea": {
+      "catCampana": {
+        "id": 3
+      },
+      "id": 2
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4007,
+        "nombre": "MAPEO_CAMPANA_3_MOVIMIENTOS"
+      }
+    },
+    "tipo": {
+      "id": 1
+    },
+    "ejecucion": {
+      "id": 2
+    },
+    "fechaCreacion": "2026-02-17T07:30:00.000+00:00",
+    "fechaUltimaModificacion": "2026-02-18T08:20:00.000+00:00"
+  },
+  {
+    "bolActivo": true,
+    "id": 8,
+    "linea": {
+      "catCampana": {
+        "id": 2
+      },
+      "id": 3
+    },
+    "asignacion": {
+      "mapeo": {
+        "id": 4008,
+        "nombre": "MAPEO_CAMPANA_2_RECUPERACION"
+      }
+    },
+    "tipo": {
+      "id": 2
+    },
+    "ejecucion": {
+      "id": 2
+    },
+    "fechaCreacion": "2026-02-16T13:15:00.000+00:00",
+    "fechaUltimaModificacion": "2026-02-19T12:00:00.000+00:00"
   }
 ]

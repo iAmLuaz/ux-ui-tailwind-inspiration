@@ -27,7 +27,7 @@ export interface TareaCampanaRow {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
   idABCCatCampana: number
-  ingesta: string
+  ingesta?: string
   bolActivo: boolean
   carga?: {
     ejecucion?: string
@@ -222,9 +222,9 @@ const thSmallClass = 'px-4 py-3'
 
             <th :class="thSmallClass + ' text-left'">Carga</th>
 
-            <th :class="thSmallClass + ' text-left'">Validar</th>
+            <th :class="thSmallClass + ' text-left'">Validación</th>
 
-            <th :class="thSmallClass + ' text-left'">Enviar</th>
+            <th :class="thSmallClass + ' text-left'">Envío</th>
 
             <th :class="thSmallClass + ' relative'">
               <FilterDropdown

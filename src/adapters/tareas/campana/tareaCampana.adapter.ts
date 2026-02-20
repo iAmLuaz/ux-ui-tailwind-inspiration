@@ -31,6 +31,30 @@ function toExecutionName(value: unknown): string {
   return 'Automatica'
 }
 
+function resolveIngestaName(tarea: any, item: any): string {
+  const value =
+    tarea?.mapeo?.nombre
+    ?? tarea?.mapeo?.descripcion
+    ?? tarea?.ingesta
+    ?? tarea?.asignacion?.mapeo?.nombre
+    ?? tarea?.asignacion?.mapeo?.descripcion
+    ?? tarea?.asignacion?.ingesta?.nombre
+    ?? tarea?.asignacion?.nombreMapeo
+    ?? tarea?.mapeo?.nombre
+    ?? tarea?.mapeo?.descripcion
+    ?? tarea?.nombreMapeo
+    ?? item?.ingesta
+    ?? item?.asignacion?.mapeo?.nombre
+    ?? item?.asignacion?.mapeo?.descripcion
+    ?? item?.asignacion?.ingesta?.nombre
+    ?? item?.asignacion?.nombreMapeo
+    ?? item?.mapeo?.nombre
+    ?? item?.mapeo?.descripcion
+    ?? item?.nombreMapeo
+    ?? ''
+  return String(value)
+}
+
 function normalizeHorarios(item: any) {
   const rawHorarios = Array.isArray(item?.horarios)
     ? item.horarios
@@ -86,12 +110,22 @@ export function normalizeTareaCampana(item: any): TareaCampanaData {
   const validacionStage = pickStageSchedule(horarios, 2)
   const envioStage = pickStageSchedule(horarios, 3)
   const executionName = toExecutionName(tarea?.ejecucion?.nombre ?? tarea?.ejecucion?.id)
+  const campanaId = Number(
+    tarea?.linea?.catCampana?.id
+    ?? tarea?.linea?.campana?.id
+    ?? tarea?.idABCCatCampana
+    ?? item?.linea?.catCampana?.id
+    ?? item?.linea?.campana?.id
+    ?? item?.idABCCatCampana
+    ?? item?.idCampana
+    ?? 0
+  )
 
   return {
     idABCConfigTareaCampana: Number(tarea?.idABCConfigTareaCampana ?? tarea?.id ?? item?.idABCConfigTareaCampana ?? item?.id ?? 0),
     idABCCatLineaNegocio: Number(tarea?.linea?.id ?? tarea?.idABCCatLineaNegocio ?? item?.idABCCatLineaNegocio ?? item?.idLinea ?? 0),
-    idABCCatCampana: Number(tarea?.linea?.campana?.id ?? tarea?.idABCCatCampana ?? item?.idABCCatCampana ?? item?.idCampana ?? 0),
-    ingesta: String(tarea?.ingesta ?? item?.ingesta ?? ''),
+    idABCCatCampana: campanaId,
+    ingesta: resolveIngestaName(tarea, item),
     carga: {
       ejecucion: executionName,
       dia: cargaStage.dia,

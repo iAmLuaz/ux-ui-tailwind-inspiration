@@ -17,13 +17,33 @@ export interface TareaRefCampana {
 
 export interface TareaRefLinea {
   id: number
-  campana: TareaRefCampana
+  campana?: TareaRefCampana | null
+  catCampana?: TareaRefCampana | null
+}
+
+export interface TareaAsignacion {
+  mapeo?: {
+    id?: number
+    nombre?: string
+    descripcion?: string
+  }
+  ingesta?: {
+    nombre?: string
+  }
+  nombreMapeo?: string
 }
 
 export interface TareaCampanaConfig {
-  idABCConfigTareaCampana: number
+  idABCConfigTareaCampana?: number
+  id?: number
   linea: TareaRefLinea
-  ingesta: string
+  mapeo?: {
+    id?: number
+    nombre?: string
+    descripcion?: string
+  }
+  ingesta?: string
+  asignacion?: TareaAsignacion
   tipo: TareaRefTipo
   ejecucion: TareaRefTipo
   bolActivo: boolean
@@ -54,7 +74,7 @@ export interface TareaCampanaData {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
   idABCCatCampana: number
-  ingesta: string
+  ingesta?: string
   carga: TareaSchedule
   validacion: TareaSchedule
   envio: TareaSchedule
@@ -67,13 +87,7 @@ export interface TareaCampanaData {
 
 export interface CreateTareaCampanaPayload {
   tarea: {
-    linea: {
-      id: number
-      campana: {
-        id: number
-      }
-    }
-    ingesta: string
+    mapeo: { id: number }
     tipo: { id: number }
     ejecucion: { id: number }
     bolActivo?: boolean
@@ -94,13 +108,16 @@ export interface CreateTareaCampanaPayload {
 export interface UpdateTareaCampanaPayload {
   tarea: {
     id: number
-    linea: {
+    mapeo?: { id: number }
+    linea?: {
       id: number
-      campana: {
+      catCampana?: {
+        id: number
+      }
+      campana?: {
         id: number
       }
     }
-    ingesta: string
     tipo: { id: number }
     ejecucion: { id: number }
     bolActivo?: boolean

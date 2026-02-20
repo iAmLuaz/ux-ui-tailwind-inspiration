@@ -9,7 +9,7 @@ import type {
 import type { BitacoraPayload } from '../types/bitacora'
 import { addToast } from '@/stores/toastStore'
 
-type ApiDomain = 'catalogos' | 'mapeos' | 'tareas' | 'columnas' | 'default'
+type ApiDomain = 'catalogos' | 'mapeos' | 'tareas' | 'horarios' | 'columnas' | 'default'
 
 const GLOBAL_USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true'
 const API_BASE_URL_REAL = import.meta.env.VITE_API_URL_REAL
@@ -28,6 +28,7 @@ function parseEnvBoolean(value: unknown): boolean | undefined {
 
 function getEndpointDomain(endpoint: string): ApiDomain {
   const path = String(endpoint || '').toLowerCase()
+  if (path.includes('/horarios')) return 'horarios'
   if (path.includes('/catalogos')) return 'catalogos'
   if (path.includes('/columnas')) return 'columnas'
   if (path.includes('/tareas')) return 'tareas'
@@ -40,6 +41,7 @@ function shouldUseMockByDomain(domain: ApiDomain): boolean {
     catalogos: 'VITE_MOCK_CATALOGOS',
     mapeos: 'VITE_MOCK_MAPEOS',
     tareas: 'VITE_MOCK_TAREAS',
+    horarios: 'VITE_MOCK_HORARIOS',
     columnas: 'VITE_MOCK_COLUMNAS',
     default: 'VITE_MOCK_DEFAULT'
   }[domain]

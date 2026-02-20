@@ -474,13 +474,22 @@ function buildColumnaCampanaRecord(mapeoId, payload) {
 function buildTareaLineaRecord(lineaId, payload) {
   const base = payload?.tarea ?? payload ?? {}
   const ejecucionId = Number(base?.ejecucion?.id ?? 1)
+  const taskId = Number(base.id ?? base.idABCConfigTareaLinea ?? 0)
+  const asignacion = base?.asignacion ?? null
+  const ingestaFromAsignacion =
+    asignacion?.mapeo?.nombre
+    ?? asignacion?.mapeo?.descripcion
+    ?? asignacion?.ingesta?.nombre
+    ?? asignacion?.nombreMapeo
+    ?? ''
   return {
-    idABCConfigTareaLinea: Number(base.idABCConfigTareaLinea ?? base.id ?? 0),
+    id: taskId,
+    idABCConfigTareaLinea: taskId,
     linea: {
-      id: Number(base?.linea?.id ?? base.idABCCatLineaNegocio ?? lineaId ?? 0),
-      campana: null
+      id: Number(base?.linea?.id ?? base.idABCCatLineaNegocio ?? lineaId ?? 0)
     },
-    ingesta: base.ingesta ?? '',
+    ingesta: base.ingesta ?? ingestaFromAsignacion ?? '',
+    asignacion,
     tipo: {
       id: Number(base?.tipo?.id ?? 1),
       nombre: base?.tipo?.nombre ?? 'Ingesta'
@@ -498,15 +507,25 @@ function buildTareaLineaRecord(lineaId, payload) {
 function buildTareaCampanaRecord(lineaId, campanaId, payload) {
   const base = payload?.tarea ?? payload ?? {}
   const ejecucionId = Number(base?.ejecucion?.id ?? 1)
+  const taskId = Number(base.id ?? base.idABCConfigTareaCampana ?? 0)
+  const asignacion = base?.asignacion ?? null
+  const ingestaFromAsignacion =
+    asignacion?.mapeo?.nombre
+    ?? asignacion?.mapeo?.descripcion
+    ?? asignacion?.ingesta?.nombre
+    ?? asignacion?.nombreMapeo
+    ?? ''
   return {
-    idABCConfigTareaCampana: Number(base.idABCConfigTareaCampana ?? base.id ?? 0),
+    id: taskId,
+    idABCConfigTareaCampana: taskId,
     linea: {
       id: Number(base?.linea?.id ?? base.idABCCatLineaNegocio ?? lineaId ?? 0),
-      campana: {
-        id: Number(base?.linea?.campana?.id ?? base.idABCCatCampana ?? campanaId ?? 0)
+      catCampana: {
+        id: Number(base?.linea?.catCampana?.id ?? base?.linea?.campana?.id ?? base.idABCCatCampana ?? campanaId ?? 0)
       }
     },
-    ingesta: base.ingesta ?? '',
+    ingesta: base.ingesta ?? ingestaFromAsignacion ?? '',
+    asignacion,
     tipo: {
       id: Number(base?.tipo?.id ?? 1),
       nombre: base?.tipo?.nombre ?? 'Ingesta'
@@ -702,11 +721,11 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (pathOnly === '/lineas/tareas') {
-        return send(res, 200, store.tareasLinea.map(withTareaLineaHorarios))
+        return send(res, 200, store.tareasLinea)
       }
 
       if (pathOnly === '/lineas/campanas/tareas') {
-        return send(res, 200, store.tareasCampana.map(withTareaCampanaHorarios))
+        return send(res, 200, store.tareasCampana)
       }
 
       const lineasMapeoParams = matchPath(pathOnly, '/lineas/:lineaId/mapeos')
@@ -720,7 +739,7 @@ const server = http.createServer(async (req, res) => {
       if (lineasTareaParams) {
         const lineaId = Number(lineasTareaParams.lineaId)
         const list = store.tareasLinea.filter(t => Number(t?.linea?.id ?? t?.idABCCatLineaNegocio) === lineaId)
-        return send(res, 200, list.map(withTareaLineaHorarios))
+        return send(res, 200, list)
       }
 
       const campanaTareaParams = matchPath(pathOnly, '/lineas/:lineaId/campanas/:campanaId/tareas')
@@ -729,9 +748,9 @@ const server = http.createServer(async (req, res) => {
         const campanaId = Number(campanaTareaParams.campanaId)
         const list = store.tareasCampana.filter(t =>
           Number(t?.linea?.id ?? t?.idABCCatLineaNegocio) === lineaId &&
-          Number(t?.linea?.campana?.id ?? t?.idABCCatCampana) === campanaId
+          Number(t?.linea?.catCampana?.id ?? t?.linea?.campana?.id ?? t?.idABCCatCampana) === campanaId
         )
-        return send(res, 200, list.map(withTareaCampanaHorarios))
+        return send(res, 200, list)
       }
 
       const horariosLineaParams = matchPath(pathOnly, '/lineas/tareas/:tareaId/horarios')
@@ -983,7 +1002,7 @@ const server = http.createServer(async (req, res) => {
           fechaUltimaModificacion: now()
         }
         Object.assign(current, updatedRecord)
-        return send(res, 200, withTareaLineaHorarios(current))
+        return send(res, 200, current)
       }
 
       if (pathOnly === '/lineas/campanas/tareas') {
@@ -993,7 +1012,7 @@ const server = http.createServer(async (req, res) => {
         const current = findTareaCampana(id)
         if (!current) return send(res, 404, { message: 'Not found' })
         const lineaId = Number(payload?.linea?.id ?? payload?.idABCCatLineaNegocio ?? current?.linea?.id ?? 0)
-        const campanaId = Number(payload?.linea?.campana?.id ?? payload?.idABCCatCampana ?? current?.linea?.campana?.id ?? 0)
+        const campanaId = Number(payload?.linea?.catCampana?.id ?? payload?.linea?.campana?.id ?? payload?.idABCCatCampana ?? current?.linea?.catCampana?.id ?? current?.linea?.campana?.id ?? 0)
         const updatedRecord = {
           ...buildTareaCampanaRecord(lineaId, campanaId, body),
           idABCConfigTareaCampana: id,
@@ -1001,7 +1020,7 @@ const server = http.createServer(async (req, res) => {
           fechaUltimaModificacion: now()
         }
         Object.assign(current, updatedRecord)
-        return send(res, 200, withTareaCampanaHorarios(current))
+        return send(res, 200, current)
       }
 
       if (pathOnly === '/lineas/campanas/mapeos') {
@@ -1123,7 +1142,7 @@ const server = http.createServer(async (req, res) => {
         if (!current) return send(res, 404, { message: 'Not found' })
         current.bolActivo = pathOnly.endsWith('/activar')
         current.fechaUltimaModificacion = now()
-        return send(res, 200, withTareaLineaHorarios(current))
+        return send(res, 200, current)
       }
 
       if (pathOnly === '/lineas/campanas/tareas/activar' || pathOnly === '/lineas/campanas/tareas/desactivar') {
@@ -1133,7 +1152,7 @@ const server = http.createServer(async (req, res) => {
         if (!current) return send(res, 404, { message: 'Not found' })
         current.bolActivo = pathOnly.endsWith('/activar')
         current.fechaUltimaModificacion = now()
-        return send(res, 200, withTareaCampanaHorarios(current))
+        return send(res, 200, current)
       }
 
       const horariosLineaToggle = matchPath(pathOnly, '/lineas/tareas/:tareaId/horarios/:action')

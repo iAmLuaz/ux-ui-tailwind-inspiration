@@ -48,12 +48,46 @@ function uniqueHorariosBySignature(horarios: any[]): any[] {
 }
 
 export const tareaLineaService = {
-  getAll() {
-    return apiClient.getTareasLinea().then(normalizeTareasLinea)
+  async getAll() {
+    const raw = await apiClient.getTareasLinea() as any
+    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const withHorarios = await Promise.all(
+      list.map(async (item: any) => {
+        if (Array.isArray(item?.horarios) || Array.isArray(item?.tarea?.horarios)) {
+          return item
+        }
+        const tareaId = Number(item?.idABCConfigTareaLinea ?? item?.id ?? item?.tarea?.idABCConfigTareaLinea ?? item?.tarea?.id ?? 0)
+        if (!tareaId) return item
+        const horarios = await apiClient.getHorariosTareaLinea(tareaId).catch(() => [])
+        return {
+          ...item,
+          horarios
+        }
+      })
+    )
+
+    return normalizeTareasLinea(withHorarios)
   },
 
-  getByLinea(lineaId: string | number) {
-    return apiClient.getTareasLineaByLinea(lineaId).then(normalizeTareasLinea)
+  async getByLinea(lineaId: string | number) {
+    const raw = await apiClient.getTareasLineaByLinea(lineaId) as any
+    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const withHorarios = await Promise.all(
+      list.map(async (item: any) => {
+        if (Array.isArray(item?.horarios) || Array.isArray(item?.tarea?.horarios)) {
+          return item
+        }
+        const tareaId = Number(item?.idABCConfigTareaLinea ?? item?.id ?? item?.tarea?.idABCConfigTareaLinea ?? item?.tarea?.id ?? 0)
+        if (!tareaId) return item
+        const horarios = await apiClient.getHorariosTareaLinea(tareaId).catch(() => [])
+        return {
+          ...item,
+          horarios
+        }
+      })
+    )
+
+    return normalizeTareasLinea(withHorarios)
   },
 
   async create(lineaId: string | number, payload: any) {

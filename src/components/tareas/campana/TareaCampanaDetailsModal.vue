@@ -28,7 +28,7 @@ interface TareaCampanaRow {
   idABCConfigTareaCampana: number
   idABCCatLineaNegocio: number
   idABCCatCampana: number
-  ingesta: string
+  ingesta?: string
   bolActivo: boolean
   carga?: { ejecucion?: string; dia?: string; hora?: string }
   validacion?: { ejecucion?: string; dia?: string; hora?: string }

@@ -48,12 +48,46 @@ function uniqueHorariosBySignature(horarios: any[]): any[] {
 }
 
 export const tareaCampanaService = {
-  getAll() {
-    return apiClient.getTareasCampana().then(normalizeTareasCampana)
+  async getAll() {
+    const raw = await apiClient.getTareasCampana() as any
+    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const withHorarios = await Promise.all(
+      list.map(async (item: any) => {
+        if (Array.isArray(item?.horarios) || Array.isArray(item?.tarea?.horarios)) {
+          return item
+        }
+        const tareaId = Number(item?.idABCConfigTareaCampana ?? item?.id ?? item?.tarea?.idABCConfigTareaCampana ?? item?.tarea?.id ?? 0)
+        if (!tareaId) return item
+        const horarios = await apiClient.getHorariosTareaCampana(tareaId).catch(() => [])
+        return {
+          ...item,
+          horarios
+        }
+      })
+    )
+
+    return normalizeTareasCampana(withHorarios)
   },
 
-  getByLineaCampana(lineaId: string | number, campanaId: string | number) {
-    return apiClient.getTareasCampanaByLineaCampana(lineaId, campanaId).then(normalizeTareasCampana)
+  async getByLineaCampana(lineaId: string | number, campanaId: string | number) {
+    const raw = await apiClient.getTareasCampanaByLineaCampana(lineaId, campanaId) as any
+    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const withHorarios = await Promise.all(
+      list.map(async (item: any) => {
+        if (Array.isArray(item?.horarios) || Array.isArray(item?.tarea?.horarios)) {
+          return item
+        }
+        const tareaId = Number(item?.idABCConfigTareaCampana ?? item?.id ?? item?.tarea?.idABCConfigTareaCampana ?? item?.tarea?.id ?? 0)
+        if (!tareaId) return item
+        const horarios = await apiClient.getHorariosTareaCampana(tareaId).catch(() => [])
+        return {
+          ...item,
+          horarios
+        }
+      })
+    )
+
+    return normalizeTareasCampana(withHorarios)
   },
 
   async create(lineaId: string | number, campanaId: string | number, payload: any) {

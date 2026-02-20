@@ -8,6 +8,7 @@ import type { WeekdayValue } from '@/composables/tareas/tareaScheduleUtils'
 export interface TareaCampanaFormModel {
   idABCCatLineaNegocio?: number | ''
   idABCCatCampana?: number | ''
+  idMapeo?: number | ''
   ingesta: string
   ejecucionIngesta: string
   diaIngesta: WeekdayValue
@@ -86,6 +87,7 @@ export function toCreateTareaCampanaPayloads(form: TareaCampanaFormModel): Creat
   const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
   const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
   const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
+  const mapeoId = Number(form.idMapeo ?? 0)
 
   const horarios = [
     ...cargaSlots.map(slot => toHorarioByType(1, slot.dia, slot.hora)),
@@ -95,16 +97,9 @@ export function toCreateTareaCampanaPayloads(form: TareaCampanaFormModel): Creat
 
   return [{
     tarea: {
-      linea: {
-        id: Number(form.idABCCatLineaNegocio ?? 0),
-        campana: {
-          id: Number(form.idABCCatCampana ?? 0)
-        }
-      },
-      ingesta: form.ingesta,
+      mapeo: { id: mapeoId },
       tipo: { id: 1 },
-      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) },
-      bolActivo: true
+      ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) }
     },
     horarios,
     idABCUsuario: Number(form.idUsuario ?? 1),
@@ -124,17 +119,18 @@ export function toUpdateTareaCampanaPayload(
   const cargaSlots = normalizeSlots(form.cargaSlots, form.diaIngesta, form.horaIngesta)
   const validacionSlots = normalizeSlots(form.validacionSlots, form.diaValidacion, form.horaValidacion)
   const envioSlots = normalizeSlots(form.envioSlots, form.diaEnvio, form.horaEnvio)
+  const mapeoId = Number(form.idMapeo ?? 0)
 
   return {
     tarea: {
       id: tareaId,
+      ...(mapeoId > 0 ? { mapeo: { id: mapeoId } } : {}),
       linea: {
         id: Number(form.idABCCatLineaNegocio ?? 0),
-        campana: {
+        catCampana: {
           id: Number(form.idABCCatCampana ?? 0)
         }
       },
-      ingesta: form.ingesta,
       tipo: { id: 1 },
       ejecucion: { id: resolveExecutionId(form.ejecucionIngesta) }
     },
