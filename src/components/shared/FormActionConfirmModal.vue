@@ -6,12 +6,14 @@ interface Props {
   confirmText?: string
   cancelText?: string
   isLoading?: boolean
+  variant?: 'overlay' | 'inline'
 }
 
 withDefaults(defineProps<Props>(), {
   confirmText: 'Confirmar',
   cancelText: 'Cancelar',
-  isLoading: false
+  isLoading: false,
+  variant: 'overlay'
 })
 
 const emit = defineEmits<{
@@ -21,17 +23,50 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="show" class="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-    <div class="w-full max-w-md rounded-xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
-      <div class="px-5 py-3 bg-[#00357F] border-b border-white/10">
-        <h4 class="text-base font-semibold text-white/95 tracking-wide">{{ title }}</h4>
+  <div
+    v-if="show"
+    :class="[
+      variant === 'overlay'
+        ? 'fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'
+        : 'w-full'
+    ]"
+  >
+    <div
+      :class="[
+        'w-full rounded-xl bg-white border overflow-hidden',
+        variant === 'overlay'
+          ? 'max-w-md shadow-2xl border-gray-100'
+          : 'max-w-full shadow-sm border-amber-200 bg-white'
+      ]"
+    >
+      <div
+        :class="[
+          'px-5 py-3 border-b',
+          variant === 'overlay'
+            ? 'bg-[#00357F] border-white/10'
+            : 'bg-amber-100 border-amber-200'
+        ]"
+      >
+        <h4
+          :class="[
+            'text-base font-semibold tracking-wide',
+            variant === 'overlay' ? 'text-white/95' : 'text-amber-900'
+          ]"
+        >
+          {{ title }}
+        </h4>
       </div>
 
       <div class="px-5 py-4">
-        <p class="text-sm text-gray-600 leading-relaxed">{{ message }}</p>
+        <p :class="['text-sm leading-relaxed', variant === 'overlay' ? 'text-gray-600' : 'text-amber-900/90']">{{ message }}</p>
       </div>
 
-      <div class="px-5 py-4 border-t border-gray-100 flex justify-end gap-3 bg-white">
+      <div
+        :class="[
+          'px-5 py-4 border-t flex justify-end gap-3',
+          variant === 'overlay' ? 'border-gray-100 bg-white' : 'border-amber-200 bg-transparent'
+        ]"
+      >
         <button
           type="button"
           class="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"

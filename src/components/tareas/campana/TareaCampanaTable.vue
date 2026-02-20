@@ -30,19 +30,25 @@ export interface TareaCampanaRow {
   ingesta?: string
   bolActivo: boolean
   carga?: {
+    ejecucionId?: number
     ejecucion?: string
     dia?: string
     hora?: string
+    configurada?: boolean
   }
   validacion?: {
+    ejecucionId?: number
     ejecucion?: string
     dia?: string
     hora?: string
+    configurada?: boolean
   }
   envio?: {
+    ejecucionId?: number
     ejecucion?: string
     dia?: string
     hora?: string
+    configurada?: boolean
   }
   horarios?: HorarioItem[]
   tarea?: {
@@ -139,7 +145,12 @@ const countStageHorarios = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
 
 const getStageInfo = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
   const count = countStageHorarios(t, stageId)
-  const configured = count > 0
+  const configuredByRow = stageId === 1
+    ? Boolean(t.carga?.configurada)
+    : stageId === 2
+      ? Boolean(t.validacion?.configurada)
+      : Boolean(t.envio?.configurada)
+  const configured = configuredByRow || count > 0
   return { count, configured }
 }
 
@@ -147,7 +158,7 @@ const getStageVisual = (t: TareaCampanaRow, stageId: 1 | 2 | 3) => {
   const stage = getStageInfo(t, stageId)
   return {
     ...stage,
-    label: stage.configured ? `${stage.count} fecha${stage.count === 1 ? '' : 's'}` : 'Sin fechas',
+    label: stage.configured ? 'Configurada' : 'No configurada',
     containerClass: stage.configured
       ? 'bg-emerald-50/80 border-emerald-200 text-emerald-700'
       : 'bg-rose-50/70 border-rose-200 text-rose-700',

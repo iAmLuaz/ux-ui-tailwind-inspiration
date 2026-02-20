@@ -97,10 +97,17 @@ async function request<T>(
 ): Promise<T> {
   const url = `${resolveBaseUrl(endpoint)}${endpoint}`
 
+  const incomingHeaders = (options.headers ?? {}) as Record<string, string>
+  const hasBody = options.body !== undefined && options.body !== null
+  const hasExplicitContentType =
+    Object.prototype.hasOwnProperty.call(incomingHeaders, 'Content-Type')
+    || Object.prototype.hasOwnProperty.call(incomingHeaders, 'content-type')
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(hasBody && !hasExplicitContentType ? { 'Content-Type': 'application/json' } : {}),
+    'Accept': 'application/json, text/plain, */*',
     'ngrok-skip-browser-warning': 'true',
-    ...options.headers
+    ...incomingHeaders
   }
 
   const endpointLower = String(endpoint || '').toLowerCase()
@@ -125,7 +132,14 @@ async function request<T>(
   const method = (options.method || 'GET').toUpperCase()
 
   const text = await response.text()
-  const data = text ? JSON.parse(text) : undefined
+  let data: any = undefined
+  if (text) {
+    try {
+      data = JSON.parse(text)
+    } catch {
+      data = text
+    }
+  }
 
     if (response.ok) {
       const path = endpointLower
@@ -247,8 +261,16 @@ export const api = {
   getTareasLineaByLinea: (lineaId: string | number) =>
     http.get(`/lineas/${lineaId}/tareas`),
   createTareaLinea: (lineaId: string | number, payload: any) =>
-    http.post(`/lineas/${lineaId}/tareas`, payload),
-  updateTareaLinea: (payload: any) => http.put('/lineas/tareas', payload),
+    request(`/lineas/${lineaId}/tareas`, {
+      method: 'POST',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
+  updateTareaLinea: (payload: any) => request('/lineas/tareas', {
+    method: 'PUT',
+    headers: { 'X-Suppress-Toast': 'true' },
+    body: JSON.stringify(payload)
+  }),
   deleteTareaLinea: (lineaId: string | number, tareaId: string | number) =>
     http.delete(`/lineas/${lineaId}/tareas/${tareaId}`),
   patchActivarTareaLinea: (payload: any) =>
@@ -258,19 +280,39 @@ export const api = {
   getHorariosTareaLinea: (tareaId: string | number) =>
     http.get(`/lineas/tareas/${tareaId}/horarios`),
   postHorariosTareaLinea: (tareaId: string | number, payload: any) =>
-    http.post(`/lineas/tareas/${tareaId}/horarios`, payload),
+    request(`/lineas/tareas/${tareaId}/horarios`, {
+      method: 'POST',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchActivarHorarioTareaLinea: (tareaId: string | number, payload: any) =>
-    http.patch(`/lineas/tareas/${tareaId}/horarios/activar`, payload),
+    request(`/lineas/tareas/${tareaId}/horarios/activar`, {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchDesactivarHorarioTareaLinea: (tareaId: string | number, payload: any) =>
-    http.patch(`/lineas/tareas/${tareaId}/horarios/desactivar`, payload),
+    request(`/lineas/tareas/${tareaId}/horarios/desactivar`, {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
 
   // Tareas campana
   getTareasCampana: () => http.get('/lineas/campanas/tareas'),
   getTareasCampanaByLineaCampana: (lineaId: string | number, campanaId: string | number) =>
     http.get(`/lineas/${lineaId}/campanas/${campanaId}/tareas`),
   createTareaCampana: (lineaId: string | number, campanaId: string | number, payload: any) =>
-    http.post(`/lineas/${lineaId}/campanas/${campanaId}/tareas`, payload),
-  updateTareaCampana: (payload: any) => http.put('/lineas/campanas/tareas', payload),
+    request(`/lineas/${lineaId}/campanas/${campanaId}/tareas`, {
+      method: 'POST',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
+  updateTareaCampana: (payload: any) => request('/lineas/campanas/tareas', {
+    method: 'PUT',
+    headers: { 'X-Suppress-Toast': 'true' },
+    body: JSON.stringify(payload)
+  }),
   deleteTareaCampana: (lineaId: string | number, campanaId: string | number, tareaId: string | number) =>
     http.delete(`/lineas/${lineaId}/campanas/${campanaId}/tareas/${tareaId}`),
   patchActivarTareaCampana: (payload: any) =>
@@ -280,11 +322,23 @@ export const api = {
   getHorariosTareaCampana: (tareaId: string | number) =>
     http.get(`/campanas/tareas/${tareaId}/horarios`),
   postHorariosTareaCampana: (tareaId: string | number, payload: any) =>
-    http.post(`/campanas/tareas/${tareaId}/horarios`, payload),
+    request(`/campanas/tareas/${tareaId}/horarios`, {
+      method: 'POST',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchActivarHorarioTareaCampana: (tareaId: string | number, payload: any) =>
-    http.patch(`/campanas/tareas/${tareaId}/horarios/activar`, payload),
+    request(`/campanas/tareas/${tareaId}/horarios/activar`, {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchDesactivarHorarioTareaCampana: (tareaId: string | number, payload: any) =>
-    http.patch(`/campanas/tareas/${tareaId}/horarios/desactivar`, payload),
+    request(`/campanas/tareas/${tareaId}/horarios/desactivar`, {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
 
   // Columna mapeo (línea)
   getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),

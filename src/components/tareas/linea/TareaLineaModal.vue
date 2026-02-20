@@ -3,33 +3,36 @@ import { ref, watch, computed } from 'vue'
 import type { MapeoLineaData } from '@/types/mapeos/linea'
 import { SelectField } from '@/components/tareas/shared/tareaFormFields'
 import TareaScheduleConfigurator, { type TareaScheduleModel } from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
-import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
+import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
 import {
-  normalizeWeekdayInputValue,
-  toHoraLabel,
   type Option,
-  type ScheduleSlot,
-  type WeekdayValue
+  type ScheduleSlot
 } from '@/composables/tareas/tareaScheduleUtils'
+import {
+  normalizeCatalogId,
+  resolveIdByLabel,
+  resolveMapeoIdFromInitialData,
+  toScheduleSlotsByType
+} from '@/composables/tareas/tareaFormUtils'
 
 export interface TareaLineaFormData {
   idABCCatLineaNegocio?: number | ''
   idMapeo?: number | ''
   ingesta: string
   carga: string
-  ejecucionIngesta: string
-  diaIngesta: WeekdayValue
-  horaIngesta: string
+  ejecucionIngesta: number | ''
+  diaIngesta: number | ''
+  horaIngesta: number | ''
   cargaSlots?: ScheduleSlot[]
   validacion: string
-  ejecucionValidacion: string
-  diaValidacion: WeekdayValue
-  horaValidacion: string
+  ejecucionValidacion: number | ''
+  diaValidacion: number | ''
+  horaValidacion: number | ''
   validacionSlots?: ScheduleSlot[]
   envio: string
-  ejecucionEnvio: string
-  diaEnvio: WeekdayValue
-  horaEnvio: string
+  ejecucionEnvio: number | ''
+  diaEnvio: number | ''
+  horaEnvio: number | ''
   envioSlots?: ScheduleSlot[]
   horariosDesactivarIds?: number[]
   horariosActivarIds?: number[]
@@ -41,6 +44,9 @@ interface Props {
   mode: 'add' | 'edit'
   lineasDisponibles: Option[]
   mapeosLinea: MapeoLineaData[]
+  diasDisponibles: Option[]
+  horasDisponibles: Option[]
+  ejecucionesDisponibles: Option[]
   initialData?: Record<string, any> | null
   isLoading?: boolean
 }
@@ -55,6 +61,8 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+
+const defaultEjecucionId = computed(() => normalizeCatalogId(props.ejecucionesDisponibles?.[0]?.value) || 1)
 
 const getMapeoLabel = (m: MapeoLineaData) => m.nombre || m.descripcion || `Mapeo ${m.idABCConfigMapeoLinea}`
 
@@ -123,6 +131,7 @@ const confirmMessage = computed(() =>
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
 const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
+const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
 
 const scheduleModel = computed<TareaScheduleModel>({
   get: () => ({
@@ -286,62 +295,65 @@ const confirmAction = () => {
 
 function initializeFormData(): TareaLineaFormData {
   if (props.initialData) {
-    const toScheduleSlotsByType = (typeId: number): ScheduleSlot[] => {
-      const horarios = Array.isArray(props.initialData?.horarios) ? props.initialData.horarios : []
-      return horarios
-        .filter((horario: any) => Number(horario?.tipoHorario?.id ?? horario?.tipo?.id ?? horario?.idABCCatTipoHorario ?? 0) === typeId)
-        .map((horario: any) => {
-          const dia = normalizeWeekdayInputValue(horario?.dia?.nombre ?? horario?.dia)
-          const hora = String(
-            horario?.dia?.hora?.nombre
-              ?? horario?.hora?.nombre
-              ?? toHoraLabel(horario?.dia?.hora?.id ?? horario?.hora?.id)
-              ?? ''
-          )
-          return {
-            dia,
-            hora,
-            horarioId: Number(horario?.idABCConfigHorarioTareaLinea ?? horario?.id ?? 0) || undefined,
-            persisted: true,
-            activo: (horario?.activo ?? horario?.bolActivo ?? true) !== false
-          }
-        })
-        .filter((slot: ScheduleSlot) => Boolean(slot.dia && slot.hora))
-    }
-
-    const cargaSlots = toScheduleSlotsByType(1)
-    const validacionSlots = toScheduleSlotsByType(2)
-    const envioSlots = toScheduleSlotsByType(3)
+    const cargaSlots = toScheduleSlotsByType(props.initialData, 1, ['idABCConfigHorarioTareaLinea'])
+    const validacionSlots = toScheduleSlotsByType(props.initialData, 2, ['idABCConfigHorarioTareaLinea'])
+    const envioSlots = toScheduleSlotsByType(props.initialData, 3, ['idABCConfigHorarioTareaLinea'])
+    const tareaCarga = props.initialData.tareasPorTipo?.carga ?? props.initialData.tarea
+    const tareaValidacion = props.initialData.tareasPorTipo?.validacion ?? props.initialData.tarea
+    const tareaEnvio = props.initialData.tareasPorTipo?.envio ?? props.initialData.tarea
 
     const isEditMode = props.mode === 'edit'
-    const diaIngesta = isEditMode ? '' : (cargaSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.carga?.dia ?? props.initialData.diaIngesta))
-    const horaIngesta = isEditMode ? '' : (cargaSlots[0]?.hora ?? String(props.initialData.carga?.hora ?? props.initialData.horaIngesta ?? ''))
-    const diaValidacion = isEditMode ? '' : (validacionSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.validacion?.dia ?? props.initialData.diaValidacion))
-    const horaValidacion = isEditMode ? '' : (validacionSlots[0]?.hora ?? String(props.initialData.validacion?.hora ?? props.initialData.horaValidacion ?? ''))
-    const diaEnvio = isEditMode ? '' : (envioSlots[0]?.dia ?? normalizeWeekdayInputValue(props.initialData.envio?.dia ?? props.initialData.diaEnvio))
-    const horaEnvio = isEditMode ? '' : (envioSlots[0]?.hora ?? String(props.initialData.envio?.hora ?? props.initialData.horaEnvio ?? ''))
+    const diaIngesta = isEditMode
+      ? ''
+      : (cargaSlots[0]?.dia ?? resolveIdByLabel(props.diasDisponibles, props.initialData.carga?.dia ?? props.initialData.diaIngesta))
+    const horaIngesta = isEditMode
+      ? ''
+      : (cargaSlots[0]?.hora ?? resolveIdByLabel(props.horasDisponibles, props.initialData.carga?.hora ?? props.initialData.horaIngesta))
+    const diaValidacion = isEditMode
+      ? ''
+      : (validacionSlots[0]?.dia ?? resolveIdByLabel(props.diasDisponibles, props.initialData.validacion?.dia ?? props.initialData.diaValidacion))
+    const horaValidacion = isEditMode
+      ? ''
+      : (validacionSlots[0]?.hora ?? resolveIdByLabel(props.horasDisponibles, props.initialData.validacion?.hora ?? props.initialData.horaValidacion))
+    const diaEnvio = isEditMode
+      ? ''
+      : (envioSlots[0]?.dia ?? resolveIdByLabel(props.diasDisponibles, props.initialData.envio?.dia ?? props.initialData.diaEnvio))
+    const horaEnvio = isEditMode
+      ? ''
+      : (envioSlots[0]?.hora ?? resolveIdByLabel(props.horasDisponibles, props.initialData.envio?.hora ?? props.initialData.horaEnvio))
+
+    const ejecucionIngesta = normalizeCatalogId(
+      props.initialData.carga?.ejecucionId
+      ?? tareaCarga?.ejecucion?.id
+      ?? resolveIdByLabel(props.ejecucionesDisponibles, props.initialData.carga?.ejecucion)
+    ) || defaultEjecucionId.value
+    const ejecucionValidacion = normalizeCatalogId(
+      props.initialData.validacion?.ejecucionId
+      ?? tareaValidacion?.ejecucion?.id
+      ?? resolveIdByLabel(props.ejecucionesDisponibles, props.initialData.validacion?.ejecucion)
+    ) || defaultEjecucionId.value
+    const ejecucionEnvio = normalizeCatalogId(
+      props.initialData.envio?.ejecucionId
+      ?? tareaEnvio?.ejecucion?.id
+      ?? resolveIdByLabel(props.ejecucionesDisponibles, props.initialData.envio?.ejecucion)
+    ) || defaultEjecucionId.value
 
     return {
       idABCCatLineaNegocio: props.initialData.idABCCatLineaNegocio ?? '',
-      idMapeo: Number(
-        props.initialData.tarea?.mapeo?.id
-        ?? props.initialData.asignacion?.mapeo?.id
-        ?? props.initialData.mapeo?.id
-        ?? 0
-      ) || '',
+      idMapeo: resolveMapeoIdFromInitialData(props.initialData),
       ingesta: props.initialData.ingesta ?? '',
       carga: 'Carga',
-      ejecucionIngesta: props.initialData.carga?.ejecucion ?? 'Automatica',
+      ejecucionIngesta,
       diaIngesta,
       horaIngesta,
       cargaSlots,
       validacion: 'Validación',
-      ejecucionValidacion: props.initialData.validacion?.ejecucion ?? 'Automatica',
+      ejecucionValidacion,
       diaValidacion,
       horaValidacion,
       validacionSlots,
       envio: 'Envío',
-      ejecucionEnvio: props.initialData.envio?.ejecucion ?? 'Automatica',
+      ejecucionEnvio,
       diaEnvio,
       horaEnvio,
       envioSlots,
@@ -356,17 +368,17 @@ function initializeFormData(): TareaLineaFormData {
     idMapeo: '',
     ingesta: '',
     carga: 'Carga',
-    ejecucionIngesta: 'Automatica',
+    ejecucionIngesta: defaultEjecucionId.value,
     diaIngesta: '',
     horaIngesta: '',
     cargaSlots: [],
     validacion: 'Validación',
-    ejecucionValidacion: 'Automatica',
+    ejecucionValidacion: defaultEjecucionId.value,
     diaValidacion: '',
     horaValidacion: '',
     validacionSlots: [],
     envio: 'Envío',
-    ejecucionEnvio: 'Automatica',
+    ejecucionEnvio: defaultEjecucionId.value,
     diaEnvio: '',
     horaEnvio: '',
     envioSlots: [],
@@ -383,7 +395,7 @@ function handleSave() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
 
       <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
         <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
@@ -442,6 +454,9 @@ function handleSave() {
           <TareaScheduleConfigurator
             v-model="scheduleModel"
             :mode="mode"
+            :day-options="diasDisponibles"
+            :hour-options="horasDisponibles"
+            :execution-options="ejecucionesDisponibles"
             @update:schedule-ready="isScheduleReady = $event"
           />
 
@@ -472,7 +487,7 @@ function handleSave() {
               title="Restaurar todo"
               aria-label="Restaurar todo"
               class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="isLoading"
+              :disabled="isLoading || showActionConfirm"
               @click="resetAllForm"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -486,14 +501,14 @@ function handleSave() {
               type="button"
               class="px-8 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-4 focus:ring-gray-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="requestCancel"
-              :disabled="isLoading"
+              :disabled="isLoading || showActionConfirm"
             >
               Cancelar
             </button>
             <button
               type="submit"
               class="px-8 py-3 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-4 focus:ring-yellow-300/50 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed flex items-center gap-3"
-              :disabled="isLoading || !canSave"
+              :disabled="isLoading || !canSave || showActionConfirm"
             >
               <svg v-if="isLoading" class="animate-spin h-5 w-5 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -505,11 +520,12 @@ function handleSave() {
         </div>
       </form>
 
-      <FormActionConfirmModal
+      <ModalActionConfirmOverlay
         :show="showActionConfirm"
         :title="confirmTitle"
         :message="confirmMessage"
         :confirm-text="confirmText"
+        :cancel-text="confirmCancelText"
         :is-loading="isLoading"
         @confirm="confirmAction"
         @cancel="closeActionConfirm"

@@ -3,12 +3,14 @@ export interface Option {
   value: number | string
 }
 
+export type CatalogValue = number | ''
+
 export type Weekday = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'
 export type WeekdayValue = Weekday | ''
 
 export interface ScheduleSlot {
-  dia: WeekdayValue
-  hora: string
+  dia: CatalogValue
+  hora: CatalogValue
   horarioId?: number
   persisted?: boolean
   activo?: boolean

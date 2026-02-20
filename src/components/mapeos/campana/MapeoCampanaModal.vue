@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
-import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
+import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
 
 interface Option {
   label: string
@@ -66,6 +66,7 @@ const confirmMessage = computed(() =>
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
 const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
+const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
 
 watch(
   () => [props.initialData, props.mode],
@@ -164,7 +165,7 @@ function handleSave() {
 
 <template>
   <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
       <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
         <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
@@ -244,34 +245,41 @@ function handleSave() {
             </label>
           </div>
 
+          <div v-if="mode === 'edit'" class="flex justify-end">
+            <button
+              type="button"
+              title="Restaurar información"
+              aria-label="Restaurar información"
+              class="group relative h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="isLoading || showActionConfirm"
+              @click="restoreInitialInformation"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+              </svg>
+              <span class="pointer-events-none absolute right-0 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Restaurar información</span>
+            </button>
+          </div>
+
           </div>
         </div>
 
         <div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
-          <button
-            v-if="mode === 'edit'"
-            type="button"
-            class="px-4 py-2.5 text-sm font-bold text-[#00357F] bg-white border border-[#00357F]/20 hover:bg-slate-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-[#00357F]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="isLoading"
-            @click="restoreInitialInformation"
-          >
-            Restaurar información
-          </button>
-          <div v-else></div>
+          <div></div>
 
           <div class="flex items-center gap-3">
             <button
               type="button"
               class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
               @click="requestCancel"
-              :disabled="isLoading"
+              :disabled="isLoading || showActionConfirm"
             >
               Cancelar
             </button>
             <button
               type="submit"
               class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-              :disabled="isLoading || isDuplicateName"
+              :disabled="isLoading || isDuplicateName || showActionConfirm"
             >
               <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -283,11 +291,12 @@ function handleSave() {
         </div>
       </form>
 
-      <FormActionConfirmModal
+      <ModalActionConfirmOverlay
         :show="showActionConfirm"
         :title="confirmTitle"
         :message="confirmMessage"
         :confirm-text="confirmText"
+        :cancel-text="confirmCancelText"
         :is-loading="isLoading"
         @confirm="confirmAction"
         @cancel="closeActionConfirm"

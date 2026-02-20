@@ -8,28 +8,33 @@ import {
   compareWeekdayTime,
   formatHourToAmPm,
   getWeekdayOrder,
-  horaOptions,
+  normalizeWeekdayInputValue,
+  toHoraLabel,
   removeScheduleSlot as deleteScheduleSlot,
-  weekdayOptions,
-  type ScheduleSlot,
-  type WeekdayValue
+  type Option,
+  type ScheduleSlot
 } from '@/composables/tareas/tareaScheduleUtils'
+import { normalizeCatalogId } from '@/composables/tareas/tareaFormUtils'
+
+type CatalogIdValue = number | ''
+
+const normalizeCatalogIdValue = (value: unknown): CatalogIdValue => normalizeCatalogId(value)
 
 export interface TareaScheduleModel {
   carga: string
-  ejecucionIngesta: string
-  diaIngesta: WeekdayValue
-  horaIngesta: string
+  ejecucionIngesta: CatalogIdValue
+  diaIngesta: CatalogIdValue
+  horaIngesta: CatalogIdValue
   cargaSlots?: ScheduleSlot[]
   validacion: string
-  ejecucionValidacion: string
-  diaValidacion: WeekdayValue
-  horaValidacion: string
+  ejecucionValidacion: CatalogIdValue
+  diaValidacion: CatalogIdValue
+  horaValidacion: CatalogIdValue
   validacionSlots?: ScheduleSlot[]
   envio: string
-  ejecucionEnvio: string
-  diaEnvio: WeekdayValue
-  horaEnvio: string
+  ejecucionEnvio: CatalogIdValue
+  diaEnvio: CatalogIdValue
+  horaEnvio: CatalogIdValue
   envioSlots?: ScheduleSlot[]
   horariosDesactivarIds?: number[]
   horariosActivarIds?: number[]
@@ -38,6 +43,9 @@ export interface TareaScheduleModel {
 interface Props {
   modelValue: TareaScheduleModel
   mode: 'add' | 'edit'
+  dayOptions: Option[]
+  hourOptions: Option[]
+  executionOptions: Option[]
 }
 
 interface Emits {
@@ -48,23 +56,55 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const ejecucionOptions = ['Automatica', 'Manual', 'Hibrida']
+const hasValue = (value: unknown) => String(value ?? '').trim() !== ''
+const sameValue = (left: unknown, right: unknown) => String(left ?? '') === String(right ?? '')
+
+const resolveDefaultExecution = (): CatalogIdValue => normalizeCatalogIdValue(props.executionOptions?.[0]?.value)
+
+const dayLabelByValue = computed(() => {
+  const map = new Map<string, string>()
+  for (const option of props.dayOptions ?? []) {
+    const key = String(option?.value ?? '').trim()
+    if (!key) continue
+    map.set(key, normalizeWeekdayInputValue(option?.label) || String(option?.label ?? ''))
+  }
+  return map
+})
+
+const executionOptions = computed(() => props.executionOptions ?? [])
+
+const hourLabelByValue = computed(() => {
+  const map = new Map<string, string>()
+  for (const option of props.hourOptions ?? []) {
+    const key = String(option?.value ?? '').trim()
+    if (!key) continue
+    map.set(key, toHoraLabel(option?.label))
+  }
+  return map
+})
+
+const toDayLabel = (value: unknown) => dayLabelByValue.value.get(String(value ?? '').trim()) || ''
+const toHourLabel = (value: unknown) => hourLabelByValue.value.get(String(value ?? '').trim()) || ''
+
+const validDayOptions = computed(() =>
+  (props.dayOptions ?? []).filter(option => getWeekdayOrder(normalizeWeekdayInputValue(option?.label)) > 0)
+)
 
 const normalizeScheduleData = (value?: Partial<TareaScheduleModel>): TareaScheduleModel => ({
   carga: value?.carga ?? 'Carga',
-  ejecucionIngesta: value?.ejecucionIngesta ?? 'Automatica',
-  diaIngesta: value?.diaIngesta ?? '',
-  horaIngesta: value?.horaIngesta ?? '',
+  ejecucionIngesta: normalizeCatalogIdValue(value?.ejecucionIngesta ?? resolveDefaultExecution()),
+  diaIngesta: normalizeCatalogIdValue(value?.diaIngesta),
+  horaIngesta: normalizeCatalogIdValue(value?.horaIngesta),
   cargaSlots: [...(value?.cargaSlots ?? [])],
   validacion: value?.validacion ?? 'Validación',
-  ejecucionValidacion: value?.ejecucionValidacion ?? 'Automatica',
-  diaValidacion: value?.diaValidacion ?? '',
-  horaValidacion: value?.horaValidacion ?? '',
+  ejecucionValidacion: normalizeCatalogIdValue(value?.ejecucionValidacion ?? resolveDefaultExecution()),
+  diaValidacion: normalizeCatalogIdValue(value?.diaValidacion),
+  horaValidacion: normalizeCatalogIdValue(value?.horaValidacion),
   validacionSlots: [...(value?.validacionSlots ?? [])],
   envio: value?.envio ?? 'Envío',
-  ejecucionEnvio: value?.ejecucionEnvio ?? 'Automatica',
-  diaEnvio: value?.diaEnvio ?? '',
-  horaEnvio: value?.horaEnvio ?? '',
+  ejecucionEnvio: normalizeCatalogIdValue(value?.ejecucionEnvio ?? resolveDefaultExecution()),
+  diaEnvio: normalizeCatalogIdValue(value?.diaEnvio),
+  horaEnvio: normalizeCatalogIdValue(value?.horaEnvio),
   envioSlots: [...(value?.envioSlots ?? [])],
   horariosDesactivarIds: [...(value?.horariosDesactivarIds ?? [])],
   horariosActivarIds: [...(value?.horariosActivarIds ?? [])]
@@ -72,7 +112,7 @@ const normalizeScheduleData = (value?: Partial<TareaScheduleModel>): TareaSchedu
 
 const sortSlots = (slots?: ScheduleSlot[]) =>
   [...(slots ?? [])]
-    .filter(slot => Boolean(slot?.dia && slot?.hora))
+    .filter(slot => hasValue(slot?.dia) && hasValue(slot?.hora))
     .sort((a, b) => `${a.dia}-${a.hora}`.localeCompare(`${b.dia}-${b.hora}`))
 
 const scheduleFingerprint = (value?: Partial<TareaScheduleModel>) => {
@@ -124,14 +164,23 @@ const isEnvioSectionEnabled = computed(() => hasValidacionSlots.value)
 const primaryCargaSlot = computed(() => (localData.value.cargaSlots ?? []).find(isSlotActive) ?? null)
 const primaryValidacionSlot = computed(() => (localData.value.validacionSlots ?? []).find(isSlotActive) ?? null)
 const primaryEnvioSlot = computed(() => (localData.value.envioSlots ?? []).find(isSlotActive) ?? null)
+
+const toSlotSchedule = (slot?: ScheduleSlot | null) => {
+  if (!slot) return null
+  const day = normalizeWeekdayInputValue(toDayLabel(slot.dia))
+  const hour = toHourLabel(slot.hora)
+  if (!day || !hour) return null
+  return { day, hour }
+}
+
 const getUsedDaysByKind = (kind: 'carga' | 'validacion' | 'envio') =>
   new Set(
     getSlotsByKind(kind)
-      .map(slot => String(slot.dia || '').trim())
+      .map(slot => String(slot.dia ?? '').trim())
       .filter(Boolean)
   )
 
-const filterUsedDays = (kind: 'carga' | 'validacion' | 'envio', options: WeekdayValue[]) => {
+const filterUsedDays = (kind: 'carga' | 'validacion' | 'envio', options: Option[]) => {
   const used = getUsedDaysByKind(kind)
   const currentValue =
     kind === 'carga'
@@ -140,22 +189,22 @@ const filterUsedDays = (kind: 'carga' | 'validacion' | 'envio', options: Weekday
         ? localData.value.diaValidacion
         : localData.value.diaEnvio
 
-  return options.filter(option => option === currentValue || !used.has(option))
+  return options.filter(option => sameValue(option?.value, currentValue) || !used.has(String(option?.value ?? '').trim()))
 }
 
-const cargaDayOptions = computed(() => filterUsedDays('carga', weekdayOptions))
-const validacionDayOptions = computed(() => filterUsedDays('validacion', weekdayOptions))
-const envioDayOptions = computed(() => filterUsedDays('envio', weekdayOptions))
+const cargaDayOptions = computed(() => filterUsedDays('carga', validDayOptions.value))
+const validacionDayOptions = computed(() => filterUsedDays('validacion', validDayOptions.value))
+const envioDayOptions = computed(() => filterUsedDays('envio', validDayOptions.value))
 
 const getUsedHoursByKind = (kind: 'carga' | 'validacion' | 'envio') =>
   new Set(
     getSlotsByKind(kind)
       .filter(isSlotActive)
-      .map(slot => String(slot.hora || '').trim())
+      .map(slot => String(slot.hora ?? '').trim())
       .filter(Boolean)
   )
 
-const filterUsedHours = (kind: 'carga' | 'validacion' | 'envio', options: string[]) => {
+const filterUsedHours = (kind: 'carga' | 'validacion' | 'envio', options: Option[]) => {
   const used = getUsedHoursByKind(kind)
   const currentValue =
     kind === 'carga'
@@ -164,68 +213,96 @@ const filterUsedHours = (kind: 'carga' | 'validacion' | 'envio', options: string
         ? localData.value.horaValidacion
         : localData.value.horaEnvio
 
-  return options.filter(option => option === currentValue || !used.has(option))
+  return options.filter(option => sameValue(option?.value, currentValue) || !used.has(String(option?.value ?? '').trim()))
+}
+
+const hourOptionsOrdered = computed(() =>
+  [...(props.hourOptions ?? [])]
+    .filter(option => Boolean(toHourLabel(option?.value)))
+    .sort((left, right) => toHourLabel(left?.value).localeCompare(toHourLabel(right?.value)))
+)
+
+const compareByCatalogValues = (
+  fromDayValue: CatalogIdValue,
+  fromHourValue: CatalogIdValue,
+  toDayValue: CatalogIdValue,
+  toHourValue: CatalogIdValue
+) => {
+  const fromDay = normalizeWeekdayInputValue(toDayLabel(fromDayValue))
+  const toDay = normalizeWeekdayInputValue(toDayLabel(toDayValue))
+  const fromHour = toHourLabel(fromHourValue)
+  const toHour = toHourLabel(toHourValue)
+  if (!fromDay || !toDay || !fromHour || !toHour) return null
+  return compareWeekdayTime(fromDay, fromHour, toDay, toHour)
+}
+
+const constrainedHourOptions = (
+  kind: 'validacion' | 'envio',
+  baseDayValue: CatalogIdValue,
+  baseHourValue: CatalogIdValue,
+  targetDayValue: CatalogIdValue
+) => {
+  if (!hasValue(baseDayValue) || !hasValue(baseHourValue) || !hasValue(targetDayValue) || !sameValue(baseDayValue, targetDayValue)) {
+    return filterUsedHours(kind, hourOptionsOrdered.value)
+  }
+
+  const constrained = hourOptionsOrdered.value.filter(option => {
+    const delta = compareByCatalogValues(baseDayValue, baseHourValue, targetDayValue, normalizeCatalogIdValue(option.value))
+    return delta !== null && delta > 0
+  })
+
+  return filterUsedHours(kind, constrained)
 }
 
 const validacionHoraOptions = computed(() => {
   const cargaBase = primaryCargaSlot.value
-  if (cargaBase && localData.value.diaValidacion && localData.value.diaValidacion === cargaBase.dia && cargaBase.hora) {
-    const diff = (option: string) => compareWeekdayTime(cargaBase.dia, cargaBase.hora, localData.value.diaValidacion, option)
-    const constrained = horaOptions.filter(option => {
-      const delta = diff(option)
-      return delta !== null && delta > 0
-    })
-    return filterUsedHours('validacion', constrained)
-  }
-  return filterUsedHours('validacion', horaOptions)
+  if (!cargaBase) return filterUsedHours('validacion', hourOptionsOrdered.value)
+  return constrainedHourOptions('validacion', cargaBase.dia, cargaBase.hora, localData.value.diaValidacion)
 })
 
-const cargaHoraOptions = computed(() => filterUsedHours('carga', horaOptions))
+const cargaHoraOptions = computed(() => filterUsedHours('carga', hourOptionsOrdered.value))
 
 const horaOptionsAmPm = computed(() =>
-  cargaHoraOptions.value.map(option => ({ label: formatHourToAmPm(option), value: option }))
+  cargaHoraOptions.value.map(option => ({ label: formatHourToAmPm(toHourLabel(option?.value)), value: option.value }))
 )
 
 const validacionHoraOptionsAmPm = computed(() =>
-  validacionHoraOptions.value.map(option => ({ label: formatHourToAmPm(option), value: option }))
+  validacionHoraOptions.value.map(option => ({ label: formatHourToAmPm(toHourLabel(option?.value)), value: option.value }))
 )
 
 const envioHoraOptionsAmPm = computed(() =>
-  envioHoraOptions.value.map(option => ({ label: formatHourToAmPm(option), value: option }))
+  envioHoraOptions.value.map(option => ({ label: formatHourToAmPm(toHourLabel(option?.value)), value: option.value }))
 )
 const envioHoraOptions = computed(() => {
   const validacionBase = primaryValidacionSlot.value
-  if (validacionBase && localData.value.diaEnvio && localData.value.diaEnvio === validacionBase.dia && validacionBase.hora) {
-    const diff = (option: string) => compareWeekdayTime(validacionBase.dia, validacionBase.hora, localData.value.diaEnvio, option)
-    const constrained = horaOptions.filter(option => {
-      const delta = diff(option)
-      return delta !== null && delta > 0
-    })
-    return filterUsedHours('envio', constrained)
-  }
-  return filterUsedHours('envio', horaOptions)
+  if (!validacionBase) return filterUsedHours('envio', hourOptionsOrdered.value)
+  return constrainedHourOptions('envio', validacionBase.dia, validacionBase.hora, localData.value.diaEnvio)
 })
-const scheduleValidationError = computed(() => {
-  const carga = primaryCargaSlot.value
-  const validacion = primaryValidacionSlot.value
-  const envio = primaryEnvioSlot.value
 
-  if (validacion && carga && getWeekdayOrder(validacion.dia) < getWeekdayOrder(carga.dia)) {
+const formatSlotDay = (value: unknown) => toDayLabel(value)
+const formatSlotHour = (value: unknown) => formatHourToAmPm(toHourLabel(value))
+
+const scheduleValidationError = computed(() => {
+  const carga = toSlotSchedule(primaryCargaSlot.value)
+  const validacion = toSlotSchedule(primaryValidacionSlot.value)
+  const envio = toSlotSchedule(primaryEnvioSlot.value)
+
+  if (validacion && carga && getWeekdayOrder(validacion.day) < getWeekdayOrder(carga.day)) {
     return 'El día de validación no puede ser anterior al día de carga.'
   }
-  if (envio && validacion && getWeekdayOrder(envio.dia) < getWeekdayOrder(validacion.dia)) {
+  if (envio && validacion && getWeekdayOrder(envio.day) < getWeekdayOrder(validacion.day)) {
     return 'El día de envío no puede ser anterior al día de validación.'
   }
 
   if (carga && validacion) {
-    const delta = compareWeekdayTime(carga.dia, carga.hora, validacion.dia, validacion.hora)
+    const delta = compareWeekdayTime(carga.day, carga.hour, validacion.day, validacion.hour)
     if (delta !== null && delta <= 0) {
       return 'Validación debe programarse después de carga.'
     }
   }
 
   if (validacion && envio) {
-    const delta = compareWeekdayTime(validacion.dia, validacion.hora, envio.dia, envio.hora)
+    const delta = compareWeekdayTime(validacion.day, validacion.hour, envio.day, envio.hour)
     if (delta !== null && delta <= 0) {
       return 'Envío debe programarse después de validación.'
     }
@@ -235,14 +312,14 @@ const scheduleValidationError = computed(() => {
 })
 const scheduleRecommendationMessages = computed(() => {
   const messages: string[] = []
-  const carga = primaryCargaSlot.value
-  const validacion = primaryValidacionSlot.value
-  const envio = primaryEnvioSlot.value
+  const carga = toSlotSchedule(primaryCargaSlot.value)
+  const validacion = toSlotSchedule(primaryValidacionSlot.value)
+  const envio = toSlotSchedule(primaryEnvioSlot.value)
 
   if (carga && validacion) {
-    const diff = compareWeekdayTime(carga.dia, carga.hora, validacion.dia, validacion.hora)
+    const diff = compareWeekdayTime(carga.day, carga.hour, validacion.day, validacion.hour)
     if (diff !== null && diff >= 0 && diff < 60 * 60_000) {
-      const suggested = addMinutes(carga.dia, carga.hora, 60)
+      const suggested = addMinutes(carga.day, carga.hour, 60)
       if (suggested) {
         messages.push(`Recomendación: programa Validación al menos 1 hora después de Carga (ej. ${suggested.date} a las ${suggested.time}).`)
       }
@@ -250,9 +327,9 @@ const scheduleRecommendationMessages = computed(() => {
   }
 
   if (validacion && envio) {
-    const diff = compareWeekdayTime(validacion.dia, validacion.hora, envio.dia, envio.hora)
+    const diff = compareWeekdayTime(validacion.day, validacion.hour, envio.day, envio.hour)
     if (diff !== null && diff >= 0 && diff < 60 * 60_000) {
-      const suggested = addMinutes(validacion.dia, validacion.hora, 60)
+      const suggested = addMinutes(validacion.day, validacion.hour, 60)
       if (suggested) {
         messages.push(`Recomendación: programa Envío al menos 1 hora después de Validación (ej. ${suggested.date} a las ${suggested.time}).`)
       }
@@ -268,14 +345,14 @@ const scheduleReady = computed(() =>
 const duplicateScheduleError = ref('')
 
 const clearEnvioConfig = () => {
-  localData.value.ejecucionEnvio = 'Automatica'
+  localData.value.ejecucionEnvio = resolveDefaultExecution()
   localData.value.diaEnvio = ''
   localData.value.horaEnvio = ''
   localData.value.envioSlots = []
 }
 
 const clearValidacionConfig = () => {
-  localData.value.ejecucionValidacion = 'Automatica'
+  localData.value.ejecucionValidacion = resolveDefaultExecution()
   localData.value.diaValidacion = ''
   localData.value.horaValidacion = ''
   localData.value.validacionSlots = []
@@ -449,7 +526,11 @@ watch(
   () => {
     duplicateScheduleError.value = ''
 
-    if (localData.value.diaValidacion && localData.value.diaIngesta && getWeekdayOrder(localData.value.diaValidacion) < getWeekdayOrder(localData.value.diaIngesta)) {
+    const diaIngesta = normalizeWeekdayInputValue(toDayLabel(localData.value.diaIngesta))
+    const diaValidacion = normalizeWeekdayInputValue(toDayLabel(localData.value.diaValidacion))
+    const diaEnvio = normalizeWeekdayInputValue(toDayLabel(localData.value.diaEnvio))
+
+    if (diaValidacion && diaIngesta && getWeekdayOrder(diaValidacion) < getWeekdayOrder(diaIngesta)) {
       localData.value.diaValidacion = ''
       localData.value.horaValidacion = ''
       localData.value.diaEnvio = ''
@@ -457,7 +538,7 @@ watch(
       return
     }
 
-    if (localData.value.diaEnvio && localData.value.diaValidacion && getWeekdayOrder(localData.value.diaEnvio) < getWeekdayOrder(localData.value.diaValidacion)) {
+    if (diaEnvio && diaValidacion && getWeekdayOrder(diaEnvio) < getWeekdayOrder(diaValidacion)) {
       localData.value.diaEnvio = ''
       localData.value.horaEnvio = ''
     }
@@ -465,37 +546,37 @@ watch(
 )
 
 watch(validacionHoraOptions, (options) => {
-  if (localData.value.horaValidacion && !options.includes(localData.value.horaValidacion)) {
+  if (localData.value.horaValidacion && !options.some(option => sameValue(option.value, localData.value.horaValidacion))) {
     localData.value.horaValidacion = ''
   }
 })
 
 watch(envioHoraOptions, (options) => {
-  if (localData.value.horaEnvio && !options.includes(localData.value.horaEnvio)) {
+  if (localData.value.horaEnvio && !options.some(option => sameValue(option.value, localData.value.horaEnvio))) {
     localData.value.horaEnvio = ''
   }
 })
 
 watch(cargaHoraOptions, (options) => {
-  if (localData.value.horaIngesta && !options.includes(localData.value.horaIngesta)) {
+  if (localData.value.horaIngesta && !options.some(option => sameValue(option.value, localData.value.horaIngesta))) {
     localData.value.horaIngesta = ''
   }
 })
 
 watch(cargaDayOptions, (options) => {
-  if (localData.value.diaIngesta && !options.includes(localData.value.diaIngesta)) {
+  if (localData.value.diaIngesta && !options.some(option => sameValue(option.value, localData.value.diaIngesta))) {
     localData.value.diaIngesta = ''
   }
 })
 
 watch(validacionDayOptions, (options) => {
-  if (localData.value.diaValidacion && !options.includes(localData.value.diaValidacion)) {
+  if (localData.value.diaValidacion && !options.some(option => sameValue(option.value, localData.value.diaValidacion))) {
     localData.value.diaValidacion = ''
   }
 })
 
 watch(envioDayOptions, (options) => {
-  if (localData.value.diaEnvio && !options.includes(localData.value.diaEnvio)) {
+  if (localData.value.diaEnvio && !options.some(option => sameValue(option.value, localData.value.diaEnvio))) {
     localData.value.diaEnvio = ''
   }
 })
@@ -523,7 +604,7 @@ watch(envioDayOptions, (options) => {
                   <div class="flex items-center gap-3">
                   <span class="shrink-0 text-[10px] font-bold text-gray-500 uppercase">Ejecución</span>
                   <div class="flex-1">
-                    <ConfigField label="Ejecución" v-model="localData.ejecucionIngesta" :options="ejecucionOptions" :hide-label="true" required />
+                    <ConfigField label="Ejecución" v-model="localData.ejecucionIngesta" :options="executionOptions" :hide-label="true" required />
                   </div>
                   </div>
               </div>
@@ -569,7 +650,7 @@ watch(envioDayOptions, (options) => {
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
-                      {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
+                      {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
@@ -620,7 +701,7 @@ watch(envioDayOptions, (options) => {
                 <div class="flex items-center gap-3">
                   <span class="shrink-0 text-[10px] font-bold text-gray-500 uppercase">Ejecución</span>
                   <div class="flex-1">
-                    <ConfigField label="Ejecución" v-model="localData.ejecucionValidacion" :options="ejecucionOptions" :disabled="!isValidacionSectionEnabled" :hide-label="true" required />
+                    <ConfigField label="Ejecución" v-model="localData.ejecucionValidacion" :options="executionOptions" :disabled="!isValidacionSectionEnabled" :hide-label="true" required />
                   </div>
                 </div>
               </div>
@@ -665,7 +746,7 @@ watch(envioDayOptions, (options) => {
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
-                      {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
+                      {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
@@ -715,7 +796,7 @@ watch(envioDayOptions, (options) => {
                 <div class="flex items-center gap-3">
                   <span class="shrink-0 text-[10px] font-bold text-gray-500 uppercase">Ejecución</span>
                   <div class="flex-1">
-                    <ConfigField label="Ejecución" v-model="localData.ejecucionEnvio" :options="ejecucionOptions" :disabled="!isEnvioSectionEnabled" :hide-label="true" required />
+                    <ConfigField label="Ejecución" v-model="localData.ejecucionEnvio" :options="executionOptions" :disabled="!isEnvioSectionEnabled" :hide-label="true" required />
                   </div>
                 </div>
               </div>
@@ -759,7 +840,7 @@ watch(envioDayOptions, (options) => {
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
                           : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
                         : 'bg-slate-100 text-slate-700 border-slate-200'">
-                      {{ slot.dia }} {{ formatHourToAmPm(slot.hora) }}
+                      {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"

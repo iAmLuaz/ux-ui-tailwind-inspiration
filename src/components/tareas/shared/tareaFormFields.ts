@@ -9,7 +9,7 @@ export const ConfigField = defineComponent({
       required: true
     },
     modelValue: {
-      type: String,
+      type: [String, Number],
       default: ''
     },
     options: {
@@ -44,12 +44,12 @@ export const ConfigField = defineComponent({
           ? null
           : h('label', { class: 'block text-[10px] font-bold text-gray-500 uppercase mb-1' }, props.label),
         h(SearchableSelect, {
-          modelValue: props.modelValue || null,
+          modelValue: props.modelValue ?? null,
           options: normalizeOptions(),
           placeholder: 'Seleccionar',
           disabled: props.disabled,
           required: props.required,
-          'onUpdate:modelValue': (value: string | number) => emit('update:modelValue', String(value ?? ''))
+          'onUpdate:modelValue': (value: string | number) => emit('update:modelValue', value ?? '')
         })
       ])
   }

@@ -1,9 +1,23 @@
 export type Weekday = 'Lunes' | 'Martes' | 'Miércoles' | 'Jueves' | 'Viernes'
 
 export interface TareaSchedule {
+  ejecucionId?: number
   ejecucion?: string
   dia?: Weekday
   hora?: string
+  configurada?: boolean
+}
+
+export interface TareaCampanaStageIds {
+  carga?: number
+  validacion?: number
+  envio?: number
+}
+
+export interface TareaCampanaStages {
+  carga?: TareaCampanaConfig
+  validacion?: TareaCampanaConfig
+  envio?: TareaCampanaConfig
 }
 
 export interface TareaRefTipo {
@@ -82,6 +96,8 @@ export interface TareaCampanaData {
   fechaCreacion: string
   fechaUltimaModificacion: string
   tarea?: TareaCampanaConfig
+  tareasPorTipo?: TareaCampanaStages
+  idsTarea?: TareaCampanaStageIds
   horarios?: TareaCampanaHorario[]
 }
 
@@ -92,17 +108,21 @@ export interface CreateTareaCampanaPayload {
     ejecucion: { id: number }
     bolActivo?: boolean
   }
-  horarios: Array<{
-    tarea?: { id: number }
-    tipoHorario?: { id: number; nombre?: string }
-    dia: {
-      id: number
-      hora: { id: number }
-    }
-    activo?: boolean
-  }>
+  horarios: TareaCampanaHorarioPostItem[]
   idABCUsuario: number
   idUsuario?: number
+}
+
+export interface TareaCampanaHorarioPostItem {
+  dia: {
+    id: number
+    hora: { id: number }
+  }
+}
+
+export interface TareaCampanaHorariosPostPayload {
+  horarios: TareaCampanaHorarioPostItem[]
+  idUsuario: number
 }
 
 export interface UpdateTareaCampanaPayload {
@@ -122,15 +142,7 @@ export interface UpdateTareaCampanaPayload {
     ejecucion: { id: number }
     bolActivo?: boolean
   }
-  horarios: Array<{
-    tarea?: { id: number }
-    tipoHorario?: { id: number; nombre?: string }
-    dia: {
-      id: number
-      hora: { id: number }
-    }
-    activo?: boolean
-  }>
+  horarios: TareaCampanaHorarioPostItem[]
   idUsuario: number
   horariosDesactivarIds?: number[]
   horariosActivarIds?: number[]

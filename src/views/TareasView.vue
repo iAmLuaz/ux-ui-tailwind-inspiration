@@ -16,8 +16,22 @@ import type { MapeoLineaData } from '@/types/mapeos/linea'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
 import type { TareaLineaFormModel } from '@/models/tareas/linea/tareaLinea.model'
 import type { TareaCampanaFormModel } from '@/models/tareas/campana/tareaCampana.model'
-import { toCreateTareaLineaPayloads, toUpdateTareaLineaPayload } from '@/models/tareas/linea/tareaLinea.model'
-import { toCreateTareaCampanaPayloads, toUpdateTareaCampanaPayload } from '@/models/tareas/campana/tareaCampana.model'
+import { toCreateTareaLineaPayloads, toUpdateTareaLineaOperations } from '@/models/tareas/linea/tareaLinea.model'
+import { toCreateTareaCampanaPayloads, toUpdateTareaCampanaOperations } from '@/models/tareas/campana/tareaCampana.model'
+import {
+  normalizeWeekdayInputValue,
+  toHoraLabel,
+  type Option as CatalogOption
+} from '@/composables/tareas/tareaScheduleUtils'
+import {
+  enrichTareaWithMapeoName,
+  mapCatalogosToOptions,
+  resolveTareaMapeoId,
+  splitHorarioIdsByStage,
+  stageKeys,
+  stageTypeByKey
+} from '@/composables/tareas/tareasViewUtils'
+import { addToast } from '@/stores/toastStore'
 
 const tabs = [
   { key: 'linea', label: 'Lineas de negocio', icon: Layers },
@@ -37,9 +51,12 @@ type TareaLineaRow = {
   idABCCatLineaNegocio: number
   ingesta?: string
   bolActivo: boolean
-  carga?: { ejecucion?: string; dia?: string; hora?: string }
-  validacion?: { ejecucion?: string; dia?: string; hora?: string }
-  envio?: { ejecucion?: string; dia?: string; hora?: string }
+  carga?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  validacion?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  envio?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  idsTarea?: { carga?: number; validacion?: number; envio?: number }
+  tareasPorTipo?: { carga?: any; validacion?: any; envio?: any }
+  horarios?: any[]
   fechaCreacion?: string
   fechaUltimaModificacion?: string
   [key: string]: any
@@ -51,9 +68,12 @@ type TareaCampanaRow = {
   idABCCatCampana: number
   ingesta?: string
   bolActivo: boolean
-  carga?: { ejecucion?: string; dia?: string; hora?: string }
-  validacion?: { ejecucion?: string; dia?: string; hora?: string }
-  envio?: { ejecucion?: string; dia?: string; hora?: string }
+  carga?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  validacion?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  envio?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  idsTarea?: { carga?: number; validacion?: number; envio?: number }
+  tareasPorTipo?: { carga?: any; validacion?: any; envio?: any }
+  horarios?: any[]
   fechaCreacion?: string
   fechaUltimaModificacion?: string
   [key: string]: any
@@ -61,11 +81,62 @@ type TareaCampanaRow = {
 
 const lineasDisponibles = ref<Option[]>([])
 const campanasDisponibles = ref<Option[]>([])
+const diasDisponibles = ref<CatalogOption[]>([])
+const horasDisponibles = ref<CatalogOption[]>([])
+const ejecucionesDisponibles = ref<CatalogOption[]>([])
+const actividadTipoIds = ref({
+  carga: 1,
+  validacion: 2,
+  envio: 3
+})
 
 const allTareasLinea = ref<TareaLineaRow[]>([])
 const allTareasCampana = ref<TareaCampanaRow[]>([])
 const allMapeosLinea = ref<MapeoLineaData[]>([])
 const allMapeosCampana = ref<MapeoCampanaData[]>([])
+
+const tareasLineaEnriched = computed(() =>
+  allTareasLinea.value.map(item => enrichTareaWithMapeoName(item, allMapeosLinea.value))
+)
+
+const tareasCampanaEnriched = computed(() =>
+  allTareasCampana.value.map(item => enrichTareaWithMapeoName(item, allMapeosCampana.value))
+)
+
+const selectedEditMapeoId = computed(() => {
+  if (modalMode.value !== 'edit' || !selectedItem.value) return 0
+  return resolveTareaMapeoId(selectedItem.value)
+})
+
+const mapeosLineaForModal = computed(() => {
+  const usedIds = new Set(
+    allTareasLinea.value
+      .map(item => resolveTareaMapeoId(item))
+      .filter(id => id > 0)
+  )
+
+  return allMapeosLinea.value.filter(mapeo => {
+    const mapeoId = Number(mapeo.idABCConfigMapeoLinea ?? 0)
+    if (mapeoId <= 0) return false
+    if (modalMode.value === 'edit' && mapeoId === selectedEditMapeoId.value) return true
+    return !usedIds.has(mapeoId)
+  })
+})
+
+const mapeosCampanaForModal = computed(() => {
+  const usedIds = new Set(
+    allTareasCampana.value
+      .map(item => resolveTareaMapeoId(item))
+      .filter(id => id > 0)
+  )
+
+  return allMapeosCampana.value.filter(mapeo => {
+    const mapeoId = Number(mapeo.idABCConfigMapeoLinea ?? 0)
+    if (mapeoId <= 0) return false
+    if (modalMode.value === 'edit' && mapeoId === selectedEditMapeoId.value) return true
+    return !usedIds.has(mapeoId)
+  })
+})
 
 const isLoadingLinea = ref(false)
 const isLoadingCampana = ref(false)
@@ -137,7 +208,7 @@ function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: strin
 }
 
 const filteredTareasLinea = computed(() => {
-  return allTareasLinea.value.filter(item => {
+  return tareasLineaEnriched.value.filter(item => {
     const matchSearch = matchesSearch(getSearchableText(item), searchQueryLinea.value || '')
     const matchLinea = selectedFiltersLinea.lineas.length
       ? selectedFiltersLinea.lineas.includes(item.idABCCatLineaNegocio)
@@ -150,7 +221,7 @@ const filteredTareasLinea = computed(() => {
 })
 
 const filteredTareasCampana = computed(() => {
-  return allTareasCampana.value.filter(item => {
+  return tareasCampanaEnriched.value.filter(item => {
     const matchSearch = matchesSearch(getSearchableText(item), searchQueryCampana.value || '')
     const matchLinea = selectedFiltersCampana.lineas.length
       ? selectedFiltersCampana.lineas.includes(item.idABCCatLineaNegocio)
@@ -214,18 +285,44 @@ const getCampanaLabel = (id?: number) => {
   return campanasDisponibles.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
 }
 
-function mapCatalogosToOptions(items: { id: number; nombre: string; bolActivo: boolean }[]) {
-  return items
-    .filter(item => item.bolActivo !== false)
-    .map(item => ({ label: item.nombre, value: item.id }))
-}
-
 async function fetchCatalogos() {
   const catalogos = await catalogosService.getCatalogosAgrupados()
   const lineas = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
   const campanas = catalogos.find(group => group.codigo === 'CMP')?.registros ?? []
+  const dias = catalogos.find(group => String(group.codigo).toUpperCase() === 'DIA')?.registros ?? []
+  const horas = catalogos.find(group => String(group.codigo).toUpperCase() === 'HRS')?.registros ?? []
+  const ejecuciones = catalogos.find(group => String(group.codigo).toUpperCase() === 'EJE')?.registros ?? []
+  const actividades = catalogos.find(group => String(group.codigo).toUpperCase() === 'ACT')?.registros ?? []
+  const actividadByCode = new Map(
+    actividades
+      .map(item => [String(item?.codigo ?? '').toUpperCase(), Number(item?.id ?? 0)] as const)
+      .filter((entry) => entry[1] > 0)
+  )
+  actividadTipoIds.value = {
+    carga: actividadByCode.get('CAG') ?? 1,
+    validacion: actividadByCode.get('VLD') ?? 2,
+    envio: actividadByCode.get('ENV') ?? 3
+  }
   lineasDisponibles.value = mapCatalogosToOptions(lineas)
   campanasDisponibles.value = mapCatalogosToOptions(campanas)
+  diasDisponibles.value = dias
+    .filter(item => item.bolActivo !== false)
+    .map(item => ({
+      label: normalizeWeekdayInputValue(item.nombre) || item.nombre,
+      value: item.id
+    }))
+  horasDisponibles.value = horas
+    .filter(item => item.bolActivo !== false)
+    .map(item => ({
+      label: toHoraLabel(item.nombre || item.codigo),
+      value: item.id
+    }))
+  ejecucionesDisponibles.value = ejecuciones
+    .filter(item => item.bolActivo !== false)
+    .map(item => ({
+      label: item.nombre,
+      value: item.id
+    }))
 }
 
 async function fetchTareasLinea() {
@@ -298,6 +395,47 @@ function handleSearchCampana(query: string) {
 const isCampanaRow = (item: TareaLineaRow | TareaCampanaRow): item is TareaCampanaRow =>
   Object.prototype.hasOwnProperty.call(item, 'idABCCatCampana')
 
+
+async function hydrateLineaForEdit(item: TareaLineaRow): Promise<TareaLineaRow> {
+  const ids = item.idsTarea ?? {}
+  const horariosByStage = await Promise.all(
+    stageKeys.map(async stage => {
+      const taskId = Number(ids[stage] ?? 0)
+      if (!taskId) return []
+      const horarios = await tareaLineaService.getHorariosByTarea(taskId)
+      return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
+        ...horario,
+        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] }
+      }))
+    })
+  )
+
+  return {
+    ...item,
+    horarios: horariosByStage.flat()
+  }
+}
+
+async function hydrateCampanaForEdit(item: TareaCampanaRow): Promise<TareaCampanaRow> {
+  const ids = item.idsTarea ?? {}
+  const horariosByStage = await Promise.all(
+    stageKeys.map(async stage => {
+      const taskId = Number(ids[stage] ?? 0)
+      if (!taskId) return []
+      const horarios = await tareaCampanaService.getHorariosByTarea(taskId)
+      return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
+        ...horario,
+        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] }
+      }))
+    })
+  )
+
+  return {
+    ...item,
+    horarios: horariosByStage.flat()
+  }
+}
+
 function openDetails(item: TareaLineaRow | TareaCampanaRow) {
   detailTab.value = activeTab.value
   detailItem.value = item
@@ -309,28 +447,65 @@ function closeDetailsModal() {
   detailItem.value = null
 }
 function openEdit(item: TareaLineaRow | TareaCampanaRow) {
-  modalMode.value = 'edit'
-  modalTab.value = activeTab.value
-  selectedItem.value = item
-  showModal.value = true
+  const run = async () => {
+    modalMode.value = 'edit'
+    modalTab.value = activeTab.value
+
+    if (isCampanaRow(item)) {
+      isLoadingCampana.value = true
+      selectedItem.value = await hydrateCampanaForEdit(item)
+    } else {
+      isLoadingLinea.value = true
+      selectedItem.value = await hydrateLineaForEdit(item)
+    }
+
+    showModal.value = true
+  }
+
+  run().catch((e: any) => {
+    error.value = e?.message ?? 'No se pudo abrir el formulario de edición.'
+  }).finally(() => {
+    isLoadingLinea.value = false
+    isLoadingCampana.value = false
+  })
 }
 
 async function toggleStatus(item: TareaLineaRow | TareaCampanaRow) {
   try {
     if (isCampanaRow(item)) {
       isLoadingCampana.value = true
-      if (item.bolActivo) {
-        await tareaCampanaService.patchDesactivar(Number(item.idABCConfigTareaCampana), 1)
-      } else {
-        await tareaCampanaService.patchActivar(Number(item.idABCConfigTareaCampana), 1)
+      const ids = stageKeys
+        .map(stage => Number(item.idsTarea?.[stage] ?? 0))
+        .filter(id => id > 0)
+      if (!ids.length) {
+        const fallbackId = Number(item.idABCConfigTareaCampana ?? 0)
+        if (fallbackId > 0) ids.push(fallbackId)
+      }
+
+      for (const id of ids) {
+        if (item.bolActivo) {
+          await tareaCampanaService.patchDesactivar(id, 1)
+        } else {
+          await tareaCampanaService.patchActivar(id, 1)
+        }
       }
       await fetchTareasCampana()
     } else {
       isLoadingLinea.value = true
-      if (item.bolActivo) {
-        await tareaLineaService.patchDesactivar(Number(item.idABCConfigTareaLinea), 1)
-      } else {
-        await tareaLineaService.patchActivar(Number(item.idABCConfigTareaLinea), 1)
+      const ids = stageKeys
+        .map(stage => Number(item.idsTarea?.[stage] ?? 0))
+        .filter(id => id > 0)
+      if (!ids.length) {
+        const fallbackId = Number(item.idABCConfigTareaLinea ?? 0)
+        if (fallbackId > 0) ids.push(fallbackId)
+      }
+
+      for (const id of ids) {
+        if (item.bolActivo) {
+          await tareaLineaService.patchDesactivar(id, 1)
+        } else {
+          await tareaLineaService.patchActivar(id, 1)
+        }
       }
       await fetchTareasLinea()
     }
@@ -354,8 +529,36 @@ function closeModal() {
   selectedItem.value = null
 }
 
+function hasHorarioChanges(payload: { horarios?: any[]; horariosDesactivarIds?: number[]; horariosActivarIds?: number[] }) {
+  return Boolean(
+    (payload.horarios?.length ?? 0) > 0
+    || (payload.horariosDesactivarIds?.length ?? 0) > 0
+    || (payload.horariosActivarIds?.length ?? 0) > 0
+  )
+}
+
+function resolveCurrentExecutionIdByStage(item: any, stage: 'carga' | 'validacion' | 'envio') {
+  return Number(
+    item?.tareasPorTipo?.[stage]?.ejecucion?.id
+    ?? item?.[stage]?.ejecucionId
+    ?? 0
+  )
+}
+
+function shouldUpdateStageTask(
+  item: TareaLineaRow | TareaCampanaRow,
+  stage: 'carga' | 'validacion' | 'envio',
+  nextExecutionId: number
+) {
+  const currentExecutionId = resolveCurrentExecutionIdByStage(item, stage)
+  return currentExecutionId !== nextExecutionId
+}
+
 async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel) {
+  const wasAdd = modalMode.value === 'add'
   try {
+    error.value = null
+
     if (modalTab.value === 'campana') {
       isLoadingCampana.value = true
       const payload = formData as TareaCampanaFormModel
@@ -363,35 +566,97 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
       const campanaId = Number(payload.idABCCatCampana ?? selectedFiltersCampana.campanas[0] ?? 0)
 
       if (modalMode.value === 'add') {
-        const payloads = toCreateTareaCampanaPayloads(payload)
+        const payloads = toCreateTareaCampanaPayloads(payload, actividadTipoIds.value)
         for (const record of payloads) {
           await tareaCampanaService.create(lineaId, campanaId, record)
         }
       } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
-        await tareaCampanaService.update(
-          toUpdateTareaCampanaPayload(payload, selectedItem.value.idABCConfigTareaCampana)
-        )
+        const operations = toUpdateTareaCampanaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
+        const byStageHorarioIds = splitHorarioIdsByStage(selectedItem.value)
+
+        for (const entry of operations.update) {
+          const payloadByStage = {
+            ...entry.payload,
+            horariosDesactivarIds: (entry.payload.horariosDesactivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id)),
+            horariosActivarIds: (entry.payload.horariosActivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id))
+          }
+
+          const requiresTaskPut = shouldUpdateStageTask(
+            selectedItem.value,
+            entry.stage,
+            Number(payloadByStage?.tarea?.ejecucion?.id ?? 0)
+          )
+
+          if (requiresTaskPut) {
+            await tareaCampanaService.update(payloadByStage)
+            continue
+          }
+
+          const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
+          if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
+            await tareaCampanaService.syncHorarios(stageTaskId, payloadByStage)
+          }
+        }
+
+        for (const entry of operations.create) {
+          await tareaCampanaService.create(lineaId, campanaId, entry.payload)
+        }
       }
-      closeModal()
+
       await fetchTareasCampana()
+      closeModal()
     } else {
       isLoadingLinea.value = true
       const payload = formData as TareaLineaFormModel
       const lineaId = Number(payload.idABCCatLineaNegocio ?? selectedFiltersLinea.lineas[0] ?? 0)
 
       if (modalMode.value === 'add') {
-        const payloads = toCreateTareaLineaPayloads(payload)
+        const payloads = toCreateTareaLineaPayloads(payload, actividadTipoIds.value)
         for (const record of payloads) {
           await tareaLineaService.create(lineaId, record)
         }
       } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
-        await tareaLineaService.update(
-          toUpdateTareaLineaPayload(payload, selectedItem.value.idABCConfigTareaLinea)
-        )
+        const operations = toUpdateTareaLineaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
+        const byStageHorarioIds = splitHorarioIdsByStage(selectedItem.value)
+
+        for (const entry of operations.update) {
+          const payloadByStage = {
+            ...entry.payload,
+            horariosDesactivarIds: (entry.payload.horariosDesactivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id)),
+            horariosActivarIds: (entry.payload.horariosActivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id))
+          }
+
+          const requiresTaskPut = shouldUpdateStageTask(
+            selectedItem.value,
+            entry.stage,
+            Number(payloadByStage?.tarea?.ejecucion?.id ?? 0)
+          )
+
+          if (requiresTaskPut) {
+            await tareaLineaService.update(payloadByStage)
+            continue
+          }
+
+          const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
+          if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
+            await tareaLineaService.syncHorarios(stageTaskId, payloadByStage)
+          }
+        }
+
+        for (const entry of operations.create) {
+          await tareaLineaService.create(lineaId, entry.payload)
+        }
       }
-      closeModal()
+
       await fetchTareasLinea()
+      closeModal()
     }
+
+    addToast(
+      wasAdd ? 'Tareas agregadas correctamente.' : 'Tareas actualizadas correctamente.',
+      'success',
+      3500
+    )
   } catch (e: any) {
     error.value = e.message
   } finally {
@@ -548,7 +813,10 @@ watch(
         :show="showModal"
         :mode="modalMode"
         :lineas-disponibles="lineasDisponibles"
-        :mapeos-linea="allMapeosLinea"
+        :mapeos-linea="mapeosLineaForModal"
+        :dias-disponibles="diasDisponibles"
+        :horas-disponibles="horasDisponibles"
+        :ejecuciones-disponibles="ejecucionesDisponibles"
         :initial-data="selectedItem"
         :is-loading="isLoadingLinea"
         @save="handleSave"
@@ -561,7 +829,10 @@ watch(
         :mode="modalMode"
         :lineas-disponibles="lineasDisponibles"
         :campanas-disponibles="campanasDisponibles"
-        :mapeos-campana="allMapeosCampana"
+        :mapeos-campana="mapeosCampanaForModal"
+        :dias-disponibles="diasDisponibles"
+        :horas-disponibles="horasDisponibles"
+        :ejecuciones-disponibles="ejecucionesDisponibles"
         :initial-data="selectedItem"
         :is-loading="isLoadingCampana"
         @save="handleSave"

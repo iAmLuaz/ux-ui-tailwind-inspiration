@@ -1,9 +1,5 @@
 import type { TareaCampanaData } from '@/types/tareas/campana'
-import {
-  normalizeWeekdayInputValue,
-  weekdayById,
-  toHoraLabel
-} from '@/composables/tareas/tareaScheduleUtils'
+import { normalizeWeekdayInputValue, weekdayById, toHoraLabel } from '@/composables/tareas/tareaScheduleUtils'
 
 function toBool(v: unknown): boolean {
   if (typeof v === 'boolean') return v
@@ -13,6 +9,32 @@ function toBool(v: unknown): boolean {
 function toWeekdayOrNull(value: unknown) {
   const normalized = normalizeWeekdayInputValue(value)
   return normalized || undefined
+}
+
+type StageKey = 'carga' | 'validacion' | 'envio'
+
+function getStageKeyByTypeId(typeId: unknown): StageKey | null {
+  const id = Number(typeId)
+  if (id === 1) return 'carga'
+  if (id === 2) return 'validacion'
+  if (id === 3) return 'envio'
+  return null
+}
+
+function getStageKeyByType(type: any): StageKey | null {
+  const byId = getStageKeyByTypeId(type?.id)
+  if (byId) return byId
+
+  const code = String(type?.codigo ?? '').trim().toUpperCase()
+  if (code === 'CAG') return 'carga'
+  if (code === 'VLD') return 'validacion'
+  if (code === 'ENV') return 'envio'
+
+  const name = String(type?.nombre ?? '').trim().toUpperCase()
+  if (name === 'CARGA') return 'carga'
+  if (name === 'VALIDACION' || name === 'VALIDACIÓN') return 'validacion'
+  if (name === 'ENVIO' || name === 'ENVÍO') return 'envio'
+  return null
 }
 
 const executionById: Record<number, string> = {
@@ -29,6 +51,18 @@ function toExecutionName(value: unknown): string {
     return value
   }
   return 'Automatica'
+}
+
+function resolveMapeoId(tarea: any, item: any): number {
+  return Number(
+    tarea?.mapeo?.id
+    ?? tarea?.asignacion?.mapeo?.id
+    ?? item?.asignacion?.mapeo?.id
+    ?? item?.mapeo?.id
+    ?? item?.idABCConfigMapeoCampana
+    ?? item?.idABCConfigMapeoLinea
+    ?? 0
+  )
 }
 
 function resolveIngestaName(tarea: any, item: any): string {
@@ -104,52 +138,123 @@ function pickStageSchedule(horarios: any[], stageId: number) {
 }
 
 export function normalizeTareaCampana(item: any): TareaCampanaData {
-  const tarea = item?.tarea ?? item ?? {}
-  const horarios = normalizeHorarios(item)
-  const cargaStage = pickStageSchedule(horarios, 1)
-  const validacionStage = pickStageSchedule(horarios, 2)
-  const envioStage = pickStageSchedule(horarios, 3)
-  const executionName = toExecutionName(tarea?.ejecucion?.nombre ?? tarea?.ejecucion?.id)
-  const campanaId = Number(
-    tarea?.linea?.catCampana?.id
-    ?? tarea?.linea?.campana?.id
-    ?? tarea?.idABCCatCampana
-    ?? item?.linea?.catCampana?.id
-    ?? item?.linea?.campana?.id
-    ?? item?.idABCCatCampana
-    ?? item?.idCampana
-    ?? 0
-  )
-
-  return {
-    idABCConfigTareaCampana: Number(tarea?.idABCConfigTareaCampana ?? tarea?.id ?? item?.idABCConfigTareaCampana ?? item?.id ?? 0),
-    idABCCatLineaNegocio: Number(tarea?.linea?.id ?? tarea?.idABCCatLineaNegocio ?? item?.idABCCatLineaNegocio ?? item?.idLinea ?? 0),
-    idABCCatCampana: campanaId,
-    ingesta: resolveIngestaName(tarea, item),
-    carga: {
-      ejecucion: executionName,
-      dia: cargaStage.dia,
-      hora: cargaStage.hora
-    },
-    validacion: {
-      ejecucion: executionName,
-      dia: validacionStage.dia,
-      hora: validacionStage.hora
-    },
-    envio: {
-      ejecucion: executionName,
-      dia: envioStage.dia,
-      hora: envioStage.hora
-    },
-    bolActivo: toBool(tarea?.bolActivo ?? item?.bolActivo ?? item?.status ?? false),
-    fechaCreacion: String(tarea?.fechaCreacion ?? item?.fechaCreacion ?? item?.fec_creacion ?? ''),
-    fechaUltimaModificacion: String(tarea?.fechaUltimaModificacion ?? item?.fechaUltimaModificacion ?? item?.fec_ult_modificacion ?? ''),
-    tarea,
-    horarios
+  const normalized = normalizeTareasCampana([item])
+  return normalized[0] ?? {
+    idABCConfigTareaCampana: 0,
+    idABCCatLineaNegocio: 0,
+    idABCCatCampana: 0,
+    ingesta: '',
+    carga: { configurada: false },
+    validacion: { configurada: false },
+    envio: { configurada: false },
+    bolActivo: false,
+    fechaCreacion: '',
+    fechaUltimaModificacion: '',
+    horarios: []
   }
 }
 
 export function normalizeTareasCampana(data: any): TareaCampanaData[] {
   const list = Array.isArray(data) ? data : data?.data ?? []
-  return list.map(normalizeTareaCampana)
+  const grouped = new Map<string, TareaCampanaData>()
+
+  for (const item of list) {
+    const tarea = item?.tarea ?? item ?? {}
+    const stageType = tarea?.tipo ?? item?.tipo ?? {}
+    const stageTypeId = Number(stageType?.id ?? 0)
+    const stageKey = getStageKeyByType(stageType)
+    const mapeoId = resolveMapeoId(tarea, item)
+    const lineaId = Number(tarea?.linea?.id ?? tarea?.idABCCatLineaNegocio ?? item?.idABCCatLineaNegocio ?? item?.idLinea ?? 0)
+    const campanaId = Number(
+      tarea?.linea?.catCampana?.id
+      ?? tarea?.linea?.campana?.id
+      ?? tarea?.idABCCatCampana
+      ?? item?.linea?.catCampana?.id
+      ?? item?.linea?.campana?.id
+      ?? item?.idABCCatCampana
+      ?? item?.idCampana
+      ?? 0
+    )
+    const taskId = Number(tarea?.idABCConfigTareaCampana ?? tarea?.id ?? item?.idABCConfigTareaCampana ?? item?.id ?? 0)
+    const key = `${lineaId}|${campanaId}|${mapeoId || taskId || resolveIngestaName(tarea, item)}`
+
+    const existing = grouped.get(key)
+    const base: TareaCampanaData = existing ?? {
+      idABCConfigTareaCampana: taskId,
+      idABCCatLineaNegocio: lineaId,
+      idABCCatCampana: campanaId,
+      ingesta: resolveIngestaName(tarea, item),
+      carga: { configurada: false },
+      validacion: { configurada: false },
+      envio: { configurada: false },
+      bolActivo: false,
+      fechaCreacion: String(tarea?.fechaCreacion ?? item?.fechaCreacion ?? item?.fec_creacion ?? ''),
+      fechaUltimaModificacion: String(tarea?.fechaUltimaModificacion ?? item?.fechaUltimaModificacion ?? item?.fec_ult_modificacion ?? ''),
+      tarea,
+      tareasPorTipo: {},
+      idsTarea: {},
+      horarios: []
+    }
+
+    const executionId = Number(tarea?.ejecucion?.id ?? item?.ejecucion?.id ?? 0)
+    const executionName = toExecutionName(tarea?.ejecucion?.nombre ?? item?.ejecucion?.nombre ?? executionId)
+
+    if (stageKey) {
+      const stageSchedule = {
+        ejecucionId: executionId || undefined,
+        ejecucion: executionName,
+        configurada: true
+      }
+      if (stageKey === 'carga') base.carga = stageSchedule
+      if (stageKey === 'validacion') base.validacion = stageSchedule
+      if (stageKey === 'envio') base.envio = stageSchedule
+
+      base.idsTarea = {
+        ...(base.idsTarea ?? {}),
+        [stageKey]: taskId || undefined
+      }
+
+      base.tareasPorTipo = {
+        ...(base.tareasPorTipo ?? {}),
+        [stageKey]: tarea
+      }
+    }
+
+    const horarios = normalizeHorarios(item)
+    if (horarios.length) {
+      const stageHorarios = stageKey
+        ? horarios.map(h => ({
+          ...h,
+          tipoHorario: h?.tipoHorario ?? h?.tipo ?? { id: stageTypeId }
+        }))
+        : horarios
+      base.horarios = [...(base.horarios ?? []), ...stageHorarios]
+
+      if (stageKey) {
+        const stageSummary = pickStageSchedule(stageHorarios, stageTypeId)
+        if (stageKey === 'carga') {
+          base.carga = { ...base.carga, dia: stageSummary.dia, hora: stageSummary.hora, configurada: true }
+        } else if (stageKey === 'validacion') {
+          base.validacion = { ...base.validacion, dia: stageSummary.dia, hora: stageSummary.hora, configurada: true }
+        } else if (stageKey === 'envio') {
+          base.envio = { ...base.envio, dia: stageSummary.dia, hora: stageSummary.hora, configurada: true }
+        }
+      }
+    }
+
+    base.bolActivo = base.bolActivo || toBool(tarea?.bolActivo ?? item?.bolActivo ?? item?.status ?? false)
+
+    const createdAt = String(tarea?.fechaCreacion ?? item?.fechaCreacion ?? item?.fec_creacion ?? '')
+    const updatedAt = String(tarea?.fechaUltimaModificacion ?? item?.fechaUltimaModificacion ?? item?.fec_ult_modificacion ?? '')
+    if (!base.fechaCreacion || (createdAt && createdAt < base.fechaCreacion)) {
+      base.fechaCreacion = createdAt
+    }
+    if (!base.fechaUltimaModificacion || (updatedAt && updatedAt > base.fechaUltimaModificacion)) {
+      base.fechaUltimaModificacion = updatedAt
+    }
+
+    grouped.set(key, base)
+  }
+
+  return Array.from(grouped.values())
 }

@@ -12,7 +12,7 @@ interface ApiClient {
 
 const apiClient = api as ApiClient
 
-const KNOWN_CODIGOS = new Set(['ROL', 'LNN', 'CMP', 'CLM', 'VAL', 'CDN', 'NMR'])
+const KNOWN_CODIGOS = new Set(['ROL', 'LNN', 'CMP', 'CLM', 'VAL', 'CDN', 'NMR', 'DIA', 'HRS', 'EJE'])
 
 function normalizeCatalogText(value: any): string {
   const clean = String(value ?? '')
@@ -59,6 +59,9 @@ function inferCodigoFromName(value: any): string {
   if (name.includes('CADENA')) return 'CDN'
   if (name.includes('NUMER')) return 'NMR'
   if (name.includes('ROL')) return 'ROL'
+  if (name.includes('DIA')) return 'DIA'
+  if (name.includes('HORA')) return 'HRS'
+  if (name.includes('EJECU')) return 'EJE'
   return ''
 }
 
