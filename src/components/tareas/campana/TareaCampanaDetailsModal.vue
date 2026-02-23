@@ -11,6 +11,7 @@ import {
 
 interface HorarioItem {
   idABCConfigHorarioTareaCampana?: number
+  stageKey?: StageKey
   tipoHorario?: {
     id?: number
     nombre?: string
@@ -93,9 +94,38 @@ const executionLabelById = computed(() => {
 })
 
 const hourLabelById = computed(() => {
+  const normalizeHourLabel = (value: unknown) => {
+    const raw = String(value ?? '').trim()
+    if (!raw) return ''
+
+    const hhmm = raw.match(/^(\d{1,2}):(\d{2})$/)
+    if (hhmm) {
+      const hours = Number(hhmm[1])
+      const minutes = Number(hhmm[2])
+      if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      }
+    }
+
+    const ampm = raw.match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/)
+    if (ampm) {
+      let hours = Number(ampm[1])
+      const minutes = Number(ampm[2])
+      const suffix = String(ampm[3]).toUpperCase()
+      if (!Number.isNaN(hours) && !Number.isNaN(minutes)) {
+        if (suffix === 'PM' && hours < 12) hours += 12
+        if (suffix === 'AM' && hours === 12) hours = 0
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+      }
+    }
+
+    const normalized = toHoraLabel(raw)
+    return normalized || ''
+  }
+
   return new Map(
     (props.horasDisponibles ?? [])
-      .map(option => [Number(option.value), toHoraLabel(option.label)] as const)
+      .map(option => [Number(option.value), normalizeHourLabel(option.label)] as const)
       .filter(entry => entry[0] > 0 && Boolean(entry[1]))
   )
 })
@@ -127,6 +157,10 @@ const resolveStageTypeId = (key: StageKey) =>
   Number(props.item?.tareasPorTipo?.[key]?.tipo?.id ?? 0)
 
 const isHorarioForStage = (horario: HorarioItem, key: StageKey) => {
+  if (horario?.stageKey) {
+    return horario.stageKey === key
+  }
+
   const stageTypeId = resolveStageTypeId(key)
   const horarioTypeId = Number(
     horario?.tipoHorario?.id
@@ -181,13 +215,18 @@ const resolveHorarioDayLabel = (horario: HorarioItem) => {
 }
 
 const resolveHorarioHourLabel = (horario: HorarioItem) => {
+  const hourId = Number(
+    horario?.dia?.hora?.id
+    ?? horario?.hora?.id
+    ?? (horario as any)?.idABCCatHora
+    ?? 0
+  )
+  const byCatalog = hourLabelById.value.get(hourId)
+  if (byCatalog) return byCatalog
+
   const byNameRaw = String(horario?.dia?.hora?.nombre ?? horario?.hora?.nombre ?? '').trim()
   const byName = toHoraLabel(byNameRaw)
   if (byName) return byName
-
-  const hourId = Number(horario?.dia?.hora?.id ?? horario?.hora?.id ?? 0)
-  const byCatalog = hourLabelById.value.get(hourId)
-  if (byCatalog) return byCatalog
 
   return ''
 }

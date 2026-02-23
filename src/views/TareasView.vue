@@ -341,6 +341,19 @@ function toHourMinutes(value: unknown) {
   return (hours * 60) + minutes
 }
 
+function resolveHourLabelFromCatalogItem(item: { nombre?: string; codigo?: string }) {
+  const fromNombre = toHoraLabel(item?.nombre)
+  if (fromNombre) return fromNombre
+
+  const fromCodigo = toHoraLabel(item?.codigo)
+  if (fromCodigo) return fromCodigo
+
+  const rawNombre = String(item?.nombre ?? '').trim()
+  if (rawNombre) return rawNombre
+
+  return String(item?.codigo ?? '').trim()
+}
+
 async function fetchCatalogos() {
   const catalogos = await catalogosService.getCatalogosAgrupados()
   const lineas = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
@@ -386,10 +399,10 @@ async function fetchCatalogos() {
       const leftInactive = left?.bolActivo === false ? 1 : 0
       const rightInactive = right?.bolActivo === false ? 1 : 0
       if (leftInactive !== rightInactive) return leftInactive - rightInactive
-      return toHourMinutes(left?.nombre || left?.codigo) - toHourMinutes(right?.nombre || right?.codigo)
+      return toHourMinutes(resolveHourLabelFromCatalogItem(left)) - toHourMinutes(resolveHourLabelFromCatalogItem(right))
     })
     .map(item => ({
-      label: toHoraLabel(item.nombre || item.codigo),
+      label: resolveHourLabelFromCatalogItem(item),
       value: item.id
     }))
   ejecucionesDisponibles.value = ejecuciones
@@ -485,7 +498,12 @@ async function hydrateLineaForEdit(item: TareaLineaRow): Promise<TareaLineaRow> 
       const horarios = await tareaLineaService.getHorariosByTarea(taskId)
       return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
         ...horario,
-        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] },
+        stageKey: stage,
+        tipoHorario: {
+          ...(horario?.tipoHorario ?? {}),
+          id: Number(horario?.tipoHorario?.id ?? stageTypeByKey[stage]),
+          nombre: String(horario?.tipoHorario?.nombre ?? stage)
+        },
         horarioId: Number(horario?.idABCConfigHorarioTareaLinea ?? horario?.id ?? 0) || undefined,
         persisted: true,
         activo: horario?.activo ?? horario?.bolActivo ?? true
@@ -513,7 +531,12 @@ async function hydrateCampanaForEdit(item: TareaCampanaRow): Promise<TareaCampan
       const horarios = await tareaCampanaService.getHorariosByTarea(taskId)
       return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
         ...horario,
-        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] },
+        stageKey: stage,
+        tipoHorario: {
+          ...(horario?.tipoHorario ?? {}),
+          id: Number(horario?.tipoHorario?.id ?? stageTypeByKey[stage]),
+          nombre: String(horario?.tipoHorario?.nombre ?? stage)
+        },
         horarioId: Number(horario?.idABCConfigHorarioTareaCampana ?? horario?.id ?? 0) || undefined,
         persisted: true,
         activo: horario?.activo ?? horario?.bolActivo ?? true
