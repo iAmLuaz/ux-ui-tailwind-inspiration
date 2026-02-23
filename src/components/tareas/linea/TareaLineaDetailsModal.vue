@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatHorarioLabel, formatHourToAmPm } from '@/composables/tareas/tareaScheduleUtils'
+import { formatHorarioLabel, formatHourToAmPm, type Option as CatalogOption } from '@/composables/tareas/tareaScheduleUtils'
 
 interface HorarioItem {
   idABCConfigHorarioTareaLinea?: number
@@ -29,10 +29,16 @@ interface TareaLineaRow {
   idABCCatLineaNegocio: number
   ingesta?: string
   bolActivo: boolean
-  carga?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
-  validacion?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
-  envio?: { ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  carga?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  validacion?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
+  envio?: { ejecucionId?: number; ejecucion?: string; dia?: string; hora?: string; configurada?: boolean }
   horarios?: HorarioItem[]
+  tareasPorTipo?: {
+    carga?: { id?: number; idABCConfigTareaLinea?: number; ejecucion?: { id?: number }; tipo?: { id?: number } }
+    validacion?: { id?: number; idABCConfigTareaLinea?: number; ejecucion?: { id?: number }; tipo?: { id?: number } }
+    envio?: { id?: number; idABCConfigTareaLinea?: number; ejecucion?: { id?: number }; tipo?: { id?: number } }
+  }
+  idsTarea?: { carga?: number; validacion?: number; envio?: number }
   tarea?: {
     tipo?: { id?: number; nombre?: string }
     ejecucion?: { id?: number; nombre?: string }
@@ -43,8 +49,10 @@ interface TareaLineaRow {
 
 interface Props {
   show: boolean
+  isLoading?: boolean
   item?: TareaLineaRow | null
   getLineaLabel: (id?: number) => string
+  ejecucionesDisponibles: CatalogOption[]
 }
 
 const props = defineProps<Props>()
@@ -54,10 +62,10 @@ const horarios = computed(() => props.item?.horarios ?? [])
 
 type StageKey = 'carga' | 'validacion' | 'envio'
 
-const STAGE_CONFIG: Array<{ key: StageKey; id: number; label: string }> = [
-  { key: 'carga', id: 1, label: 'Carga' },
-  { key: 'validacion', id: 2, label: 'Validación' },
-  { key: 'envio', id: 3, label: 'Envío' }
+const STAGE_CONFIG: Array<{ key: StageKey; label: string }> = [
+  { key: 'carga', label: 'Carga' },
+  { key: 'validacion', label: 'Validación' },
+  { key: 'envio', label: 'Envío' }
 ]
 
 const getHorarioActive = (horario: HorarioItem) => horario.activo ?? horario.bolActivo ?? true
@@ -66,7 +74,71 @@ const getStageSchedule = (key: StageKey) => {
   return props.item?.[key] ?? {}
 }
 
-const getStageExecution = (key: StageKey) => String(getStageSchedule(key)?.ejecucion ?? '-').trim() || '-'
+const executionLabelById = computed(() => {
+  return new Map(
+    (props.ejecucionesDisponibles ?? [])
+      .map(option => [Number(option.value), String(option.label ?? '').trim()] as const)
+      .filter(entry => entry[0] > 0 && Boolean(entry[1]))
+  )
+})
+
+const resolveStageExecutionId = (key: StageKey) => {
+  const schedule = getStageSchedule(key)
+  return Number(
+    schedule?.ejecucionId
+    ?? props.item?.tareasPorTipo?.[key]?.ejecucion?.id
+    ?? 0
+  )
+}
+
+const getStageExecution = (key: StageKey) => {
+  const executionId = resolveStageExecutionId(key)
+  const executionNameFromCatalog = executionLabelById.value.get(executionId)
+  if (executionNameFromCatalog) return executionNameFromCatalog
+  return String(getStageSchedule(key)?.ejecucion ?? '-').trim() || '-'
+}
+
+const normalizeStageToken = (value: unknown) =>
+  String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase()
+
+const resolveStageTypeId = (key: StageKey) =>
+  Number(props.item?.tareasPorTipo?.[key]?.tipo?.id ?? 0)
+
+const isHorarioForStage = (horario: HorarioItem, key: StageKey) => {
+  const stageTypeId = resolveStageTypeId(key)
+  const horarioTypeId = Number(
+    horario?.tipoHorario?.id
+    ?? (horario as any)?.tipo?.id
+    ?? (horario as any)?.idABCCatTipoHorario
+    ?? 0
+  )
+
+  if (stageTypeId > 0 && horarioTypeId > 0) {
+    return horarioTypeId === stageTypeId
+  }
+
+  const horarioTypeCode = normalizeStageToken((horario as any)?.tipoHorario?.codigo ?? (horario as any)?.tipo?.codigo)
+  if (key === 'carga' && horarioTypeCode === 'CAG') return true
+  if (key === 'validacion' && horarioTypeCode === 'VLD') return true
+  if (key === 'envio' && horarioTypeCode === 'ENV') return true
+
+  const horarioTypeName = normalizeStageToken(horario?.tipoHorario?.nombre ?? (horario as any)?.tipo?.nombre)
+  if (key === 'carga' && horarioTypeName === 'CARGA') return true
+  if (key === 'validacion' && horarioTypeName === 'VALIDACION') return true
+  if (key === 'envio' && horarioTypeName === 'ENVIO') return true
+
+  if (horarioTypeId > 0) {
+    if (key === 'carga' && horarioTypeId === 1) return true
+    if (key === 'validacion' && horarioTypeId === 2) return true
+    if (key === 'envio' && horarioTypeId === 3) return true
+  }
+
+  return false
+}
 
 const formatLegacySchedule = (key: StageKey) => {
   const schedule = getStageSchedule(key)
@@ -81,7 +153,7 @@ const stageDetails = computed(() => {
 
   return STAGE_CONFIG.map(stage => {
     const stageHorarios = source
-      .filter(horario => Number(horario?.tipoHorario?.id ?? 0) === stage.id)
+      .filter(horario => isHorarioForStage(horario, stage.key))
       .map(horario => ({
         label: formatHorarioLabel(horario),
         active: getHorarioActive(horario)
@@ -97,13 +169,24 @@ const stageDetails = computed(() => {
       }
     }
 
+    const hasTaskConfigured = Boolean(
+      Number(props.item?.idsTarea?.[stage.key] ?? 0)
+      || Number(props.item?.tareasPorTipo?.[stage.key]?.idABCConfigTareaLinea ?? 0)
+      || Number(props.item?.tareasPorTipo?.[stage.key]?.id ?? 0)
+    )
+
+    const hasExecutionConfigured = resolveStageExecutionId(stage.key) > 0
+    const hasAnySchedule = stageHorarios.length > 0
+    const configured = hasTaskConfigured || hasExecutionConfigured || hasAnySchedule
+
     return {
       ...stage,
       execution: getStageExecution(stage.key),
       horarios: stageHorarios,
-      activeCount: stageHorarios.filter(entry => entry.active).length
+      activeCount: stageHorarios.filter(entry => entry.active).length,
+      configured
     }
-  })
+  }).filter(stage => stage.configured)
 })
 
 function formatTimestamp(value?: string) {
@@ -129,7 +212,9 @@ function formatTimestamp(value?: string) {
       </div>
 
       <div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
-        <div v-if="!item" class="text-sm text-slate-500">Sin información para mostrar.</div>
+        <div v-if="isLoading" class="text-sm text-slate-500">Cargando detalle...</div>
+
+        <div v-else-if="!item" class="text-sm text-slate-500">Sin información para mostrar.</div>
 
         <div v-else class="space-y-4 text-sm">
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
@@ -177,7 +262,7 @@ function formatTimestamp(value?: string) {
                       v-for="(horario, index) in stage.horarios"
                       :key="`${stage.key}-${index}`"
                       class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border"
-                      :class="horario.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200'"
+                      :class="horario.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200 opacity-60'"
                     >
                       {{ horario.label }}
                       <span class="font-semibold">{{ horario.active ? 'Activo' : 'Inactivo' }}</span>

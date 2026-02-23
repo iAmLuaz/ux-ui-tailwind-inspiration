@@ -39,18 +39,36 @@ function getStageKeyByType(type: any): StageKey | null {
 
 const executionById: Record<number, string> = {
   1: 'Automatica',
-  2: 'Manual'
+  2: 'Manual',
+  3: 'Híbrido'
+}
+
+const executionByCode: Record<string, string> = {
+  AUT: 'Automatica',
+  MAN: 'Manual',
+  HIB: 'Híbrido',
+  HYB: 'Híbrido'
 }
 
 function toExecutionName(value: unknown): string {
+  if (typeof value === 'string') {
+    const raw = value.trim()
+    if (!raw) return '-'
+    const normalizedCode = raw
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+    if (executionByCode[normalizedCode]) {
+      return executionByCode[normalizedCode]
+    }
+    return raw
+  }
+
   const rawId = Number(value)
   if (!Number.isNaN(rawId) && executionById[rawId]) {
     return executionById[rawId]
   }
-  if (typeof value === 'string' && value.trim()) {
-    return value
-  }
-  return 'Automatica'
+  return '-'
 }
 
 function resolveMapeoId(tarea: any, item: any): number {
@@ -196,8 +214,20 @@ export function normalizeTareasCampana(data: any): TareaCampanaData[] {
       horarios: []
     }
 
-    const executionId = Number(tarea?.ejecucion?.id ?? item?.ejecucion?.id ?? 0)
-    const executionName = toExecutionName(tarea?.ejecucion?.nombre ?? item?.ejecucion?.nombre ?? executionId)
+    const executionId = Number(
+      tarea?.ejecucion?.id
+      ?? item?.ejecucion?.id
+      ?? tarea?.idABCCatTipoEjecucion
+      ?? item?.idABCCatTipoEjecucion
+      ?? 0
+    )
+    const executionName = toExecutionName(
+      tarea?.ejecucion?.nombre
+      ?? item?.ejecucion?.nombre
+      ?? tarea?.ejecucion?.codigo
+      ?? item?.ejecucion?.codigo
+      ?? executionId
+    )
 
     if (stageKey) {
       const stageSchedule = {

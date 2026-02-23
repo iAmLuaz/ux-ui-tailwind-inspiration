@@ -35,6 +35,18 @@ interface StageDefinition {
   slots: Array<{ dia: CatalogValue; hora: CatalogValue; activo?: boolean }>
 }
 
+function getStageSlotsByName(form: TareaCampanaFormModel, stage: StageName) {
+  if (stage === 'carga') return Array.isArray(form.cargaSlots) ? form.cargaSlots : []
+  if (stage === 'validacion') return Array.isArray(form.validacionSlots) ? form.validacionSlots : []
+  return Array.isArray(form.envioSlots) ? form.envioSlots : []
+}
+
+function getStageHorarioIds(form: TareaCampanaFormModel, stage: StageName): number[] {
+  return getStageSlotsByName(form, stage)
+    .map((slot: any) => Number(slot?.horarioId ?? 0))
+    .filter((id) => !Number.isNaN(id) && id > 0)
+}
+
 export interface TareaCampanaStageTaskIds {
   carga?: number
   validacion?: number
@@ -207,7 +219,18 @@ export function toUpdateTareaCampanaOperations(
   const update: Array<{ stage: StageName; payload: UpdateTareaCampanaPayload }> = []
 
   for (const stage of stages) {
-    if (!stage.slots.length) continue
+    const stageSlotsRaw = getStageSlotsByName(form, stage.stage) as any[]
+    const stageHorarioIds = new Set(getStageHorarioIds(form, stage.stage))
+    const inferredStageDesactivarIds = stageSlotsRaw
+      .filter(slot => Number(slot?.horarioId ?? 0) > 0 && (slot?.activo ?? true) === false)
+      .map(slot => Number(slot?.horarioId ?? 0))
+      .filter(id => !Number.isNaN(id) && id > 0)
+
+    const stageHorariosDesactivarIds = Array.from(new Set([
+      ...horariosDesactivarIds.filter(id => stageHorarioIds.has(id)),
+      ...inferredStageDesactivarIds
+    ]))
+    const stageHorariosActivarIds = horariosActivarIds.filter(id => stageHorarioIds.has(id))
 
     const commonTarea = {
       ...(mapeoId > 0 ? { mapeo: { id: mapeoId } } : {}),
@@ -223,6 +246,10 @@ export function toUpdateTareaCampanaOperations(
 
     const existingTaskId = Number(taskIds[stage.stage] ?? 0)
     if (existingTaskId > 0) {
+      if (!stage.slots.length && !stageHorariosDesactivarIds.length && !stageHorariosActivarIds.length) {
+        continue
+      }
+
       update.push({
         stage: stage.stage,
         payload: {
@@ -232,12 +259,14 @@ export function toUpdateTareaCampanaOperations(
           },
           horarios: stage.slots.map(slot => toHorarioByType(stage.typeId, slot.dia, slot.hora, existingTaskId)),
           idUsuario,
-          horariosDesactivarIds,
-          horariosActivarIds
+          horariosDesactivarIds: stageHorariosDesactivarIds,
+          horariosActivarIds: stageHorariosActivarIds
         }
       })
       continue
     }
+
+    if (!stage.slots.length) continue
 
     create.push({
       stage: stage.stage,

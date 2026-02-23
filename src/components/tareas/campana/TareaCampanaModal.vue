@@ -2,8 +2,13 @@
 import { ref, watch, computed } from 'vue'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
 import { SelectField } from '@/components/tareas/shared/tareaFormFields'
-import TareaScheduleConfigurator, { type TareaScheduleModel } from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
+import TareaScheduleConfigurator, {
+  type TareaScheduleModel,
+  type TareaToggleSlotPayload
+} from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
+import { addToast } from '@/stores/toastStore'
+import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
 import {
   type Option,
   type ScheduleSlot
@@ -115,6 +120,7 @@ const isScheduleReady = ref(false)
 const initialFormSnapshot = ref('')
 const showActionConfirm = ref(false)
 const pendingAction = ref<'save' | 'cancel' | null>(null)
+const isPatchingHorario = ref(false)
 
 const isEditing = computed(() => props.mode === 'edit')
 const isLineaSelected = computed(() => Boolean(formData.value.idABCCatLineaNegocio))
@@ -318,6 +324,90 @@ const confirmAction = () => {
   closeActionConfirm()
 }
 
+const stageTypeByKind = {
+  carga: 1,
+  validacion: 2,
+  envio: 3
+} as const
+
+function resolveTaskIdByKind(kind: keyof typeof stageTypeByKind) {
+  const fromIds = Number(props.initialData?.idsTarea?.[kind] ?? 0)
+  if (fromIds > 0) return fromIds
+
+  const stageTask = props.initialData?.tareasPorTipo?.[kind]
+  return Number(
+    stageTask?.id
+    ?? stageTask?.idABCConfigTareaCampana
+    ?? props.initialData?.idABCConfigTareaCampana
+    ?? 0
+  ) || 0
+}
+
+function resolveHorarioIdFromList(slot: ScheduleSlot, horarios: any[], kind: keyof typeof stageTypeByKind) {
+  void kind
+  const dayId = Number(slot?.dia ?? 0)
+  const hourId = Number(slot?.hora ?? 0)
+
+  const found = (Array.isArray(horarios) ? horarios : []).find((item: any) => {
+    const itemDayId = Number(item?.dia?.id ?? item?.idABCCatDia ?? 0)
+    const itemHourId = Number(item?.dia?.hora?.id ?? item?.hora?.id ?? item?.idABCCatHora ?? 0)
+    return itemDayId === dayId && itemHourId === hourId
+  })
+
+  return Number(found?.idABCConfigHorarioTareaCampana ?? found?.horarioId ?? found?.id ?? 0) || 0
+}
+
+async function handleToggleSlot(payload: TareaToggleSlotPayload) {
+  if (!isEditing.value) return
+  if (isPatchingHorario.value) return
+
+  const taskId = resolveTaskIdByKind(payload.kind)
+  if (!taskId) {
+    addToast('No se pudo identificar la tarea para actualizar el horario.', 'warning', 3500)
+    return
+  }
+
+  let horarioId = Number(payload.slot?.horarioId ?? 0)
+
+  try {
+    isPatchingHorario.value = true
+
+    if (!horarioId) {
+      const horarios = await tareaCampanaService.getHorariosByTarea(taskId)
+      horarioId = resolveHorarioIdFromList(payload.slot, horarios, payload.kind)
+    }
+
+    const idUsuario = Number(formData.value.idUsuario ?? props.initialData?.idUsuario ?? props.initialData?.idABCUsuario ?? 1)
+    const slotData = {
+      dia: Number(payload.slot?.dia ?? 0),
+      hora: Number(payload.slot?.hora ?? 0)
+    }
+
+    if (payload.nextActive) {
+      if (horarioId) {
+        payload.slot.horarioId = horarioId
+        await tareaCampanaService.patchActivarHorario(taskId, horarioId, idUsuario)
+      } else {
+        await tareaCampanaService.patchActivarHorarioBySlot(taskId, slotData, idUsuario)
+      }
+      addToast('Horario activado correctamente.', 'success', 2500)
+    } else {
+      if (horarioId) {
+        payload.slot.horarioId = horarioId
+        await tareaCampanaService.patchDesactivarHorario(taskId, horarioId, idUsuario)
+      } else {
+        await tareaCampanaService.patchDesactivarHorarioBySlot(taskId, slotData, idUsuario)
+      }
+      addToast('Horario desactivado correctamente.', 'success', 2500)
+    }
+  } catch (error: any) {
+    payload.slot.activo = !payload.nextActive
+    addToast(error?.message ?? 'No se pudo actualizar el horario.', 'error', 3500)
+  } finally {
+    isPatchingHorario.value = false
+  }
+}
+
 function initializeFormData(): TareaCampanaFormData {
   if (props.initialData) {
     const cargaSlots = toScheduleSlotsByType(props.initialData, 1, ['idABCConfigHorarioTareaCampana'])
@@ -492,6 +582,7 @@ function handleSave() {
             :hour-options="horasDisponibles"
             :execution-options="ejecucionesDisponibles"
             @update:schedule-ready="isScheduleReady = $event"
+            @toggle-slot="handleToggleSlot"
           />
 
           <div v-if="mode === 'edit'" class="flex justify-end">

@@ -30,6 +30,7 @@ export const toScheduleSlotsByType = (
         persistedIdKeys
           .map(key => horario?.[key])
           .find(value => Number(value ?? 0) > 0)
+          ?? horario?.horarioId
           ?? horario?.id
           ?? 0
       ) || undefined

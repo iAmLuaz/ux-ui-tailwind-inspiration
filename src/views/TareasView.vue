@@ -28,7 +28,6 @@ import {
   enrichTareaWithMapeoName,
   mapCatalogosToOptions,
   resolveTareaMapeoId,
-  splitHorarioIdsByStage,
   stageKeys,
   stageTypeByKey
 } from '@/composables/tareas/tareasViewUtils'
@@ -36,7 +35,7 @@ import { addToast } from '@/stores/toastStore'
 
 const tabs = [
   { key: 'linea', label: 'Lineas de negocio', icon: Layers },
-  { key: 'campana', label: 'Campanas', icon: Megaphone }
+  { key: 'campana', label: 'Campañas', icon: Megaphone }
 ] as const
 
 type TabKey = typeof tabs[number]['key']
@@ -170,6 +169,7 @@ const selectedItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
 const showDetailsModal = ref(false)
 const detailTab = ref<TabKey>('linea')
 const detailItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
+const isLoadingDetails = ref(false)
 const showSaveProgress = ref(false)
 const saveProgressCompleted = ref(0)
 const saveProgressTotal = ref(1)
@@ -405,12 +405,20 @@ async function hydrateLineaForEdit(item: TareaLineaRow): Promise<TareaLineaRow> 
   const ids = item.idsTarea ?? {}
   const horariosByStage = await Promise.all(
     stageKeys.map(async stage => {
-      const taskId = Number(ids[stage] ?? 0)
+      const taskId = Number(
+        ids[stage]
+        ?? item.tareasPorTipo?.[stage]?.idABCConfigTareaLinea
+        ?? item.tareasPorTipo?.[stage]?.id
+        ?? 0
+      )
       if (!taskId) return []
       const horarios = await tareaLineaService.getHorariosByTarea(taskId)
       return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
         ...horario,
-        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] }
+        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] },
+        horarioId: Number(horario?.idABCConfigHorarioTareaLinea ?? horario?.id ?? 0) || undefined,
+        persisted: true,
+        activo: horario?.activo ?? horario?.bolActivo ?? true
       }))
     })
   )
@@ -425,12 +433,20 @@ async function hydrateCampanaForEdit(item: TareaCampanaRow): Promise<TareaCampan
   const ids = item.idsTarea ?? {}
   const horariosByStage = await Promise.all(
     stageKeys.map(async stage => {
-      const taskId = Number(ids[stage] ?? 0)
+      const taskId = Number(
+        ids[stage]
+        ?? item.tareasPorTipo?.[stage]?.idABCConfigTareaCampana
+        ?? item.tareasPorTipo?.[stage]?.id
+        ?? 0
+      )
       if (!taskId) return []
       const horarios = await tareaCampanaService.getHorariosByTarea(taskId)
       return (Array.isArray(horarios) ? horarios : []).map((horario: any) => ({
         ...horario,
-        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] }
+        tipoHorario: horario?.tipoHorario ?? { id: stageTypeByKey[stage] },
+        horarioId: Number(horario?.idABCConfigHorarioTareaCampana ?? horario?.id ?? 0) || undefined,
+        persisted: true,
+        activo: horario?.activo ?? horario?.bolActivo ?? true
       }))
     })
   )
@@ -442,14 +458,31 @@ async function hydrateCampanaForEdit(item: TareaCampanaRow): Promise<TareaCampan
 }
 
 function openDetails(item: TareaLineaRow | TareaCampanaRow) {
-  detailTab.value = activeTab.value
-  detailItem.value = item
-  showDetailsModal.value = true
+  const run = async () => {
+    detailTab.value = activeTab.value
+    detailItem.value = null
+    showDetailsModal.value = true
+    isLoadingDetails.value = true
+
+    if (isCampanaRow(item)) {
+      detailItem.value = await hydrateCampanaForEdit(item)
+    } else {
+      detailItem.value = await hydrateLineaForEdit(item)
+    }
+  }
+
+  run().catch((e: any) => {
+    error.value = e?.message ?? 'No se pudo cargar el detalle de la tarea.'
+    detailItem.value = item
+  }).finally(() => {
+    isLoadingDetails.value = false
+  })
 }
 
 function closeDetailsModal() {
   showDetailsModal.value = false
   detailItem.value = null
+  isLoadingDetails.value = false
 }
 function openEdit(item: TareaLineaRow | TareaCampanaRow) {
   const run = async () => {
@@ -565,6 +598,75 @@ const stageActionLabel = (stage: 'carga' | 'validacion' | 'envio') => {
   return 'envío'
 }
 
+function resolveStageTaskIds(item: TareaLineaRow | TareaCampanaRow) {
+  return {
+    carga: Number(item.idsTarea?.carga ?? item.tareasPorTipo?.carga?.id ?? item.tareasPorTipo?.carga?.idABCConfigTareaLinea ?? item.tareasPorTipo?.carga?.idABCConfigTareaCampana ?? 0) || undefined,
+    validacion: Number(item.idsTarea?.validacion ?? item.tareasPorTipo?.validacion?.id ?? item.tareasPorTipo?.validacion?.idABCConfigTareaLinea ?? item.tareasPorTipo?.validacion?.idABCConfigTareaCampana ?? 0) || undefined,
+    envio: Number(item.idsTarea?.envio ?? item.tareasPorTipo?.envio?.id ?? item.tareasPorTipo?.envio?.idABCConfigTareaLinea ?? item.tareasPorTipo?.envio?.idABCConfigTareaCampana ?? 0) || undefined
+  }
+}
+
+function toPositiveIds(values: unknown[]): number[] {
+  return values
+    .map(value => Number(value))
+    .filter(id => !Number.isNaN(id) && id > 0)
+}
+
+function uniqueIds(values: number[]): number[] {
+  return Array.from(new Set(values))
+}
+
+function buildForcedHorarioSyncByStage(
+  payload: any,
+  stageTaskIds: { carga?: number; validacion?: number; envio?: number }
+) {
+  const idUsuario = Number(payload?.idUsuario ?? payload?.idABCUsuario ?? 1)
+  const globalDesactivarIds = toPositiveIds(Array.isArray(payload?.horariosDesactivarIds) ? payload.horariosDesactivarIds : [])
+  const globalActivarIds = toPositiveIds(Array.isArray(payload?.horariosActivarIds) ? payload.horariosActivarIds : [])
+
+  const forcedSyncEntries = stageKeys
+    .map(stage => {
+      const taskId = Number(stageTaskIds[stage] ?? 0)
+      if (!taskId) return null
+
+      const stageSlots = Array.isArray(payload?.[`${stage}Slots`]) ? payload[`${stage}Slots`] : []
+      const stageHorarioIds = new Set(
+        toPositiveIds(stageSlots.map((slot: any) => slot?.horarioId))
+      )
+
+      const inferredDesactivarIds = toPositiveIds(
+        stageSlots
+          .filter((slot: any) => Number(slot?.horarioId ?? 0) > 0 && (slot?.activo ?? true) === false)
+          .map((slot: any) => slot?.horarioId)
+      )
+
+      const horariosDesactivarIds = uniqueIds([
+        ...globalDesactivarIds.filter(id => stageHorarioIds.has(id)),
+        ...inferredDesactivarIds
+      ])
+
+      const horariosActivarIds = uniqueIds(
+        globalActivarIds.filter(id => stageHorarioIds.has(id))
+      )
+
+      if (!horariosDesactivarIds.length && !horariosActivarIds.length) return null
+
+      return {
+        stage,
+        taskId,
+        payload: {
+          horarios: [],
+          idUsuario,
+          horariosDesactivarIds,
+          horariosActivarIds
+        }
+      }
+    })
+    .filter((item): item is { stage: 'carga' | 'validacion' | 'envio'; taskId: number; payload: any } => Boolean(item))
+
+  return forcedSyncEntries
+}
+
 function startSaveProgress(totalActions: number) {
   saveProgressTotal.value = Math.max(1, totalActions)
   saveProgressCompleted.value = 0
@@ -592,6 +694,13 @@ type SaveAction = {
   run: () => Promise<void>
 }
 
+function toTaskOnlyUpdatePayload(payloadByStage: any) {
+  return {
+    tarea: payloadByStage?.tarea ?? {},
+    idUsuario: Number(payloadByStage?.idUsuario ?? payloadByStage?.idABCUsuario ?? 1)
+  }
+}
+
 async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel) {
   const wasAdd = modalMode.value === 'add'
   try {
@@ -615,15 +724,17 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           })
         }
       } else if (selectedItem.value && isCampanaRow(selectedItem.value)) {
-        const operations = toUpdateTareaCampanaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
-        const byStageHorarioIds = splitHorarioIdsByStage(selectedItem.value)
+        const stageTaskIds = resolveStageTaskIds(selectedItem.value)
+        const operations = toUpdateTareaCampanaOperations(payload, stageTaskIds, actividadTipoIds.value)
+        const syncedHorarioStages = new Set<string>()
 
         for (const entry of operations.update) {
-          const payloadByStage = {
-            ...entry.payload,
-            horariosDesactivarIds: (entry.payload.horariosDesactivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id)),
-            horariosActivarIds: (entry.payload.horariosActivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id))
-          }
+          const payloadByStage = entry.payload
+          const stageTaskId = Number(
+            payloadByStage?.tarea?.id
+            ?? stageTaskIds[entry.stage]
+            ?? 0
+          )
 
           const requiresTaskPut = shouldUpdateStageTask(
             selectedItem.value,
@@ -634,18 +745,25 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           if (requiresTaskPut) {
             actions.push({
               label: `Actualizando ${stageActionLabel(entry.stage)}`,
-              run: () => tareaCampanaService.update(payloadByStage).then(() => undefined)
+              run: () => tareaCampanaService.update(toTaskOnlyUpdatePayload(payloadByStage)).then(() => undefined)
             })
-            continue
           }
 
-          const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
           if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
+            syncedHorarioStages.add(entry.stage)
             actions.push({
               label: `Sincronizando horarios de ${stageActionLabel(entry.stage)}`,
               run: () => tareaCampanaService.syncHorarios(stageTaskId, payloadByStage).then(() => undefined)
             })
           }
+        }
+
+        for (const forcedSync of buildForcedHorarioSyncByStage(payload, stageTaskIds)) {
+          if (syncedHorarioStages.has(forcedSync.stage)) continue
+          actions.push({
+            label: `Sincronizando horarios de ${stageActionLabel(forcedSync.stage)}`,
+            run: () => tareaCampanaService.syncHorarios(forcedSync.taskId, forcedSync.payload).then(() => undefined)
+          })
         }
 
         for (const entry of operations.create) {
@@ -685,15 +803,17 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           })
         }
       } else if (selectedItem.value && !isCampanaRow(selectedItem.value)) {
-        const operations = toUpdateTareaLineaOperations(payload, selectedItem.value.idsTarea ?? {}, actividadTipoIds.value)
-        const byStageHorarioIds = splitHorarioIdsByStage(selectedItem.value)
+        const stageTaskIds = resolveStageTaskIds(selectedItem.value)
+        const operations = toUpdateTareaLineaOperations(payload, stageTaskIds, actividadTipoIds.value)
+        const syncedHorarioStages = new Set<string>()
 
         for (const entry of operations.update) {
-          const payloadByStage = {
-            ...entry.payload,
-            horariosDesactivarIds: (entry.payload.horariosDesactivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id)),
-            horariosActivarIds: (entry.payload.horariosActivarIds ?? []).filter(id => byStageHorarioIds[entry.stage].includes(id))
-          }
+          const payloadByStage = entry.payload
+          const stageTaskId = Number(
+            payloadByStage?.tarea?.id
+            ?? stageTaskIds[entry.stage]
+            ?? 0
+          )
 
           const requiresTaskPut = shouldUpdateStageTask(
             selectedItem.value,
@@ -704,18 +824,25 @@ async function handleSave(formData: TareaLineaFormModel | TareaCampanaFormModel)
           if (requiresTaskPut) {
             actions.push({
               label: `Actualizando ${stageActionLabel(entry.stage)}`,
-              run: () => tareaLineaService.update(payloadByStage).then(() => undefined)
+              run: () => tareaLineaService.update(toTaskOnlyUpdatePayload(payloadByStage)).then(() => undefined)
             })
-            continue
           }
 
-          const stageTaskId = Number(payloadByStage?.tarea?.id ?? selectedItem.value.idsTarea?.[entry.stage] ?? 0)
           if (stageTaskId > 0 && hasHorarioChanges(payloadByStage)) {
+            syncedHorarioStages.add(entry.stage)
             actions.push({
               label: `Sincronizando horarios de ${stageActionLabel(entry.stage)}`,
               run: () => tareaLineaService.syncHorarios(stageTaskId, payloadByStage).then(() => undefined)
             })
           }
+        }
+
+        for (const forcedSync of buildForcedHorarioSyncByStage(payload, stageTaskIds)) {
+          if (syncedHorarioStages.has(forcedSync.stage)) continue
+          actions.push({
+            label: `Sincronizando horarios de ${stageActionLabel(forcedSync.stage)}`,
+            run: () => tareaLineaService.syncHorarios(forcedSync.taskId, forcedSync.payload).then(() => undefined)
+          })
         }
 
         for (const entry of operations.create) {
@@ -932,17 +1059,21 @@ watch(
       <TareaLineaDetailsModal
         v-if="detailTab === 'linea'"
         :show="showDetailsModal"
+        :is-loading="isLoadingDetails"
         :item="detailItem as TareaLineaRow | null"
         :get-linea-label="getLineaLabel"
+        :ejecuciones-disponibles="ejecucionesDisponibles"
         @close="closeDetailsModal"
       />
 
       <TareaCampanaDetailsModal
         v-if="detailTab === 'campana'"
         :show="showDetailsModal"
+        :is-loading="isLoadingDetails"
         :item="detailItem as TareaCampanaRow | null"
         :get-linea-label="getLineaLabel"
         :get-campana-label="getCampanaLabel"
+        :ejecuciones-disponibles="ejecucionesDisponibles"
         @close="closeDetailsModal"
       />
 

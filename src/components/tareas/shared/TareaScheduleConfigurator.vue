@@ -10,7 +10,6 @@ import {
   getWeekdayOrder,
   normalizeWeekdayInputValue,
   toHoraLabel,
-  removeScheduleSlot as deleteScheduleSlot,
   type Option,
   type ScheduleSlot
 } from '@/composables/tareas/tareaScheduleUtils'
@@ -40,6 +39,13 @@ export interface TareaScheduleModel {
   horariosActivarIds?: number[]
 }
 
+export interface TareaToggleSlotPayload {
+  kind: 'carga' | 'validacion' | 'envio'
+  index: number
+  slot: ScheduleSlot
+  nextActive: boolean
+}
+
 interface Props {
   modelValue: TareaScheduleModel
   mode: 'add' | 'edit'
@@ -51,6 +57,7 @@ interface Props {
 interface Emits {
   (e: 'update:modelValue', value: TareaScheduleModel): void
   (e: 'update:scheduleReady', value: boolean): void
+  (e: 'toggle-slot', value: TareaToggleSlotPayload): void
 }
 
 const props = defineProps<Props>()
@@ -310,34 +317,51 @@ const scheduleValidationError = computed(() => {
 
   return ''
 })
-const scheduleRecommendationMessages = computed(() => {
-  const messages: string[] = []
+
+const validacionRecommendationMessage = computed(() => {
+  const shouldShow =
+    isValidacionSectionEnabled.value
+    && !hasValidacionConfig.value
+    && !hasValue(localData.value.diaValidacion)
+    && !hasValue(localData.value.horaValidacion)
+
+  if (!shouldShow) return ''
+
   const carga = toSlotSchedule(primaryCargaSlot.value)
-  const validacion = toSlotSchedule(primaryValidacionSlot.value)
-  const envio = toSlotSchedule(primaryEnvioSlot.value)
-
-  if (carga && validacion) {
-    const diff = compareWeekdayTime(carga.day, carga.hour, validacion.day, validacion.hour)
-    if (diff !== null && diff >= 0 && diff < 60 * 60_000) {
-      const suggested = addMinutes(carga.day, carga.hour, 60)
-      if (suggested) {
-        messages.push(`Recomendación: programa Validación al menos 1 hora después de Carga (ej. ${suggested.date} a las ${suggested.time}).`)
-      }
-    }
+  if (!carga) {
+    return 'Recomendación: programa Validación al menos 1 hora después de Carga.'
   }
 
-  if (validacion && envio) {
-    const diff = compareWeekdayTime(validacion.day, validacion.hour, envio.day, envio.hour)
-    if (diff !== null && diff >= 0 && diff < 60 * 60_000) {
-      const suggested = addMinutes(validacion.day, validacion.hour, 60)
-      if (suggested) {
-        messages.push(`Recomendación: programa Envío al menos 1 hora después de Validación (ej. ${suggested.date} a las ${suggested.time}).`)
-      }
-    }
+  const suggested = addMinutes(carga.day, carga.hour, 60)
+  if (!suggested) {
+    return 'Recomendación: programa Validación al menos 1 hora después de Carga.'
   }
 
-  return messages
+  return `Recomendación: programa Validación al menos 1 hora después de Carga (ej. ${suggested.date} a las ${suggested.time}).`
 })
+
+const envioRecommendationMessage = computed(() => {
+  const shouldShow =
+    isEnvioSectionEnabled.value
+    && !hasEnvioConfig.value
+    && !hasValue(localData.value.diaEnvio)
+    && !hasValue(localData.value.horaEnvio)
+
+  if (!shouldShow) return ''
+
+  const validacion = toSlotSchedule(primaryValidacionSlot.value)
+  if (!validacion) {
+    return 'Recomendación: programa Envío al menos 1 hora después de Validación.'
+  }
+
+  const suggested = addMinutes(validacion.day, validacion.hour, 60)
+  if (!suggested) {
+    return 'Recomendación: programa Envío al menos 1 hora después de Validación.'
+  }
+
+  return `Recomendación: programa Envío al menos 1 hora después de Validación (ej. ${suggested.date} a las ${suggested.time}).`
+})
+
 const scheduleReady = computed(() =>
   hasCargaConfig.value &&
   !scheduleValidationError.value
@@ -420,41 +444,19 @@ const removeScheduleSlot = (kind: 'carga' | 'validacion' | 'envio', index: numbe
     return
   }
 
-  const isPersistedEditSlot = props.mode === 'edit' && Boolean(slot.persisted && slot.horarioId)
-  if (isPersistedEditSlot) {
-    const horarioId = Number(slot.horarioId)
-    const activateIds = new Set(localData.value.horariosActivarIds ?? [])
-    const deactivateIds = new Set(localData.value.horariosDesactivarIds ?? [])
+  const nextActive = !isSlotActive(slot)
+  slot.activo = nextActive
 
-    if (isSlotActive(slot)) {
-      slot.activo = false
-      activateIds.delete(horarioId)
-      deactivateIds.add(horarioId)
-    } else {
-      slot.activo = true
-      deactivateIds.delete(horarioId)
-      activateIds.add(horarioId)
-    }
-
-    localData.value.horariosActivarIds = Array.from(activateIds)
-    localData.value.horariosDesactivarIds = Array.from(deactivateIds)
-    return
-  }
-
-  if (kind === 'carga') {
-    localData.value.cargaSlots = deleteScheduleSlot(localData.value.cargaSlots, index)
-  } else if (kind === 'validacion') {
-    localData.value.validacionSlots = deleteScheduleSlot(localData.value.validacionSlots, index)
-  } else {
-    localData.value.envioSlots = deleteScheduleSlot(localData.value.envioSlots, index)
-  }
+  emit('toggle-slot', {
+    kind,
+    index,
+    slot: { ...slot },
+    nextActive
+  })
 }
 
 const getSlotActionLabel = (slot: ScheduleSlot) => {
-  if (slot.persisted && props.mode === 'edit') {
-    return isSlotActive(slot) ? 'Desactivar' : 'Activar'
-  }
-  return 'Eliminar'
+  return isSlotActive(slot) ? 'Desactivar' : 'Activar'
 }
 
 watch(
@@ -477,7 +479,7 @@ watch(
     if (isSameScheduleData(normalized, props.modelValue)) return
     emit('update:modelValue', normalized)
   },
-  { deep: true }
+  { deep: true, flush: 'sync' }
 )
 
 watch(scheduleReady, (ready) => emit('update:scheduleReady', ready), { immediate: true })
@@ -645,11 +647,11 @@ watch(envioDayOptions, (options) => {
                  
                  <div v-else class="flex flex-wrap gap-2">
                     <span v-for="(slot, index) in localData.cargaSlots" :key="`carga-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
-                      :class="slot.persisted
-                        ? (isSlotActive(slot)
+                      :class="isSlotActive(slot)
+                        ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
-                        : 'bg-slate-100 text-slate-700 border-slate-200'">
+                          : 'bg-slate-100 text-slate-700 border-slate-200')
+                        : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60'">
                       {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
@@ -658,15 +660,12 @@ watch(envioDayOptions, (options) => {
                         :title="getSlotActionLabel(slot)"
                         @click="removeScheduleSlot('carga', index)"
                       >
-                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
                           <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
-                        </svg>
-                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
                         </svg>
                         <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
@@ -707,6 +706,13 @@ watch(envioDayOptions, (options) => {
               </div>
             </div>
 
+            <div
+              v-if="validacionRecommendationMessage"
+              class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+            >
+              {{ validacionRecommendationMessage }}
+            </div>
+
             <div class="rounded-lg border border-slate-300 bg-white p-4">
               <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Horarios</p>
@@ -741,11 +747,11 @@ watch(envioDayOptions, (options) => {
                  <p v-if="!localData.validacionSlots?.length" class="text-[11px] text-slate-400 italic">Agrega al menos un horario para habilitar Envío.</p>
                  <div v-else class="flex flex-wrap gap-2">
                     <span v-for="(slot, index) in localData.validacionSlots" :key="`validacion-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
-                      :class="slot.persisted
-                        ? (isSlotActive(slot)
+                      :class="isSlotActive(slot)
+                        ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
-                        : 'bg-slate-100 text-slate-700 border-slate-200'">
+                          : 'bg-slate-100 text-slate-700 border-slate-200')
+                        : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60'">
                       {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
@@ -754,15 +760,12 @@ watch(envioDayOptions, (options) => {
                         :title="getSlotActionLabel(slot)"
                         @click="removeScheduleSlot('validacion', index)"
                       >
-                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
                           <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
-                        </svg>
-                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
                         </svg>
                         <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
@@ -802,6 +805,13 @@ watch(envioDayOptions, (options) => {
               </div>
             </div>
 
+            <div
+              v-if="envioRecommendationMessage"
+              class="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+            >
+              {{ envioRecommendationMessage }}
+            </div>
+
              <div class="rounded-lg border border-slate-300 bg-white p-4">
               <div class="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
                 <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Horarios</p>
@@ -835,11 +845,11 @@ watch(envioDayOptions, (options) => {
               <div class="min-h-[24px]">
                  <div v-if="localData.envioSlots?.length" class="flex flex-wrap gap-2">
                     <span v-for="(slot, index) in localData.envioSlots" :key="`envio-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
-                      :class="slot.persisted
-                        ? (isSlotActive(slot)
+                      :class="isSlotActive(slot)
+                        ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
-                          : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60')
-                        : 'bg-slate-100 text-slate-700 border-slate-200'">
+                          : 'bg-slate-100 text-slate-700 border-slate-200')
+                        : 'bg-slate-100 text-slate-500 border-slate-200 opacity-60'">
                       {{ formatSlotDay(slot.dia) }} {{ formatSlotHour(slot.hora) }}
                       <button
                         type="button"
@@ -848,15 +858,12 @@ watch(envioDayOptions, (options) => {
                         :title="getSlotActionLabel(slot)"
                         @click="removeScheduleSlot('envio', index)"
                       >
-                        <svg v-if="slot.persisted && mode === 'edit' && isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
                           <path d="M6.8 10.2l2.1 2.1 4.3-4.3" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
-                        <svg v-else-if="slot.persisted && mode === 'edit'" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
-                        </svg>
-                        <svg v-else class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                          <path d="M6 6l8 8M14 6l-8 8" stroke-linecap="round" />
                         </svg>
                         <span class="pointer-events-none absolute z-[120] left-1/2 -translate-x-1/2 -top-8 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[10px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">{{ getSlotActionLabel(slot) }}</span>
                       </button>
@@ -869,10 +876,9 @@ watch(envioDayOptions, (options) => {
       </div>
     </div>
 
-    <div v-if="scheduleValidationError || duplicateScheduleError || scheduleRecommendationMessages.length" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 space-y-1 mt-6">
+    <div v-if="scheduleValidationError || duplicateScheduleError" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 space-y-1 mt-6">
       <p v-if="scheduleValidationError" class="font-semibold text-red-700">{{ scheduleValidationError }}</p>
       <p v-if="duplicateScheduleError" class="font-semibold text-amber-700">{{ duplicateScheduleError }}</p>
-      <p v-for="message in scheduleRecommendationMessages" :key="message">{{ message }}</p>
     </div>
   </div>
 </template>
