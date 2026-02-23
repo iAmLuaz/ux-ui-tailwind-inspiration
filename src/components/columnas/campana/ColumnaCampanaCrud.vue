@@ -9,6 +9,7 @@ import type { ColumnaCampanaModel } from '@/models/columnas/campana/columnaCampa
 import ColumnaCampanaTable from './ColumnaCampanaTable.vue'
 import ColumnaCampanaModal from './ColumnaCampanaModal.vue'
 import ColumnaDetailsModal from '../ColumnaDetailsModal.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 
 const props = defineProps<{
 	mapeoId?: number | string | null
@@ -40,6 +41,24 @@ const selectedFilters = reactive({
 const pageSize = ref(10)
 const currentPage = ref(1)
 
+function toTimestamp(value?: string) {
+	const parsed = value ? Date.parse(value) : Number.NaN
+	return Number.isFinite(parsed) ? parsed : -1
+}
+
+function newestFirstCompare(
+	left: { fechaCreacion?: string; mapeoId?: number; columnaId?: number },
+	right: { fechaCreacion?: string; mapeoId?: number; columnaId?: number }
+) {
+	const leftTs = toTimestamp(left.fechaCreacion)
+	const rightTs = toTimestamp(right.fechaCreacion)
+	if (rightTs !== leftTs) return rightTs - leftTs
+
+	const leftId = Number(left.mapeoId ?? 0) * 100000 + Number(left.columnaId ?? 0)
+	const rightId = Number(right.mapeoId ?? 0) * 100000 + Number(right.columnaId ?? 0)
+	return rightId - leftId
+}
+
 const filtered = computed(() =>
 	items.value.filter(item => {
 		const matchMapeo = selectedFilters.mapeos.length
@@ -53,7 +72,7 @@ const filtered = computed(() =>
 			: true
 
 		return matchMapeo && matchColumna && matchStatus
-	})
+	}).sort(newestFirstCompare)
 )
 
 const totalPages = computed(() =>
@@ -69,6 +88,21 @@ const showModal = ref(false)
 const showDetails = ref(false)
 const mode = ref<'add' | 'edit'>('add')
 const selected = ref<any>(null)
+const showStatusConfirmModal = ref(false)
+const pendingStatusItem = ref<ColumnaCampanaModel | null>(null)
+
+const statusConfirmTitle = computed(() => {
+	if (!pendingStatusItem.value) return 'Confirmar cambio de estatus'
+	return pendingStatusItem.value.bolActivo
+		? 'Confirmar desactivación'
+		: 'Confirmar activación'
+})
+
+const statusConfirmMessage = computed(() => {
+	if (!pendingStatusItem.value) return '¿Deseas continuar con este cambio de estatus?'
+	const actionText = pendingStatusItem.value.bolActivo ? 'desactivar' : 'activar'
+	return `¿Deseas ${actionText} esta columna?`
+})
 
 async function fetchCatalogos() {
 	const catalogos = await catalogosService.getCatalogosAgrupados()
@@ -105,6 +139,24 @@ async function handleSaved() {
 
 function toggleFilterMenu(column: string) {
 	openFilter.value = openFilter.value === column ? null : column
+}
+
+function requestStatusToggle(item: ColumnaCampanaModel) {
+	pendingStatusItem.value = item
+	showStatusConfirmModal.value = true
+}
+
+function closeStatusConfirmModal() {
+	if (loading.value) return
+	showStatusConfirmModal.value = false
+	pendingStatusItem.value = null
+}
+
+async function confirmStatusToggle() {
+	if (!pendingStatusItem.value) return
+	await toggle(pendingStatusItem.value)
+	showStatusConfirmModal.value = false
+	pendingStatusItem.value = null
 }
 
 onMounted(() => {
@@ -176,7 +228,7 @@ defineExpose({ openAdd })
 					:is-loading="loading"
 					:current-page="currentPage"
 					:total-pages="totalPages"
-					@toggle="toggle"
+					@toggle="requestStatusToggle"
 					@add="openAdd"
 					@edit="openEdit"
 					@details="openDetails"
@@ -232,6 +284,17 @@ defineExpose({ openAdd })
 			:selected-campana-id="selected?.campanaId ?? props.selectedCampanaId ?? null"
 			:selected-campana-nombre="selected?.campanaNombre ?? props.selectedCampanaNombre ?? null"
 			@close="showDetails = false"
+		/>
+
+		<FormActionConfirmModal
+			:show="showStatusConfirmModal"
+			:title="statusConfirmTitle"
+			:message="statusConfirmMessage"
+			confirm-text="Aceptar"
+			cancel-text="Cancelar"
+			:is-loading="loading"
+			@confirm="confirmStatusToggle"
+			@cancel="closeStatusConfirmModal"
 		/>
 	</div>
 </template>

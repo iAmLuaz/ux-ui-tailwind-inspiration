@@ -17,8 +17,8 @@ export function toCreateMapeoLineaPayload(form: MapeoLineaFormModel): CreateMape
     mapeo: {
       nombre: form.nombre,
       descripcion: form.descripcion,
-      validar: form.validar,
-      enviar: form.enviar
+      validar: form.validar ?? true,
+      enviar: form.enviar ?? true
     },
     idABCUsuario: Number(form.idUsuario ?? 1),
     idUsuario: form.idUsuario === '' ? undefined : Number(form.idUsuario ?? 1)

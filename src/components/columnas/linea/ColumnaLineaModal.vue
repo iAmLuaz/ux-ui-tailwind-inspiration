@@ -4,6 +4,7 @@ import { catalogosService } from '@/services/catalogos/catalogosService'
 import { columnaService } from '@/services/columnas/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
+import { X } from 'lucide-vue-next'
 import type { ColumnaLineaModel } from '@/models/columnas/linea/columnaLinea.model'
 
 interface Option {
@@ -87,7 +88,7 @@ const confirmMessage = computed(() =>
 		? '¿Estás seguro de guardar los cambios de este registro?'
 		: 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Cancelar'))
 const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
 
 const selectedVal = computed(() => {
@@ -373,6 +374,14 @@ async function save() {
 					<!-- Configurar columna en {{ mapeoNombre }} -->
 					Agregar columna
 				</h3>
+				<button
+					type="button"
+					class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+					:disabled="isLoading || showActionConfirm"
+					@click="requestCancel"
+				>
+					<X class="w-4 h-4" />
+				</button>
 			</div>
 
 			<form @submit.prevent="requestSave" class="flex flex-col min-h-0 flex-1">

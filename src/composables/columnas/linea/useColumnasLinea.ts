@@ -37,8 +37,29 @@ export function useColumnasLinea() {
         ? columnaService.patchDesactivarColumnaLinea
         : columnaService.patchActivarColumnaLinea
 
-      const mapeoId = currentMapeo.value ?? item.mapeoId ?? 0
-      await fn(mapeoId, { columna: { tipo: { id: item.columnaId } }, idUsuario: 1 })
+      const mapeoCandidates = Array.from(new Set([
+        Number(item?.mapeoId ?? 0),
+        Number(item?.idABCConfigMapeoLinea ?? 0),
+        Number(currentMapeo.value ?? 0)
+      ].filter((id) => Number.isFinite(id) && id >= 0)))
+
+      let patched = false
+      let lastError: any = null
+
+      for (const mapeoId of mapeoCandidates) {
+        try {
+          await fn(mapeoId, { columna: { tipo: { id: item.columnaId } }, idUsuario: 1 })
+          patched = true
+          break
+        } catch (e: any) {
+          lastError = e
+          if (Number(e?.status ?? 0) !== 404) throw e
+        }
+      }
+
+      if (!patched && lastError) {
+        throw lastError
+      }
 
       await fetchAll(currentMapeo.value)
     } finally {

@@ -18,6 +18,7 @@ import MapeoLineaDetailsModal from '@/components/mapeos/linea/MapeoLineaDetailsM
 import MapeoCampanaDetailsModal from '@/components/mapeos/campana/MapeoCampanaDetailsModal.vue'
 import MapeoLineaColumnasModal from '@/components/mapeos/linea/MapeoLineaColumnasModal.vue'
 import MapeoCampanaColumnasModal from '@/components/mapeos/campana/MapeoCampanaColumnasModal.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 import { Plus, Layers, Megaphone, LayoutGrid } from 'lucide-vue-next'
 
 const tabs = [
@@ -119,6 +120,21 @@ function matchesSearch(nameValue: string, query: string) {
   return qTokens.every(token => nameWords.some(w => w.includes(token)))
 }
 
+function toTimestamp(value?: string) {
+  const parsed = value ? Date.parse(value) : Number.NaN
+  return Number.isFinite(parsed) ? parsed : -1
+}
+
+function newestFirstCompare(
+  left: { fechaCreacion?: string; idABCConfigMapeoLinea?: number },
+  right: { fechaCreacion?: string; idABCConfigMapeoLinea?: number }
+) {
+  const leftTs = toTimestamp(left.fechaCreacion)
+  const rightTs = toTimestamp(right.fechaCreacion)
+  if (rightTs !== leftTs) return rightTs - leftTs
+  return Number(right.idABCConfigMapeoLinea ?? 0) - Number(left.idABCConfigMapeoLinea ?? 0)
+}
+
 const filteredMapeosLinea = computed(() => {
   return allMapeosLinea.value.filter(item => {
     const matchSearch = matchesSearch(item.nombre || '', searchQueryLinea.value || '')
@@ -130,7 +146,7 @@ const filteredMapeosLinea = computed(() => {
       ? selectedFiltersLinea.status.includes(item.bolActivo)
       : true
     return matchSearch && matchLinea && matchStatus
-  })
+  }).sort(newestFirstCompare)
 })
 
 const filteredMapeosCampana = computed(() => {
@@ -148,7 +164,7 @@ const filteredMapeosCampana = computed(() => {
       ? selectedFiltersCampana.campanas.includes(campanaId)
       : true
     return matchSearch && matchLinea && matchStatus && matchCampana
-  })
+  }).sort(newestFirstCompare)
 })
 
 const totalPagesLinea = computed(() =>
@@ -218,6 +234,28 @@ const lineaIdForModal = ref<number | string | null>(null)
 const campanaIdForModal = ref<number | string | null>(null)
 const lineaNombreForModal = ref<string | null>(null)
 const campanaNombreForModal = ref<string | null>(null)
+const showStatusConfirmModal = ref(false)
+const pendingStatusItem = ref<MapeoLineaData | MapeoCampanaData | null>(null)
+
+const statusConfirmLoading = computed(() => {
+  if (!pendingStatusItem.value) return false
+  return isCampanaRow(pendingStatusItem.value)
+    ? isLoadingCampana.value
+    : isLoadingLinea.value
+})
+
+const statusConfirmTitle = computed(() => {
+  if (!pendingStatusItem.value) return 'Confirmar cambio de estatus'
+  return pendingStatusItem.value.bolActivo
+    ? 'Confirmar desactivación'
+    : 'Confirmar activación'
+})
+
+const statusConfirmMessage = computed(() => {
+  if (!pendingStatusItem.value) return '¿Deseas continuar con este cambio de estatus?'
+  const actionText = pendingStatusItem.value.bolActivo ? 'desactivar' : 'activar'
+  return `¿Deseas ${actionText} este mapeo?`
+})
 
 function openAddModal() {
   modalMode.value = 'add'
@@ -237,6 +275,16 @@ function openDetails(item: MapeoLineaData | MapeoCampanaData) {
   detailsItem.value = item
   detailsTab.value = activeTab.value
   showDetailsModal.value = true
+}
+
+function resolveMapeoToggleCandidates(item: MapeoLineaData | MapeoCampanaData): number[] {
+  const candidates = [
+    Number((item as any)?.idABCConfigMapeoLinea ?? 0),
+    Number((item as any)?.idABCConfigMapeoCampana ?? 0),
+    Number((item as any)?.mapeo?.id ?? 0),
+    Number((item as any)?.id ?? 0)
+  ].filter(id => Number.isFinite(id) && id > 0)
+  return Array.from(new Set(candidates))
 }
 
 async function handleSave(formData: MapeoLineaFormModel | MapeoCampanaFormModel) {
@@ -282,22 +330,57 @@ async function handleSave(formData: MapeoLineaFormModel | MapeoCampanaFormModel)
 async function toggleStatus(item: MapeoLineaData | MapeoCampanaData) {
   try {
     const wasActive = item.bolActivo
-    item.bolActivo = !item.bolActivo
+    const targetIds = resolveMapeoToggleCandidates(item)
+
     if (isCampanaRow(item)) {
       isLoadingCampana.value = true
-      if (wasActive) {
-        await mapeoCampanaService.patchDesactivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
-      } else {
-        await mapeoCampanaService.patchActivarMapeoCampana(Number(item.idABCConfigMapeoLinea), 1)
+      let patched = false
+      let lastError: any = null
+
+      for (const targetId of targetIds) {
+        try {
+          if (wasActive) {
+            await mapeoCampanaService.patchDesactivarMapeoCampana(targetId, 1)
+          } else {
+            await mapeoCampanaService.patchActivarMapeoCampana(targetId, 1)
+          }
+          patched = true
+          break
+        } catch (e: any) {
+          lastError = e
+          if (Number(e?.status ?? 0) !== 404) throw e
+        }
       }
+
+      if (!patched && lastError) {
+        throw lastError
+      }
+
       await fetchMapeosCampana()
     } else {
       isLoadingLinea.value = true
-      if (wasActive) {
-        await mapeoLineaService.patchDesactivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
-      } else {
-        await mapeoLineaService.patchActivarMapeoLinea(Number(item.idABCConfigMapeoLinea), 1)
+      let patched = false
+      let lastError: any = null
+
+      for (const targetId of targetIds) {
+        try {
+          if (wasActive) {
+            await mapeoLineaService.patchDesactivarMapeoLinea(targetId, 1)
+          } else {
+            await mapeoLineaService.patchActivarMapeoLinea(targetId, 1)
+          }
+          patched = true
+          break
+        } catch (e: any) {
+          lastError = e
+          if (Number(e?.status ?? 0) !== 404) throw e
+        }
       }
+
+      if (!patched && lastError) {
+        throw lastError
+      }
+
       await fetchMapeosLinea()
     }
   } catch (e: any) {
@@ -306,6 +389,24 @@ async function toggleStatus(item: MapeoLineaData | MapeoCampanaData) {
     isLoadingLinea.value = false
     isLoadingCampana.value = false
   }
+}
+
+function requestStatusToggle(item: MapeoLineaData | MapeoCampanaData) {
+  pendingStatusItem.value = item
+  showStatusConfirmModal.value = true
+}
+
+function closeStatusConfirmModal() {
+  if (statusConfirmLoading.value) return
+  showStatusConfirmModal.value = false
+  pendingStatusItem.value = null
+}
+
+async function confirmStatusToggle() {
+  if (!pendingStatusItem.value) return
+  await toggleStatus(pendingStatusItem.value)
+  showStatusConfirmModal.value = false
+  pendingStatusItem.value = null
 }
 
 const toggleFilterMenuLinea = (column: string) => {
@@ -479,7 +580,7 @@ function handleSearchCampana(query: string) {
         :get-linea-label="getLineaLabel"
         @toggle-filter="toggleFilterMenuLinea"
         @view-details="openDetails"
-        @toggle-status="toggleStatus"
+        @toggle-status="requestStatusToggle"
         @edit="openEditModal"
         @select-all-lineas="selectedFiltersLinea.lineas = lineasDisponibles.map(x => x.value)"
         @prev-page="prevPageLinea"
@@ -505,7 +606,7 @@ function handleSearchCampana(query: string) {
         :get-campana-label="getCampanaLabel"
         @toggle-filter="toggleFilterMenuCampana"
         @view-details="openDetails"
-        @toggle-status="toggleStatus"
+        @toggle-status="requestStatusToggle"
         @edit="openEditModal"
         @select-all-lineas="selectedFiltersCampana.lineas = lineasDisponibles.map(x => x.value)"
         @select-all-campanas="selectedFiltersCampana.campanas = campanasDisponibles.map(x => x.value)"
@@ -579,6 +680,17 @@ function handleSearchCampana(query: string) {
       :selected-campana-nombre="campanaNombreForModal"
       :lineas-disponibles="lineasDisponibles"
       @close="showColumnasModal = false"
+    />
+
+    <FormActionConfirmModal
+      :show="showStatusConfirmModal"
+      :title="statusConfirmTitle"
+      :message="statusConfirmMessage"
+      confirm-text="Aceptar"
+      cancel-text="Cancelar"
+      :is-loading="statusConfirmLoading"
+      @confirm="confirmStatusToggle"
+      @cancel="closeStatusConfirmModal"
     />
   </div>
 </template>

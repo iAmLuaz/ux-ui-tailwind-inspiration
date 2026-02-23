@@ -36,7 +36,7 @@ const emit = defineEmits<{
         'w-full rounded-xl bg-white border overflow-hidden',
         variant === 'overlay'
           ? 'max-w-md shadow-2xl border-gray-100'
-          : 'max-w-full shadow-sm border-amber-200 bg-white'
+          : 'max-w-full shadow-sm border-gray-100 bg-white'
       ]"
     >
       <div
@@ -44,13 +44,13 @@ const emit = defineEmits<{
           'px-5 py-3 border-b',
           variant === 'overlay'
             ? 'bg-[#00357F] border-white/10'
-            : 'bg-amber-100 border-amber-200'
+            : 'bg-[#00357F] border-white/10'
         ]"
       >
         <h4
           :class="[
             'text-base font-semibold tracking-wide',
-            variant === 'overlay' ? 'text-white/95' : 'text-amber-900'
+            variant === 'overlay' ? 'text-white/95' : 'text-white/95'
           ]"
         >
           {{ title }}
@@ -58,13 +58,13 @@ const emit = defineEmits<{
       </div>
 
       <div class="px-5 py-4">
-        <p :class="['text-sm leading-relaxed', variant === 'overlay' ? 'text-gray-600' : 'text-amber-900/90']">{{ message }}</p>
+        <p :class="['text-sm leading-relaxed', variant === 'overlay' ? 'text-gray-600' : 'text-gray-600']">{{ message }}</p>
       </div>
 
       <div
         :class="[
           'px-5 py-4 border-t flex justify-end gap-3',
-          variant === 'overlay' ? 'border-gray-100 bg-white' : 'border-amber-200 bg-transparent'
+          variant === 'overlay' ? 'border-gray-100 bg-white' : 'border-gray-100 bg-white'
         ]"
       >
         <button

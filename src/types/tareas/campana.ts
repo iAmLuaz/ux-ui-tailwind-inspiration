@@ -103,7 +103,7 @@ export interface TareaCampanaData {
 
 export interface CreateTareaCampanaPayload {
   tarea: {
-    mapeo: { id: number }
+    mapeo?: { id: number }
     tipo: { id: number }
     ejecucion: { id: number }
     bolActivo?: boolean

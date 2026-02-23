@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
+import { X } from 'lucide-vue-next'
 
 interface Option {
   label: string
@@ -63,7 +64,7 @@ const confirmMessage = computed(() =>
     ? '¿Estás seguro de guardar los cambios de este registro?'
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Cancelar'))
 const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
 
 watch(
@@ -137,8 +138,8 @@ function initializeFormData(): MapeoLineaFormData {
       idABCCatLineaNegocio: lineaId,
       nombre: props.initialData.nombre ?? '',
       descripcion: props.initialData.descripcion ?? '',
-      validar: props.initialData.validar ?? false,
-      enviar: props.initialData.enviar ?? props.initialData.envio ?? false,
+      validar: props.initialData.validar ?? props.initialData.valida ?? true,
+      enviar: props.initialData.enviar ?? props.initialData.envio ?? true,
       idUsuario: props.initialData.idUsuario ?? props.initialData.idABCUsuario ?? 1
     }
   }
@@ -147,8 +148,8 @@ function initializeFormData(): MapeoLineaFormData {
     idABCCatLineaNegocio: '',
     nombre: '',
     descripcion: '',
-    validar: false,
-    enviar: false,
+    validar: true,
+    enviar: true,
     idUsuario: 1
   }
 }
@@ -165,6 +166,14 @@ function handleSave() {
         <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
         </h3>
+        <button
+          type="button"
+          class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+          :disabled="isLoading || showActionConfirm"
+          @click="requestCancel"
+        >
+          <X class="w-4 h-4" />
+        </button>
       </div>
 
       <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">

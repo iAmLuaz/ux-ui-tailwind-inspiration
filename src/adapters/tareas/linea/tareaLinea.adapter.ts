@@ -240,7 +240,7 @@ export function normalizeTareasLinea(data: any): TareaLineaData[] {
     const horarios = normalizeHorarios(item)
     if (horarios.length) {
       const stageHorarios = stageKey
-        ? horarios.map(h => ({
+        ? horarios.map((h: any) => ({
           ...h,
           tipoHorario: h?.tipoHorario ?? h?.tipo ?? { id: stageTypeId }
         }))

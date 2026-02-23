@@ -8,6 +8,7 @@ import TareaCampanaModal from '@/components/tareas/campana/TareaCampanaModal.vue
 import TareaLineaDetailsModal from '@/components/tareas/linea/TareaLineaDetailsModal.vue'
 import TareaCampanaDetailsModal from '@/components/tareas/campana/TareaCampanaDetailsModal.vue'
 import TareaSaveProgressOverlay from '@/components/tareas/shared/TareaSaveProgressOverlay.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 import { catalogosService } from '@/services/catalogos/catalogosService'
 import { tareaLineaService } from '@/services/tareas/linea/tareaLineaService'
 import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
@@ -174,6 +175,29 @@ const showSaveProgress = ref(false)
 const saveProgressCompleted = ref(0)
 const saveProgressTotal = ref(1)
 const saveProgressAction = ref('')
+const statusToggleLocks = ref(new Set<string>())
+const showStatusConfirmModal = ref(false)
+const pendingStatusItem = ref<TareaLineaRow | TareaCampanaRow | null>(null)
+
+const statusConfirmLoading = computed(() => {
+  if (!pendingStatusItem.value) return false
+  return isCampanaRow(pendingStatusItem.value)
+    ? isLoadingCampana.value
+    : isLoadingLinea.value
+})
+
+const statusConfirmTitle = computed(() => {
+  if (!pendingStatusItem.value) return 'Confirmar cambio de estatus'
+  return pendingStatusItem.value.bolActivo
+    ? 'Confirmar desactivación'
+    : 'Confirmar activación'
+})
+
+const statusConfirmMessage = computed(() => {
+  if (!pendingStatusItem.value) return '¿Deseas continuar con este cambio de estatus?'
+  const actionText = pendingStatusItem.value.bolActivo ? 'desactivar' : 'activar'
+  return `¿Deseas ${actionText} este registro de tarea?`
+})
 
 const normalizeString = (s: unknown) => {
   if (s === null || s === undefined) return ''
@@ -212,6 +236,24 @@ function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: strin
   return `${item.ingesta ?? ''} ${item.carga?.ejecucion ?? ''} ${item.idABCConfigTareaLinea ?? ''} ${item.idABCConfigTareaCampana ?? ''}`.trim()
 }
 
+function toTimestamp(value?: string) {
+  const parsed = value ? Date.parse(value) : Number.NaN
+  return Number.isFinite(parsed) ? parsed : -1
+}
+
+function newestFirstCompare(
+  left: { fechaCreacion?: string; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number },
+  right: { fechaCreacion?: string; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number }
+) {
+  const leftTs = toTimestamp(left.fechaCreacion)
+  const rightTs = toTimestamp(right.fechaCreacion)
+  if (rightTs !== leftTs) return rightTs - leftTs
+
+  const leftId = Number(left.idABCConfigTareaCampana ?? left.idABCConfigTareaLinea ?? 0)
+  const rightId = Number(right.idABCConfigTareaCampana ?? right.idABCConfigTareaLinea ?? 0)
+  return rightId - leftId
+}
+
 const filteredTareasLinea = computed(() => {
   return tareasLineaEnriched.value.filter(item => {
     const matchSearch = matchesSearch(getSearchableText(item), searchQueryLinea.value || '')
@@ -222,7 +264,7 @@ const filteredTareasLinea = computed(() => {
       ? selectedFiltersLinea.status.includes(item.bolActivo)
       : true
     return matchSearch && matchLinea && matchStatus
-  })
+  }).sort(newestFirstCompare)
 })
 
 const filteredTareasCampana = computed(() => {
@@ -238,7 +280,7 @@ const filteredTareasCampana = computed(() => {
       ? selectedFiltersCampana.campanas.includes(item.idABCCatCampana)
       : true
     return matchSearch && matchLinea && matchStatus && matchCampana
-  })
+  }).sort(newestFirstCompare)
 })
 
 const totalPagesLinea = computed(() =>
@@ -290,6 +332,15 @@ const getCampanaLabel = (id?: number) => {
   return campanasDisponibles.value.find(x => x.value === id)?.label ?? `Campaña ${id}`
 }
 
+function toHourMinutes(value: unknown) {
+  const label = toHoraLabel(value)
+  const [hoursRaw, minutesRaw] = String(label ?? '').split(':')
+  const hours = Number(hoursRaw)
+  const minutes = Number(minutesRaw)
+  if ([hours, minutes].some(Number.isNaN)) return Number.POSITIVE_INFINITY
+  return (hours * 60) + minutes
+}
+
 async function fetchCatalogos() {
   const catalogos = await catalogosService.getCatalogosAgrupados()
   const lineas = catalogos.find(group => group.codigo === 'LNN')?.registros ?? []
@@ -310,14 +361,33 @@ async function fetchCatalogos() {
   }
   lineasDisponibles.value = mapCatalogosToOptions(lineas)
   campanasDisponibles.value = mapCatalogosToOptions(campanas)
-  diasDisponibles.value = dias
-    .filter(item => item.bolActivo !== false)
+  diasDisponibles.value = [...dias]
+    .sort((left, right) => {
+      const leftInactive = left?.bolActivo === false ? 1 : 0
+      const rightInactive = right?.bolActivo === false ? 1 : 0
+      if (leftInactive !== rightInactive) return leftInactive - rightInactive
+      const leftDay = normalizeWeekdayInputValue(left?.nombre)
+      const rightDay = normalizeWeekdayInputValue(right?.nombre)
+      const order: Record<string, number> = {
+        Lunes: 1,
+        Martes: 2,
+        Miércoles: 3,
+        Jueves: 4,
+        Viernes: 5
+      }
+      return (order[leftDay] ?? 999) - (order[rightDay] ?? 999)
+    })
     .map(item => ({
       label: normalizeWeekdayInputValue(item.nombre) || item.nombre,
       value: item.id
     }))
-  horasDisponibles.value = horas
-    .filter(item => item.bolActivo !== false)
+  horasDisponibles.value = [...horas]
+    .sort((left, right) => {
+      const leftInactive = left?.bolActivo === false ? 1 : 0
+      const rightInactive = right?.bolActivo === false ? 1 : 0
+      if (leftInactive !== rightInactive) return leftInactive - rightInactive
+      return toHourMinutes(left?.nombre || left?.codigo) - toHourMinutes(right?.nombre || right?.codigo)
+    })
     .map(item => ({
       label: toHoraLabel(item.nombre || item.codigo),
       value: item.id
@@ -508,51 +578,140 @@ function openEdit(item: TareaLineaRow | TareaCampanaRow) {
   })
 }
 
+function toUniquePositiveIds(values: unknown[]): number[] {
+  const list = values
+    .map(value => Number(value ?? 0))
+    .filter(id => Number.isFinite(id) && id > 0)
+  return Array.from(new Set(list))
+}
+
+function resolveTareaToggleTargetIds(item: TareaLineaRow | TareaCampanaRow): number[] {
+  const stageIds = stageKeys.flatMap(stage => {
+    const explicitId = Number(item.idsTarea?.[stage] ?? 0)
+    const fromTipo = Number(
+      item.tareasPorTipo?.[stage]?.id
+      ?? item.tareasPorTipo?.[stage]?.idABCConfigTareaLinea
+      ?? item.tareasPorTipo?.[stage]?.idABCConfigTareaCampana
+      ?? 0
+    )
+    return [explicitId, fromTipo]
+  })
+
+  const principalId = Number(
+    isCampanaRow(item)
+      ? item.idABCConfigTareaCampana
+      : item.idABCConfigTareaLinea
+  )
+  const rawTaskId = Number((item as any)?.tarea?.id ?? 0)
+
+  const uniqueStageIds = toUniquePositiveIds(stageIds)
+  if (uniqueStageIds.length) return uniqueStageIds
+  return toUniquePositiveIds([principalId, rawTaskId])
+}
+
 async function toggleStatus(item: TareaLineaRow | TareaCampanaRow) {
+  const wasActive = item.bolActivo
+  const scope = isCampanaRow(item) ? 'campana' : 'linea'
+  const lockId = Number(
+    isCampanaRow(item)
+      ? item.idABCConfigTareaCampana
+      : item.idABCConfigTareaLinea
+  ) || 0
+  const lockKey = `${scope}:${lockId}`
+  if (statusToggleLocks.value.has(lockKey)) return
+
+  statusToggleLocks.value.add(lockKey)
   try {
     if (isCampanaRow(item)) {
       isLoadingCampana.value = true
-      const ids = stageKeys
-        .map(stage => Number(item.idsTarea?.[stage] ?? 0))
-        .filter(id => id > 0)
-      if (!ids.length) {
-        const fallbackId = Number(item.idABCConfigTareaCampana ?? 0)
-        if (fallbackId > 0) ids.push(fallbackId)
-      }
+      const targetIds = resolveTareaToggleTargetIds(item)
+      let patchedCount = 0
+      let lastError: any = null
 
-      for (const id of ids) {
-        if (item.bolActivo) {
-          await tareaCampanaService.patchDesactivar(id, 1)
-        } else {
-          await tareaCampanaService.patchActivar(id, 1)
+      for (const targetId of targetIds) {
+        try {
+          if (wasActive) {
+            await tareaCampanaService.patchDesactivar(targetId, 1)
+          } else {
+            await tareaCampanaService.patchActivar(targetId, 1)
+          }
+          patchedCount += 1
+        } catch (e: any) {
+          lastError = e
+          if (Number(e?.status ?? 0) === 404) continue
+          throw e
         }
       }
+
+      if (patchedCount <= 0 && lastError) {
+        throw lastError
+      }
+
       await fetchTareasCampana()
+      addToast(
+        wasActive
+          ? 'Tareas de campaña desactivadas correctamente'
+          : 'Tareas de campaña activadas correctamente',
+        'success'
+      )
     } else {
       isLoadingLinea.value = true
-      const ids = stageKeys
-        .map(stage => Number(item.idsTarea?.[stage] ?? 0))
-        .filter(id => id > 0)
-      if (!ids.length) {
-        const fallbackId = Number(item.idABCConfigTareaLinea ?? 0)
-        if (fallbackId > 0) ids.push(fallbackId)
-      }
+      const targetIds = resolveTareaToggleTargetIds(item)
+      let patchedCount = 0
+      let lastError: any = null
 
-      for (const id of ids) {
-        if (item.bolActivo) {
-          await tareaLineaService.patchDesactivar(id, 1)
-        } else {
-          await tareaLineaService.patchActivar(id, 1)
+      for (const targetId of targetIds) {
+        try {
+          if (wasActive) {
+            await tareaLineaService.patchDesactivar(targetId, 1)
+          } else {
+            await tareaLineaService.patchActivar(targetId, 1)
+          }
+          patchedCount += 1
+        } catch (e: any) {
+          lastError = e
+          if (Number(e?.status ?? 0) === 404) continue
+          throw e
         }
       }
+
+      if (patchedCount <= 0 && lastError) {
+        throw lastError
+      }
+
       await fetchTareasLinea()
+      addToast(
+        wasActive
+          ? 'Tareas de línea desactivadas correctamente'
+          : 'Tareas de línea activadas correctamente',
+        'success'
+      )
     }
   } catch (e: any) {
     error.value = e.message
   } finally {
+    statusToggleLocks.value.delete(lockKey)
     isLoadingLinea.value = false
     isLoadingCampana.value = false
   }
+}
+
+function requestStatusToggle(item: TareaLineaRow | TareaCampanaRow) {
+  pendingStatusItem.value = item
+  showStatusConfirmModal.value = true
+}
+
+function closeStatusConfirmModal() {
+  if (statusConfirmLoading.value) return
+  showStatusConfirmModal.value = false
+  pendingStatusItem.value = null
+}
+
+async function confirmStatusToggle() {
+  if (!pendingStatusItem.value) return
+  await toggleStatus(pendingStatusItem.value)
+  showStatusConfirmModal.value = false
+  pendingStatusItem.value = null
 }
 
 function openAddModal() {
@@ -964,7 +1123,7 @@ watch(
             class="flex items-center gap-2 bg-[#FFD100] hover:bg-yellow-400 text-[#00357F] text-sm font-bold py-2 px-4 rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
           >
             <Plus class="w-4 h-4" />
-            <span>Nuevo</span>
+            <span>Nueva</span>
           </button>
         </div>
       </div>
@@ -984,7 +1143,7 @@ watch(
         :get-linea-label="getLineaLabel"
         @toggle-filter="toggleFilterMenuLinea"
         @view-details="openDetails"
-        @toggle-status="toggleStatus"
+        @toggle-status="requestStatusToggle"
         @edit="openEdit"
         @select-all-lineas="selectedFiltersLinea.lineas = lineasDisponibles.map(x => x.value)"
         @prev-page="prevPageLinea"
@@ -1009,7 +1168,7 @@ watch(
         :get-campana-label="getCampanaLabel"
         @toggle-filter="toggleFilterMenuCampana"
         @view-details="openDetails"
-        @toggle-status="toggleStatus"
+        @toggle-status="requestStatusToggle"
         @edit="openEdit"
         @select-all-lineas="selectedFiltersCampana.lineas = lineasDisponibles.map(x => x.value)"
         @select-all-campanas="selectedFiltersCampana.campanas = campanasDisponibles.map(x => x.value)"
@@ -1063,6 +1222,7 @@ watch(
         :item="detailItem as TareaLineaRow | null"
         :get-linea-label="getLineaLabel"
         :ejecuciones-disponibles="ejecucionesDisponibles"
+        :horas-disponibles="horasDisponibles"
         @close="closeDetailsModal"
       />
 
@@ -1074,6 +1234,7 @@ watch(
         :get-linea-label="getLineaLabel"
         :get-campana-label="getCampanaLabel"
         :ejecuciones-disponibles="ejecucionesDisponibles"
+        :horas-disponibles="horasDisponibles"
         @close="closeDetailsModal"
       />
 
@@ -1083,6 +1244,17 @@ watch(
         :current-action="saveProgressAction"
         :completed="saveProgressCompleted"
         :total="saveProgressTotal"
+      />
+
+      <FormActionConfirmModal
+        :show="showStatusConfirmModal"
+        :title="statusConfirmTitle"
+        :message="statusConfirmMessage"
+        confirm-text="Aceptar"
+        cancel-text="Cancelar"
+        :is-loading="statusConfirmLoading"
+        @confirm="confirmStatusToggle"
+        @cancel="closeStatusConfirmModal"
       />
     </div>
   </div>

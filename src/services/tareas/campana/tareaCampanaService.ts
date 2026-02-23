@@ -101,12 +101,6 @@ function resolveHorarioCampanaId(horario: any): number {
   return Number(horario?.idABCConfigHorarioTareaCampana ?? horario?.horarioId ?? horario?.id ?? 0)
 }
 
-function toHorarioPatchItemById(horarioId: number, existingHorarios: any[]): TareaCampanaHorarioPostItem | null {
-  const found = (Array.isArray(existingHorarios) ? existingHorarios : [])
-    .find(item => resolveHorarioCampanaId(item) === horarioId)
-  return toHorarioPostItem(found)
-}
-
 function uniqueHorariosBySignature(horarios: any[]): any[] {
   const seen = new Set<string>()
   const result: any[] = []
@@ -123,6 +117,12 @@ function uniqueHorariosBySignature(horarios: any[]): any[] {
 
 function isHorarioActive(horario: any): boolean {
   return (horario?.activo ?? horario?.bolActivo ?? true) !== false
+}
+
+function extractArrayResponse(raw: unknown): any[] {
+  if (Array.isArray(raw)) return raw
+  const data = (raw as { data?: unknown } | null | undefined)?.data
+  return Array.isArray(data) ? data : []
 }
 
 async function syncHorariosByTareaId(
@@ -221,20 +221,20 @@ async function syncHorariosByTareaId(
 
 export const tareaCampanaService = {
   async getAll() {
-    const raw = await apiClient.getTareasCampana() as any
-    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getTareasCampana()
+    const list = extractArrayResponse(raw)
     return normalizeTareasCampana(list)
   },
 
   async getByLineaCampana(lineaId: string | number, campanaId: string | number) {
-    const raw = await apiClient.getTareasCampanaByLineaCampana(lineaId, campanaId) as any
-    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getTareasCampanaByLineaCampana(lineaId, campanaId)
+    const list = extractArrayResponse(raw)
     return normalizeTareasCampana(list)
   },
 
   async getHorariosByTarea(tareaId: string | number) {
-    const raw = await apiClient.getHorariosTareaCampana(tareaId).catch(() => []) as any
-    return Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getHorariosTareaCampana(tareaId).catch(() => [])
+    return extractArrayResponse(raw)
   },
 
   async create(lineaId: string | number, campanaId: string | number, payload: any) {

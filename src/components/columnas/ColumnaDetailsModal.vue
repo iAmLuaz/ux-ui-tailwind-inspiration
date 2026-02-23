@@ -199,6 +199,15 @@ function mapNumeroTipoName(id: number | null | undefined) {
 				<h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
 					Detalle de Columna
 				</h3>
+				<button
+					type="button"
+					class="ml-auto h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+					@click="emit('close')"
+				>
+					<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+					</svg>
+				</button>
 			</div>
 
 			<div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
@@ -374,7 +383,7 @@ function mapNumeroTipoName(id: number | null | undefined) {
 					class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
 					@click="emit('close')"
 				>
-					Cerrar
+					Aceptar
 				</button>
 			</div>
 		</div>

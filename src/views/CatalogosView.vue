@@ -20,6 +20,18 @@ const error = ref<string | null>(null)
 const items = ref<CatalogoItem[]>([])
 const catalogosAgrupados = ref<CatalogoGrupo[]>([])
 
+function toTimestamp(value?: string) {
+    const parsed = value ? Date.parse(value) : Number.NaN
+    return Number.isFinite(parsed) ? parsed : -1
+}
+
+function newestFirstCompare(a: CatalogoItem, b: CatalogoItem) {
+    const left = toTimestamp(a.fechaCreacion)
+    const right = toTimestamp(b.fechaCreacion)
+    if (right !== left) return right - left
+    return Number(b.id ?? 0) - Number(a.id ?? 0)
+}
+
 function syncItemsBySelection() {
     const selected = catalogosAgrupados.value.find(group => group.codigo === selectedCodigo.value)
     items.value = selected?.registros ?? []
@@ -39,10 +51,7 @@ async function fetchCatalogos() {
 }
 
 const sortedItems = computed(() => {
-    return [...items.value].sort((a, b) => {
-        if (a.bolActivo !== b.bolActivo) return a.bolActivo ? -1 : 1
-        return a.nombre.localeCompare(b.nombre)
-    })
+    return [...items.value].sort(newestFirstCompare)
 })
 
 onMounted(fetchCatalogos)

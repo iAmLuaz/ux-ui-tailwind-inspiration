@@ -97,6 +97,15 @@ const validDayOptions = computed(() =>
   (props.dayOptions ?? []).filter(option => getWeekdayOrder(normalizeWeekdayInputValue(option?.label)) > 0)
 )
 
+const toMinutesOfDay = (value: unknown) => {
+  const label = toHoraLabel(value)
+  const [hoursRaw, minutesRaw] = String(label ?? '').split(':')
+  const hours = Number(hoursRaw)
+  const minutes = Number(minutesRaw)
+  if ([hours, minutes].some(Number.isNaN)) return Number.POSITIVE_INFINITY
+  return (hours * 60) + minutes
+}
+
 const normalizeScheduleData = (value?: Partial<TareaScheduleModel>): TareaScheduleModel => ({
   carga: value?.carga ?? 'Carga',
   ejecucionIngesta: normalizeCatalogIdValue(value?.ejecucionIngesta ?? resolveDefaultExecution()),
@@ -142,12 +151,34 @@ const syncingFromParent = ref(false)
 
 const isSlotActive = (slot?: ScheduleSlot) => (slot?.activo ?? true) !== false
 
+const compareSlotsForDisplay = (left: ScheduleSlot, right: ScheduleSlot) => {
+  const leftActive = isSlotActive(left) ? 0 : 1
+  const rightActive = isSlotActive(right) ? 0 : 1
+  if (leftActive !== rightActive) return leftActive - rightActive
+
+  const leftDay = getWeekdayOrder(normalizeWeekdayInputValue(toDayLabel(left?.dia)))
+  const rightDay = getWeekdayOrder(normalizeWeekdayInputValue(toDayLabel(right?.dia)))
+  if (leftDay !== rightDay) return leftDay - rightDay
+
+  const leftMinutes = toMinutesOfDay(left?.hora)
+  const rightMinutes = toMinutesOfDay(right?.hora)
+  if (leftMinutes !== rightMinutes) return leftMinutes - rightMinutes
+
+  return 0
+}
+
+const sortSlotsForDisplay = (slots?: ScheduleSlot[]) => [...(slots ?? [])].sort(compareSlotsForDisplay)
+
 const getSlotsByKind = (kind: 'carga' | 'validacion' | 'envio') =>
   kind === 'carga'
     ? localData.value.cargaSlots ?? []
     : kind === 'validacion'
       ? localData.value.validacionSlots ?? []
       : localData.value.envioSlots ?? []
+
+const cargaSlotsSorted = computed(() => sortSlotsForDisplay(localData.value.cargaSlots))
+const validacionSlotsSorted = computed(() => sortSlotsForDisplay(localData.value.validacionSlots))
+const envioSlotsSorted = computed(() => sortSlotsForDisplay(localData.value.envioSlots))
 
 const activeSlotsCountByKind = (kind: 'carga' | 'validacion' | 'envio') =>
   getSlotsByKind(kind).filter(isSlotActive).length
@@ -168,9 +199,9 @@ const hasValidacionSlots = computed(() => activeSlotsCountByKind('validacion') >
 const isValidacionSectionEnabled = computed(() => hasCargaSlots.value)
 const isEnvioSectionEnabled = computed(() => hasValidacionSlots.value)
 
-const primaryCargaSlot = computed(() => (localData.value.cargaSlots ?? []).find(isSlotActive) ?? null)
-const primaryValidacionSlot = computed(() => (localData.value.validacionSlots ?? []).find(isSlotActive) ?? null)
-const primaryEnvioSlot = computed(() => (localData.value.envioSlots ?? []).find(isSlotActive) ?? null)
+const primaryCargaSlot = computed(() => cargaSlotsSorted.value.find(isSlotActive) ?? null)
+const primaryValidacionSlot = computed(() => validacionSlotsSorted.value.find(isSlotActive) ?? null)
+const primaryEnvioSlot = computed(() => envioSlotsSorted.value.find(isSlotActive) ?? null)
 
 const toSlotSchedule = (slot?: ScheduleSlot | null) => {
   if (!slot) return null
@@ -180,94 +211,49 @@ const toSlotSchedule = (slot?: ScheduleSlot | null) => {
   return { day, hour }
 }
 
-const getUsedDaysByKind = (kind: 'carga' | 'validacion' | 'envio') =>
-  new Set(
-    getSlotsByKind(kind)
-      .map(slot => String(slot.dia ?? '').trim())
-      .filter(Boolean)
-  )
-
-const filterUsedDays = (kind: 'carga' | 'validacion' | 'envio', options: Option[]) => {
-  const used = getUsedDaysByKind(kind)
-  const currentValue =
-    kind === 'carga'
-      ? localData.value.diaIngesta
-      : kind === 'validacion'
-        ? localData.value.diaValidacion
-        : localData.value.diaEnvio
-
-  return options.filter(option => sameValue(option?.value, currentValue) || !used.has(String(option?.value ?? '').trim()))
-}
-
-const cargaDayOptions = computed(() => filterUsedDays('carga', validDayOptions.value))
-const validacionDayOptions = computed(() => filterUsedDays('validacion', validDayOptions.value))
-const envioDayOptions = computed(() => filterUsedDays('envio', validDayOptions.value))
-
-const getUsedHoursByKind = (kind: 'carga' | 'validacion' | 'envio') =>
-  new Set(
-    getSlotsByKind(kind)
-      .filter(isSlotActive)
-      .map(slot => String(slot.hora ?? '').trim())
-      .filter(Boolean)
-  )
-
-const filterUsedHours = (kind: 'carga' | 'validacion' | 'envio', options: Option[]) => {
-  const used = getUsedHoursByKind(kind)
-  const currentValue =
-    kind === 'carga'
-      ? localData.value.horaIngesta
-      : kind === 'validacion'
-        ? localData.value.horaValidacion
-        : localData.value.horaEnvio
-
-  return options.filter(option => sameValue(option?.value, currentValue) || !used.has(String(option?.value ?? '').trim()))
-}
+const cargaDayOptions = computed(() => validDayOptions.value)
+const validacionDayOptions = computed(() => validDayOptions.value)
+const envioDayOptions = computed(() => validDayOptions.value)
 
 const hourOptionsOrdered = computed(() =>
   [...(props.hourOptions ?? [])]
-    .filter(option => Boolean(toHourLabel(option?.value)))
-    .sort((left, right) => toHourLabel(left?.value).localeCompare(toHourLabel(right?.value)))
+    .filter(option => Boolean(toHourLabel(option?.label) || toHourLabel(option?.value)))
+    .sort((left, right) => {
+      const leftMinutes = toMinutesOfDay(left?.label)
+      const rightMinutes = toMinutesOfDay(right?.label)
+      return leftMinutes - rightMinutes
+    })
 )
 
-const compareByCatalogValues = (
-  fromDayValue: CatalogIdValue,
-  fromHourValue: CatalogIdValue,
-  toDayValue: CatalogIdValue,
-  toHourValue: CatalogIdValue
-) => {
-  const fromDay = normalizeWeekdayInputValue(toDayLabel(fromDayValue))
-  const toDay = normalizeWeekdayInputValue(toDayLabel(toDayValue))
-  const fromHour = toHourLabel(fromHourValue)
-  const toHour = toHourLabel(toHourValue)
-  if (!fromDay || !toDay || !fromHour || !toHour) return null
-  return compareWeekdayTime(fromDay, fromHour, toDay, toHour)
+const getTakenHoursByDay = (selectedDay: CatalogIdValue) => {
+  const dayKey = String(selectedDay ?? '').trim()
+  if (!dayKey) return new Set<string>()
+
+  const allSlots = [
+    ...(localData.value.cargaSlots ?? []),
+    ...(localData.value.validacionSlots ?? []),
+    ...(localData.value.envioSlots ?? [])
+  ]
+
+  return new Set(
+    allSlots
+      .filter(slot => String(slot?.dia ?? '').trim() === dayKey)
+      .map(slot => String(slot?.hora ?? '').trim())
+      .filter(Boolean)
+  )
 }
 
-const constrainedHourOptions = (
-  kind: 'validacion' | 'envio',
-  baseDayValue: CatalogIdValue,
-  baseHourValue: CatalogIdValue,
-  targetDayValue: CatalogIdValue
-) => {
-  if (!hasValue(baseDayValue) || !hasValue(baseHourValue) || !hasValue(targetDayValue) || !sameValue(baseDayValue, targetDayValue)) {
-    return filterUsedHours(kind, hourOptionsOrdered.value)
-  }
-
-  const constrained = hourOptionsOrdered.value.filter(option => {
-    const delta = compareByCatalogValues(baseDayValue, baseHourValue, targetDayValue, normalizeCatalogIdValue(option.value))
-    return delta !== null && delta > 0
-  })
-
-  return filterUsedHours(kind, constrained)
+const filterHourOptionsBySelectedDay = (selectedDay: CatalogIdValue) => {
+  const taken = getTakenHoursByDay(selectedDay)
+  if (!taken.size) return hourOptionsOrdered.value
+  return hourOptionsOrdered.value.filter(option => !taken.has(String(option?.value ?? '').trim()))
 }
 
 const validacionHoraOptions = computed(() => {
-  const cargaBase = primaryCargaSlot.value
-  if (!cargaBase) return filterUsedHours('validacion', hourOptionsOrdered.value)
-  return constrainedHourOptions('validacion', cargaBase.dia, cargaBase.hora, localData.value.diaValidacion)
+  return filterHourOptionsBySelectedDay(localData.value.diaValidacion)
 })
 
-const cargaHoraOptions = computed(() => filterUsedHours('carga', hourOptionsOrdered.value))
+const cargaHoraOptions = computed(() => filterHourOptionsBySelectedDay(localData.value.diaIngesta))
 
 const horaOptionsAmPm = computed(() =>
   cargaHoraOptions.value.map(option => ({ label: formatHourToAmPm(toHourLabel(option?.value)), value: option.value }))
@@ -281,9 +267,7 @@ const envioHoraOptionsAmPm = computed(() =>
   envioHoraOptions.value.map(option => ({ label: formatHourToAmPm(toHourLabel(option?.value)), value: option.value }))
 )
 const envioHoraOptions = computed(() => {
-  const validacionBase = primaryValidacionSlot.value
-  if (!validacionBase) return filterUsedHours('envio', hourOptionsOrdered.value)
-  return constrainedHourOptions('envio', validacionBase.dia, validacionBase.hora, localData.value.diaEnvio)
+  return filterHourOptionsBySelectedDay(localData.value.diaEnvio)
 })
 
 const formatSlotDay = (value: unknown) => toDayLabel(value)
@@ -322,7 +306,6 @@ const validacionRecommendationMessage = computed(() => {
   const shouldShow =
     isValidacionSectionEnabled.value
     && !hasValidacionConfig.value
-    && !hasValue(localData.value.diaValidacion)
     && !hasValue(localData.value.horaValidacion)
 
   if (!shouldShow) return ''
@@ -337,14 +320,13 @@ const validacionRecommendationMessage = computed(() => {
     return 'Recomendación: programa Validación al menos 1 hora después de Carga.'
   }
 
-  return `Recomendación: programa Validación al menos 1 hora después de Carga (ej. ${suggested.date} a las ${suggested.time}).`
+  return `Recomendación: programa Validación al menos 1 hora después de Carga (ej. ${suggested.date} a las ${formatHourToAmPm(suggested.time)}).`
 })
 
 const envioRecommendationMessage = computed(() => {
   const shouldShow =
     isEnvioSectionEnabled.value
     && !hasEnvioConfig.value
-    && !hasValue(localData.value.diaEnvio)
     && !hasValue(localData.value.horaEnvio)
 
   if (!shouldShow) return ''
@@ -359,7 +341,7 @@ const envioRecommendationMessage = computed(() => {
     return 'Recomendación: programa Envío al menos 1 hora después de Validación.'
   }
 
-  return `Recomendación: programa Envío al menos 1 hora después de Validación (ej. ${suggested.date} a las ${suggested.time}).`
+  return `Recomendación: programa Envío al menos 1 hora después de Validación (ej. ${suggested.date} a las ${formatHourToAmPm(suggested.time)}).`
 })
 
 const scheduleReady = computed(() =>
@@ -383,6 +365,33 @@ const clearValidacionConfig = () => {
   clearEnvioConfig()
 }
 
+const stageLabelByKind: Record<'carga' | 'validacion' | 'envio', string> = {
+  carga: 'Carga',
+  validacion: 'Validación',
+  envio: 'Envío'
+}
+
+const hasOverlappingSlot = (kind: 'carga' | 'validacion' | 'envio', slot: ScheduleSlot) => {
+  const dayKey = String(slot?.dia ?? '').trim()
+  const hourKey = String(slot?.hora ?? '').trim()
+  if (!dayKey || !hourKey) return null
+
+  const allKinds: Array<'carga' | 'validacion' | 'envio'> = ['carga', 'validacion', 'envio']
+  for (const currentKind of allKinds) {
+    const found = getSlotsByKind(currentKind)
+      .filter(isSlotActive)
+      .find(existing => String(existing?.dia ?? '').trim() === dayKey && String(existing?.hora ?? '').trim() === hourKey)
+    if (found) {
+      return {
+        stage: stageLabelByKind[currentKind],
+        sameStage: currentKind === kind
+      }
+    }
+  }
+
+  return null
+}
+
 const addScheduleSlot = (kind: 'carga' | 'validacion' | 'envio') => {
   const slot =
     kind === 'carga'
@@ -399,17 +408,11 @@ const addScheduleSlot = (kind: 'carga' | 'validacion' | 'envio') => {
         : localData.value.envioSlots ?? []
 
   const duplicateExists = currentSlots.some(existing => existing.dia === slot.dia && existing.hora === slot.hora)
-  if (duplicateExists) {
-    const etapa = kind === 'carga' ? 'Carga' : kind === 'validacion' ? 'Validación' : 'Envío'
-    duplicateScheduleError.value = `Ese horario ya existe en ${etapa}.`
-    addToast(duplicateScheduleError.value, 'warning', 3000)
-    return
-  }
-
-  const duplicateDayExists = currentSlots.some(existing => existing.dia === slot.dia)
-  if (duplicateDayExists) {
-    const etapa = kind === 'carga' ? 'Carga' : kind === 'validacion' ? 'Validación' : 'Envío'
-    duplicateScheduleError.value = `Ese día ya está configurado en ${etapa}.`
+  const overlap = duplicateExists ? { stage: stageLabelByKind[kind], sameStage: true } : hasOverlappingSlot(kind, slot)
+  if (overlap) {
+    duplicateScheduleError.value = overlap.sameStage
+      ? `Ese horario ya existe en ${overlap.stage}.`
+      : `Ese horario se traslapa con ${overlap.stage}.`
     addToast(duplicateScheduleError.value, 'warning', 3000)
     return
   }
@@ -431,9 +434,25 @@ const addScheduleSlot = (kind: 'carga' | 'validacion' | 'envio') => {
   }
 }
 
-const removeScheduleSlot = (kind: 'carga' | 'validacion' | 'envio', index: number) => {
+const resolveSlotIndex = (kind: 'carga' | 'validacion' | 'envio', slotToToggle: ScheduleSlot) => {
   const currentList = getSlotsByKind(kind)
+  const targetHorarioId = Number(slotToToggle?.horarioId ?? 0)
+  if (targetHorarioId > 0) {
+    const indexById = currentList.findIndex(slot => Number(slot?.horarioId ?? 0) === targetHorarioId)
+    if (indexById >= 0) return indexById
+  }
 
+  return currentList.findIndex(slot =>
+    String(slot?.dia ?? '') === String(slotToToggle?.dia ?? '')
+    && String(slot?.hora ?? '') === String(slotToToggle?.hora ?? '')
+  )
+}
+
+const removeScheduleSlot = (kind: 'carga' | 'validacion' | 'envio', slotToToggle: ScheduleSlot) => {
+  const currentList = getSlotsByKind(kind)
+  const index = resolveSlotIndex(kind, slotToToggle)
+
+  if (index < 0) return
   const slot = currentList[index]
   if (!slot) return
 
@@ -645,8 +664,8 @@ watch(envioDayOptions, (options) => {
               <div class="min-h-[24px]">
                  <p v-if="!localData.cargaSlots?.length" class="text-[11px] text-slate-400 italic">Agrega al menos un horario para habilitar Validación.</p>
                  
-                 <div v-else class="flex flex-wrap gap-2">
-                    <span v-for="(slot, index) in localData.cargaSlots" :key="`carga-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
+                  <div v-else class="flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in cargaSlotsSorted" :key="`carga-${slot.dia}-${slot.hora}-${slot.horarioId ?? index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
                       :class="isSlotActive(slot)
                         ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -658,7 +677,7 @@ watch(envioDayOptions, (options) => {
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
                         :aria-label="getSlotActionLabel(slot)"
                         :title="getSlotActionLabel(slot)"
-                        @click="removeScheduleSlot('carga', index)"
+                        @click="removeScheduleSlot('carga', slot)"
                       >
                         <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
@@ -745,8 +764,8 @@ watch(envioDayOptions, (options) => {
 
               <div class="min-h-[24px]">
                  <p v-if="!localData.validacionSlots?.length" class="text-[11px] text-slate-400 italic">Agrega al menos un horario para habilitar Envío.</p>
-                 <div v-else class="flex flex-wrap gap-2">
-                    <span v-for="(slot, index) in localData.validacionSlots" :key="`validacion-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
+                  <div v-else class="flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in validacionSlotsSorted" :key="`validacion-${slot.dia}-${slot.hora}-${slot.horarioId ?? index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
                       :class="isSlotActive(slot)
                         ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -758,7 +777,7 @@ watch(envioDayOptions, (options) => {
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
                         :aria-label="getSlotActionLabel(slot)"
                         :title="getSlotActionLabel(slot)"
-                        @click="removeScheduleSlot('validacion', index)"
+                        @click="removeScheduleSlot('validacion', slot)"
                       >
                         <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
@@ -843,8 +862,8 @@ watch(envioDayOptions, (options) => {
               </div>
 
               <div class="min-h-[24px]">
-                 <div v-if="localData.envioSlots?.length" class="flex flex-wrap gap-2">
-                    <span v-for="(slot, index) in localData.envioSlots" :key="`envio-${slot.dia}-${slot.hora}-${index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
+                  <div v-if="localData.envioSlots?.length" class="flex flex-wrap gap-2">
+                    <span v-for="(slot, index) in envioSlotsSorted" :key="`envio-${slot.dia}-${slot.hora}-${slot.horarioId ?? index}`" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border"
                       :class="isSlotActive(slot)
                         ? (slot.persisted
                           ? 'bg-blue-50 text-blue-700 border-blue-200'
@@ -856,7 +875,7 @@ watch(envioDayOptions, (options) => {
                         class="group relative ml-1 h-5 w-5 inline-flex items-center justify-center rounded-full text-slate-400 hover:text-[#00357F] hover:bg-white/80 transition-colors"
                         :aria-label="getSlotActionLabel(slot)"
                         :title="getSlotActionLabel(slot)"
-                        @click="removeScheduleSlot('envio', index)"
+                        @click="removeScheduleSlot('envio', slot)"
                       >
                         <svg v-if="isSlotActive(slot)" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />

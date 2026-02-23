@@ -274,9 +274,17 @@ export const api = {
   deleteTareaLinea: (lineaId: string | number, tareaId: string | number) =>
     http.delete(`/lineas/${lineaId}/tareas/${tareaId}`),
   patchActivarTareaLinea: (payload: any) =>
-    http.patch('/lineas/tareas/activar', payload),
+    request('/lineas/tareas/activar', {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchDesactivarTareaLinea: (payload: any) =>
-    http.patch('/lineas/tareas/desactivar', payload),
+    request('/lineas/tareas/desactivar', {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   getHorariosTareaLinea: (tareaId: string | number) =>
     http.get(`/lineas/tareas/${tareaId}/horarios`),
   postHorariosTareaLinea: (tareaId: string | number, payload: any) =>
@@ -316,9 +324,17 @@ export const api = {
   deleteTareaCampana: (lineaId: string | number, campanaId: string | number, tareaId: string | number) =>
     http.delete(`/lineas/${lineaId}/campanas/${campanaId}/tareas/${tareaId}`),
   patchActivarTareaCampana: (payload: any) =>
-    http.patch('/lineas/campanas/tareas/activar', payload),
+    request('/lineas/campanas/tareas/activar', {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   patchDesactivarTareaCampana: (payload: any) =>
-    http.patch('/lineas/campanas/tareas/desactivar', payload),
+    request('/lineas/campanas/tareas/desactivar', {
+      method: 'PATCH',
+      headers: { 'X-Suppress-Toast': 'true' },
+      body: JSON.stringify(payload)
+    }),
   getHorariosTareaCampana: (tareaId: string | number) =>
     http.get(`/campanas/tareas/${tareaId}/horarios`),
   postHorariosTareaCampana: (tareaId: string | number, payload: any) =>

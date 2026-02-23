@@ -9,6 +9,7 @@ import TareaScheduleConfigurator, {
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
 import { addToast } from '@/stores/toastStore'
 import { tareaCampanaService } from '@/services/tareas/campana/tareaCampanaService'
+import { X } from 'lucide-vue-next'
 import {
   type Option,
   type ScheduleSlot
@@ -156,7 +157,7 @@ const confirmMessage = computed(() =>
     ? '¿Estás seguro de guardar los cambios de este registro?'
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Descartar'))
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Cancelar'))
 const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
 
 const scheduleModel = computed<TareaScheduleModel>({
@@ -517,6 +518,14 @@ function handleSave() {
         <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
           {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
         </h3>
+        <button
+          type="button"
+          class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+          :disabled="isLoading || showActionConfirm"
+          @click="requestCancel"
+        >
+          <X class="w-4 h-4" />
+        </button>
       </div>
 
       <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">
@@ -585,42 +594,28 @@ function handleSave() {
             @toggle-slot="handleToggleSlot"
           />
 
-          <div v-if="mode === 'edit'" class="flex justify-end">
+          <div class="flex justify-end">
             <button
               type="button"
-              title="Restaurar información"
-              aria-label="Restaurar información"
-              class="group relative h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="isLoading"
-              @click="restoreInitialInformation"
+              :title="mode === 'edit' ? 'Restaurar información' : 'Restaurar todo'"
+              :aria-label="mode === 'edit' ? 'Restaurar información' : 'Restaurar todo'"
+              class="group relative h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-[#00357F] bg-gray-100 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="isLoading || showActionConfirm"
+              @click="mode === 'edit' ? restoreInitialInformation() : resetAllForm()"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
               </svg>
-              <span class="pointer-events-none absolute right-0 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Restaurar información</span>
+              <span class="pointer-events-none absolute z-[9999] right-0 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">
+                {{ mode === 'edit' ? 'Restaurar información' : 'Restaurar todo' }}
+              </span>
             </button>
           </div>
 
           </div>
         </div>
 
-        <div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
-          <div>
-            <button
-              v-if="mode === 'add'"
-              type="button"
-              title="Restaurar todo"
-              aria-label="Restaurar todo"
-              class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-              :disabled="isLoading || showActionConfirm"
-              @click="resetAllForm"
-            >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
-              </svg>
-            </button>
-          </div>
-
+        <div class="shrink-0 flex items-center justify-end gap-3 p-4 border-t border-gray-100 bg-white">
           <div class="flex items-center gap-3">
             <button
               type="button"

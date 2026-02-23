@@ -97,7 +97,7 @@ export interface TareaLineaData {
 
 export interface CreateTareaLineaPayload {
   tarea: {
-    mapeo: { id: number }
+    mapeo?: { id: number }
     tipo: { id: number }
     ejecucion: { id: number }
     bolActivo?: boolean

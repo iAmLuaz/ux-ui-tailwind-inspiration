@@ -101,12 +101,6 @@ function resolveHorarioLineaId(horario: any): number {
   return Number(horario?.idABCConfigHorarioTareaLinea ?? horario?.horarioId ?? horario?.id ?? 0)
 }
 
-function toHorarioPatchItemById(horarioId: number, existingHorarios: any[]): TareaLineaHorarioPostItem | null {
-  const found = (Array.isArray(existingHorarios) ? existingHorarios : [])
-    .find(item => resolveHorarioLineaId(item) === horarioId)
-  return toHorarioPostItem(found)
-}
-
 function uniqueHorariosBySignature(horarios: any[]): any[] {
   const seen = new Set<string>()
   const result: any[] = []
@@ -123,6 +117,12 @@ function uniqueHorariosBySignature(horarios: any[]): any[] {
 
 function isHorarioActive(horario: any): boolean {
   return (horario?.activo ?? horario?.bolActivo ?? true) !== false
+}
+
+function extractArrayResponse(raw: unknown): any[] {
+  if (Array.isArray(raw)) return raw
+  const data = (raw as { data?: unknown } | null | undefined)?.data
+  return Array.isArray(data) ? data : []
 }
 
 async function syncHorariosByTareaId(
@@ -221,20 +221,20 @@ async function syncHorariosByTareaId(
 
 export const tareaLineaService = {
   async getAll() {
-    const raw = await apiClient.getTareasLinea() as any
-    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getTareasLinea()
+    const list = extractArrayResponse(raw)
     return normalizeTareasLinea(list)
   },
 
   async getByLinea(lineaId: string | number) {
-    const raw = await apiClient.getTareasLineaByLinea(lineaId) as any
-    const list = Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getTareasLineaByLinea(lineaId)
+    const list = extractArrayResponse(raw)
     return normalizeTareasLinea(list)
   },
 
   async getHorariosByTarea(tareaId: string | number) {
-    const raw = await apiClient.getHorariosTareaLinea(tareaId).catch(() => []) as any
-    return Array.isArray(raw) ? raw : raw?.data ?? []
+    const raw = await apiClient.getHorariosTareaLinea(tareaId).catch(() => [])
+    return extractArrayResponse(raw)
   },
 
   async create(lineaId: string | number, payload: any) {

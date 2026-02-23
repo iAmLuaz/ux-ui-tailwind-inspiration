@@ -23,9 +23,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div v-if="show" class="absolute inset-0 z-30 isolate flex items-end px-4 pb-4 pointer-events-none">
+  <div v-if="show" class="absolute inset-0 z-30 isolate flex items-center justify-center p-4 pointer-events-none">
     <div class="absolute inset-0 z-0 bg-slate-950/45 backdrop-blur-[2px]"></div>
-    <div class="relative z-10 w-full pointer-events-auto">
+    <div class="relative z-10 w-full max-w-md pointer-events-auto">
       <FormActionConfirmModal
         :show="show"
         variant="inline"

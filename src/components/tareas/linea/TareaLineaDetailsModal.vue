@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatHorarioLabel, formatHourToAmPm, type Option as CatalogOption } from '@/composables/tareas/tareaScheduleUtils'
+import {
+  formatHourToAmPm,
+  getWeekdayOrder,
+  normalizeWeekdayInputValue,
+  toHoraLabel,
+  weekdayById,
+  type Option as CatalogOption
+} from '@/composables/tareas/tareaScheduleUtils'
 
 interface HorarioItem {
   idABCConfigHorarioTareaLinea?: number
@@ -53,6 +60,7 @@ interface Props {
   item?: TareaLineaRow | null
   getLineaLabel: (id?: number) => string
   ejecucionesDisponibles: CatalogOption[]
+  horasDisponibles: CatalogOption[]
 }
 
 const props = defineProps<Props>()
@@ -78,6 +86,14 @@ const executionLabelById = computed(() => {
   return new Map(
     (props.ejecucionesDisponibles ?? [])
       .map(option => [Number(option.value), String(option.label ?? '').trim()] as const)
+      .filter(entry => entry[0] > 0 && Boolean(entry[1]))
+  )
+})
+
+const hourLabelById = computed(() => {
+  return new Map(
+    (props.horasDisponibles ?? [])
+      .map(option => [Number(option.value), toHoraLabel(option.label)] as const)
       .filter(entry => entry[0] > 0 && Boolean(entry[1]))
   )
 })
@@ -148,23 +164,78 @@ const formatLegacySchedule = (key: StageKey) => {
   return `${day} · ${formatHourToAmPm(hourRaw)}`
 }
 
+type StageHorarioEntry = {
+  label: string
+  active: boolean
+  dayOrder: number
+  hourMinutes: number
+}
+
+const resolveHorarioDayLabel = (horario: HorarioItem) => {
+  const byName = normalizeWeekdayInputValue(horario?.dia?.nombre)
+  if (byName) return byName
+  const byId = weekdayById[Number(horario?.dia?.id ?? 0)]
+  return byId ?? ''
+}
+
+const resolveHorarioHourLabel = (horario: HorarioItem) => {
+  const byNameRaw = String(horario?.dia?.hora?.nombre ?? horario?.hora?.nombre ?? '').trim()
+  const byName = toHoraLabel(byNameRaw)
+  if (byName) return byName
+
+  const hourId = Number(horario?.dia?.hora?.id ?? horario?.hora?.id ?? 0)
+  const byCatalog = hourLabelById.value.get(hourId)
+  if (byCatalog) return byCatalog
+
+  return ''
+}
+
+const toHourMinutes = (hourLabel: string) => {
+  const [hoursRaw, minutesRaw] = hourLabel.split(':')
+  const hours = Number(hoursRaw)
+  const minutes = Number(minutesRaw)
+  if ([hours, minutes].some(Number.isNaN)) return Number.POSITIVE_INFINITY
+  return (hours * 60) + minutes
+}
+
+const toStageHorarioEntry = (horario: HorarioItem): StageHorarioEntry => {
+  const day = resolveHorarioDayLabel(horario)
+  const hour = resolveHorarioHourLabel(horario)
+  const label = [day, hour ? formatHourToAmPm(hour) : ''].filter(Boolean).join(' · ') || '-'
+
+  return {
+    label,
+    active: getHorarioActive(horario),
+    dayOrder: getWeekdayOrder(day),
+    hourMinutes: toHourMinutes(hour)
+  }
+}
+
+const compareStageHorarioEntry = (left: StageHorarioEntry, right: StageHorarioEntry) => {
+  const leftInactive = left.active ? 0 : 1
+  const rightInactive = right.active ? 0 : 1
+  if (leftInactive !== rightInactive) return leftInactive - rightInactive
+  if (left.dayOrder !== right.dayOrder) return left.dayOrder - right.dayOrder
+  return left.hourMinutes - right.hourMinutes
+}
+
 const stageDetails = computed(() => {
   const source = horarios.value
 
   return STAGE_CONFIG.map(stage => {
     const stageHorarios = source
       .filter(horario => isHorarioForStage(horario, stage.key))
-      .map(horario => ({
-        label: formatHorarioLabel(horario),
-        active: getHorarioActive(horario)
-      }))
+      .map(toStageHorarioEntry)
+      .sort(compareStageHorarioEntry)
 
     if (!stageHorarios.length) {
       const fallback = formatLegacySchedule(stage.key)
       if (fallback) {
         stageHorarios.push({
           label: fallback,
-          active: Boolean(props.item?.bolActivo)
+          active: Boolean(props.item?.bolActivo),
+          dayOrder: Number.POSITIVE_INFINITY,
+          hourMinutes: Number.POSITIVE_INFINITY
         })
       }
     }
@@ -209,6 +280,15 @@ function formatTimestamp(value?: string) {
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
       <div class="px-4 py-2.5 bg-[#00357F] border-b border-white/10 flex items-center shrink-0">
         <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">Detalle de Tarea</h3>
+        <button
+          type="button"
+          class="ml-auto h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
+          @click="emit('close')"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
       </div>
 
       <div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
@@ -250,7 +330,7 @@ function formatTimestamp(value?: string) {
                   <div class="flex items-start justify-between gap-2">
                     <div>
                       <p class="text-sm font-bold text-slate-700">{{ stage.label }}</p>
-                      <p class="text-xs text-slate-500 mt-0.5">Tipo de ejecución: <span class="font-semibold text-slate-700">{{ stage.execution }}</span></p>
+                      <p class="text-xs text-slate-500 mt-0.5">TIPO DE EJECUCIÓN: <span class="font-semibold text-slate-700">{{ stage.execution }}</span></p>
                     </div>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                       {{ stage.activeCount }} activos
@@ -264,8 +344,11 @@ function formatTimestamp(value?: string) {
                       class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs border"
                       :class="horario.active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-600 border-slate-200 opacity-60'"
                     >
+                      <span
+                        class="h-2.5 w-2.5 rounded-full"
+                        :class="horario.active ? 'bg-emerald-500' : 'bg-slate-400'"
+                      ></span>
                       {{ horario.label }}
-                      <span class="font-semibold">{{ horario.active ? 'Activo' : 'Inactivo' }}</span>
                     </span>
                   </div>
                   <p v-else class="mt-2 text-xs text-slate-500">Sin horarios configurados.</p>
@@ -293,7 +376,7 @@ function formatTimestamp(value?: string) {
           class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
           @click="emit('close')"
         >
-          Cerrar
+          Aceptar
         </button>
       </div>
     </div>
