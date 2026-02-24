@@ -137,8 +137,8 @@ const confirmMessage = computed(() =>
     ? '¿Estás seguro de guardar los cambios de este registro?'
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Cancelar'))
-const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Aceptar'))
+const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Cancelar' : 'Cancelar'))
 
 const scheduleModel = computed<TareaScheduleModel>({
   get: () => ({
@@ -536,7 +536,7 @@ function handleSave() {
                     type="button"
                     title="Elegir de nuevo"
                     aria-label="Elegir de nuevo"
-                    class="shrink-0 h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-[#00357F] bg-[#FFD100]/70 hover:bg-[#FFD100] transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    class="group relative h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-[#00357F] bg-gray-100 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
                     :disabled="!isAutoMapped || isEditing"
                     @click="resetHeaderSelection"
                   >

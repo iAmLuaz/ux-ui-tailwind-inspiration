@@ -64,8 +64,8 @@ const confirmMessage = computed(() =>
     ? '¿Estás seguro de guardar los cambios de este registro?'
     : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
 )
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Cancelar'))
-const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Volver' : 'Seguir editando'))
+const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Aceptar'))
+const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Cancelar' : 'Cancelar'))
 
 watch(
   () => [props.initialData, props.mode],
