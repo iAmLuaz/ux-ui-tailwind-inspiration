@@ -9,7 +9,7 @@ import type {
 import type { BitacoraPayload } from '../types/bitacora'
 import { addToast } from '@/stores/toastStore'
 
-type ApiDomain = 'catalogos' | 'mapeos' | 'tareas' | 'horarios' | 'columnas' | 'default'
+type ApiDomain = 'catalogos' | 'mapeos' | 'tareas' | 'monitor' | 'horarios' | 'columnas' | 'default'
 
 const GLOBAL_USE_MOCK = String(import.meta.env.VITE_USE_MOCK ?? 'false').toLowerCase() === 'true'
 const API_BASE_URL_REAL = import.meta.env.VITE_API_URL_REAL
@@ -28,6 +28,7 @@ function parseEnvBoolean(value: unknown): boolean | undefined {
 
 function getEndpointDomain(endpoint: string): ApiDomain {
   const path = String(endpoint || '').toLowerCase()
+  if (path.includes('/monitor/tareas')) return 'monitor'
   if (path.includes('/horarios')) return 'horarios'
   if (path.includes('/catalogos')) return 'catalogos'
   if (path.includes('/columnas')) return 'columnas'
@@ -41,6 +42,7 @@ function shouldUseMockByDomain(domain: ApiDomain): boolean {
     catalogos: 'VITE_MOCK_CATALOGOS',
     mapeos: 'VITE_MOCK_MAPEOS',
     tareas: 'VITE_MOCK_TAREAS',
+    monitor: 'VITE_MOCK_TAREAS_MONITOR',
     horarios: 'VITE_MOCK_HORARIOS',
     columnas: 'VITE_MOCK_COLUMNAS',
     default: 'VITE_MOCK_DEFAULT'
@@ -355,6 +357,10 @@ export const api = {
       headers: { 'X-Suppress-Toast': 'true' },
       body: JSON.stringify(payload)
     }),
+
+  // Monitor de tareas (solo lectura)
+  getTareasMonitorLinea: () => http.get('/monitor/tareas/linea'),
+  getTareasMonitorCampana: () => http.get('/monitor/tareas/campana'),
 
   // Columna mapeo (línea)
   getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),

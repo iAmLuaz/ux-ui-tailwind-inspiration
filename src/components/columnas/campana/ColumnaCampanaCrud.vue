@@ -20,6 +20,10 @@ const props = defineProps<{
 	selectedCampanaNombre?: string | null
 }>()
 
+const emit = defineEmits<{
+	(e: 'saved'): void
+}>()
+
 interface Option {
 	label: string
 	value: number
@@ -135,6 +139,7 @@ async function handleSaved() {
 		fetchAll(props.mapeoId ?? null),
 		fetchMapeos()
 	])
+	emit('saved')
 }
 
 function toggleFilterMenu(column: string) {

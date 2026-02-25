@@ -32,6 +32,7 @@ import {
   stageKeys,
   stageTypeByKey
 } from '@/composables/tareas/tareasViewUtils'
+import { compareNewestFirst, matchesTokenizedSearch } from '@/composables/shared/listViewUtils'
 import { addToast } from '@/stores/toastStore'
 
 const tabs = [
@@ -199,64 +200,22 @@ const statusConfirmMessage = computed(() => {
   return `¿Deseas ${actionText} este registro de tarea?`
 })
 
-const normalizeString = (s: unknown) => {
-  if (s === null || s === undefined) return ''
-  const str = String(s)
-  try {
-    return str
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase()
-      .trim()
-  } catch (_) {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-  }
-}
-
-function matchesSearch(nameValue: string, query: string) {
-  const q = normalizeString(query)
-  if (!q) return true
-
-  const name = normalizeString(nameValue || '')
-  const nameWords = name.split(/\s+/).filter(Boolean)
-  const qTokens = q.split(/\s+/).filter(Boolean)
-
-  if (qTokens.length === 1) {
-    const token = qTokens[0] ?? ''
-    return nameWords.some(w => w.includes(token)) || name.includes(token)
-  }
-  return qTokens.every(token => nameWords.some(w => w.includes(token)))
-}
-
 function getSearchableText(item: { ingesta?: string; carga?: { ejecucion?: string }; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number }) {
   return `${item.ingesta ?? ''} ${item.carga?.ejecucion ?? ''} ${item.idABCConfigTareaLinea ?? ''} ${item.idABCConfigTareaCampana ?? ''}`.trim()
-}
-
-function toTimestamp(value?: string) {
-  const parsed = value ? Date.parse(value) : Number.NaN
-  return Number.isFinite(parsed) ? parsed : -1
 }
 
 function newestFirstCompare(
   left: { fechaCreacion?: string; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number },
   right: { fechaCreacion?: string; idABCConfigTareaLinea?: number; idABCConfigTareaCampana?: number }
 ) {
-  const leftTs = toTimestamp(left.fechaCreacion)
-  const rightTs = toTimestamp(right.fechaCreacion)
-  if (rightTs !== leftTs) return rightTs - leftTs
-
   const leftId = Number(left.idABCConfigTareaCampana ?? left.idABCConfigTareaLinea ?? 0)
   const rightId = Number(right.idABCConfigTareaCampana ?? right.idABCConfigTareaLinea ?? 0)
-  return rightId - leftId
+  return compareNewestFirst(left.fechaCreacion, right.fechaCreacion, leftId, rightId)
 }
 
 const filteredTareasLinea = computed(() => {
   return tareasLineaEnriched.value.filter(item => {
-    const matchSearch = matchesSearch(getSearchableText(item), searchQueryLinea.value || '')
+    const matchSearch = matchesTokenizedSearch(getSearchableText(item), searchQueryLinea.value || '')
     const matchLinea = selectedFiltersLinea.lineas.length
       ? selectedFiltersLinea.lineas.includes(item.idABCCatLineaNegocio)
       : true
@@ -269,7 +228,7 @@ const filteredTareasLinea = computed(() => {
 
 const filteredTareasCampana = computed(() => {
   return tareasCampanaEnriched.value.filter(item => {
-    const matchSearch = matchesSearch(getSearchableText(item), searchQueryCampana.value || '')
+    const matchSearch = matchesTokenizedSearch(getSearchableText(item), searchQueryCampana.value || '')
     const matchLinea = selectedFiltersCampana.lineas.length
       ? selectedFiltersCampana.lineas.includes(item.idABCCatLineaNegocio)
       : true

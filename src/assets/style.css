@@ -3,3 +3,30 @@
 button{
     cursor: pointer;
 }
+
+.row-new-record-glow {
+    animation: row-new-record-pulse 2.2s ease-in-out 1;
+}
+
+@keyframes row-new-record-pulse {
+    0% {
+        background-color: rgba(219, 234, 254, 0.95);
+        box-shadow: inset 0 0 0 999px rgba(219, 234, 254, 0.75);
+    }
+    22% {
+        background-color: rgba(191, 219, 254, 0.95);
+        box-shadow: inset 0 0 0 999px rgba(191, 219, 254, 0.7);
+    }
+    45% {
+        background-color: rgba(219, 234, 254, 0.75);
+        box-shadow: inset 0 0 0 999px rgba(219, 234, 254, 0.55);
+    }
+    68% {
+        background-color: rgba(191, 219, 254, 0.65);
+        box-shadow: inset 0 0 0 999px rgba(191, 219, 254, 0.45);
+    }
+    100% {
+        background-color: transparent;
+        box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0);
+    }
+}

@@ -12,7 +12,7 @@ const props = defineProps<{
   selectedLineaNombre?: string | null
 }>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'saved'])
 
 watch(() => props.show, (val) => {
   try { document.body.style.overflow = val ? 'hidden' : '' } catch (_) {}
@@ -43,6 +43,7 @@ onUnmounted(() => { try { document.body.style.overflow = '' } catch (_) {} })
             :mapeo-nombre="props.mapeoNombre"
             :selected-linea-id="props.selectedLineaId"
             :selected-linea-nombre="props.selectedLineaNombre ?? null"
+            @saved="emit('saved')"
           />
         </div>
       </div>

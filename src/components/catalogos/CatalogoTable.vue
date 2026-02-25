@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next'
 import type { CatalogoItem } from '../../types/catalogos/catalogos'
+import { useFirstRowNewGlow } from '@/composables/shared/useFirstRowNewGlow'
 
 interface Props {
   items: CatalogoItem[]
@@ -8,6 +9,12 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const { isRowGlowing } = useFirstRowNewGlow(
+  () => props.items,
+  row => `${row.codigo}-${row.id}`,
+  { isLoading: () => props.isLoading }
+)
 
 function formatTimestamp(value?: string) {
   if (!value) return ''
@@ -50,7 +57,12 @@ function formatTimestamp(value?: string) {
               </div>
             </td>
           </tr>
-          <tr v-else v-for="item in props.items" :key="`${item.codigo}-${item.id}`" class="text-sm hover:bg-blue-50/30 transition-colors">
+          <tr
+            v-else
+            v-for="(item, index) in props.items"
+            :key="`${item.codigo}-${item.id}`"
+            :class="['text-sm hover:bg-blue-50/30 transition-colors', { 'row-new-record-glow': isRowGlowing(item, index) }]"
+          >
             <td class="px-4 py-2.5">
               <span
                 class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border"

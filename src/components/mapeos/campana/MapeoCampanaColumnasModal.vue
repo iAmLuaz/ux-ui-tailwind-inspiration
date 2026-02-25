@@ -14,7 +14,7 @@ const props = defineProps<{
   selectedCampanaNombre?: string | null
 }>()
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'saved'])
 
 watch(() => props.show, (val) => {
   try { document.body.style.overflow = val ? 'hidden' : '' } catch (_) {}
@@ -47,6 +47,7 @@ onUnmounted(() => { try { document.body.style.overflow = '' } catch (_) {} })
             :selected-campana-id="props.selectedCampanaId"
             :selected-linea-nombre="props.selectedLineaNombre ?? null"
             :selected-campana-nombre="props.selectedCampanaNombre ?? null"
+            @saved="emit('saved')"
           />
         </div>
       </div>

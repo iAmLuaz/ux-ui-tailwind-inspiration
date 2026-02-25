@@ -1,26 +1,589 @@
 [
-  {
-    "id": 1,
-    "bolActivo": true,
-    "codigo": "CAG",
-    "nombre": "Carga",
-    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
-    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
-  },
-  {
-    "id": 2,
-    "bolActivo": true,
-    "codigo": "VLD",
-    "nombre": "Validación",
-    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
-    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
-  },
-  {
-    "id": 3,
-    "bolActivo": true,
-    "codigo": "ENV",
-    "nombre": "Envío",
-    "fecCreacion": "2026-02-01T00:00:00.000+00:00",
-    "fecUltModificacion": "2026-02-01T00:00:00.000+00:00"
-  }
+    {
+        "codigo": "CMP",
+        "nombre": "CAMPANA",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "BNV",
+                "nombre": "BIENVENIDA"
+            },
+            {
+                "id": 2,
+                "codigo": "DES",
+                "nombre": "DESCUENTOS"
+            },
+            {
+                "id": 3,
+                "codigo": "CUM",
+                "nombre": "CUMPLEAÑOS"
+            },
+            {
+                "id": 4,
+                "codigo": "PRO",
+                "nombre": "PROMOCION"
+            },
+            {
+                "id": 5,
+                "codigo": "DAU",
+                "nombre": "DESCUENTO SEGURO DE AUTO "
+            },
+            {
+                "id": 6,
+                "codigo": "DAU",
+                "nombre": "DESCUENTO SEGURO DE AUTO "
+            },
+            {
+                "id": 7,
+                "codigo": "AFR",
+                "nombre": "cujxnajcn"
+            },
+            {
+                "id": 8,
+                "codigo": "AFR",
+                "nombre": "Afore"
+            },
+            {
+                "id": 9,
+                "codigo": "AFR",
+                "nombre": "Afore"
+            },
+            {
+                "id": 10,
+                "codigo": "AFR",
+                "nombre": "Afore"
+            }
+        ]
+    },
+    {
+        "codigo": "CLM",
+        "nombre": "COLUMNA",
+        "registros": [
+            {
+                "id": 38,
+                "codigo": "NOM",
+                "nombre": "NOMBRE"
+            },
+            {
+                "id": 39,
+                "codigo": "DAU",
+                "nombre": "DESCUENTO SEGURO DE AUTO "
+            },
+            {
+                "id": 40,
+                "codigo": "APM",
+                "nombre": "APELLIDO MATERNO"
+            },
+            {
+                "id": 41,
+                "codigo": "CID",
+                "nombre": "COSTUMER ID"
+            },
+            {
+                "id": 42,
+                "codigo": "COR",
+                "nombre": "CORREO"
+            },
+            {
+                "id": 43,
+                "codigo": "TEL",
+                "nombre": "TELEFONO"
+            },
+            {
+                "id": 44,
+                "codigo": "EDA",
+                "nombre": "EDAD"
+            },
+            {
+                "id": 45,
+                "codigo": "EMA",
+                "nombre": "EMAIL_ADDRESS_ "
+            },
+            {
+                "id": 46,
+                "codigo": "MOM",
+                "nombre": "MOBILE_NUMBER_ "
+            },
+            {
+                "id": 47,
+                "codigo": "MOC",
+                "nombre": "MOBILE_COUNTRY_ "
+            },
+            {
+                "id": 48,
+                "codigo": "AFO",
+                "nombre": "ID_AFORE "
+            },
+            {
+                "id": 49,
+                "codigo": "DEA",
+                "nombre": "DESCRIPCION_DE_AFORE "
+            },
+            {
+                "id": 50,
+                "codigo": "LDN",
+                "nombre": "LINEA_DE_NEGOCIO "
+            },
+            {
+                "id": 51,
+                "codigo": "NDC",
+                "nombre": "NUMERO_DE_CUENTA "
+            },
+            {
+                "id": 52,
+                "codigo": "NSS",
+                "nombre": "NSS "
+            },
+            {
+                "id": 53,
+                "codigo": "CUR",
+                "nombre": "CURP "
+            },
+            {
+                "id": 54,
+                "codigo": "RFC",
+                "nombre": "RFC "
+            },
+            {
+                "id": 55,
+                "codigo": "SIF",
+                "nombre": "SIEFORE "
+            },
+            {
+                "id": 56,
+                "codigo": "DOB",
+                "nombre": "DATE_OF_BIRTH "
+            },
+            {
+                "id": 57,
+                "codigo": "SEG",
+                "nombre": "SEGMENTO "
+            },
+            {
+                "id": 58,
+                "codigo": "REG",
+                "nombre": "REGIMEN "
+            },
+            {
+                "id": 59,
+                "codigo": "PS1",
+                "nombre": "POSTAL_STREET_1_ "
+            },
+            {
+                "id": 60,
+                "codigo": "PS2",
+                "nombre": "POSTAL_STREET_2_ "
+            },
+            {
+                "id": 61,
+                "codigo": "CIT",
+                "nombre": "CITY_ "
+            },
+            {
+                "id": 62,
+                "codigo": "STE",
+                "nombre": "STATE_ "
+            },
+            {
+                "id": 63,
+                "codigo": "POC",
+                "nombre": "POSTAL_CODE_ "
+            },
+            {
+                "id": 64,
+                "codigo": "IDC",
+                "nombre": "ID_CLIENTE_AHORRADOR "
+            },
+            {
+                "id": 65,
+                "codigo": "POL",
+                "nombre": "POLIZA "
+            },
+            {
+                "id": 66,
+                "codigo": "IDP",
+                "nombre": "ID_PRESTAMO_PENSIONADO "
+            },
+            {
+                "id": 67,
+                "codigo": "IDS",
+                "nombre": "ID_SUSCEPTIBLE_PRESTAMO "
+            },
+            {
+                "id": 68,
+                "codigo": "TIP",
+                "nombre": "TIPO_PENSION "
+            },
+            {
+                "id": 69,
+                "codigo": "GRP",
+                "nombre": "GRUPO_PAGO "
+            },
+            {
+                "id": 70,
+                "codigo": "IDB",
+                "nombre": "ID_BAJA_CAMBIO "
+            },
+            {
+                "id": 71,
+                "codigo": "FBC",
+                "nombre": "FECHA_BAJA_CAMBIO "
+            },
+            {
+                "id": 72,
+                "codigo": "REI",
+                "nombre": "REGIMEN_IMSS "
+            },
+            {
+                "id": 73,
+                "codigo": "SEA",
+                "nombre": "SEGMENTO_AFO "
+            },
+            {
+                "id": 74,
+                "codigo": "GEN",
+                "nombre": "GENERO "
+            }
+        ]
+    },
+    {
+        "codigo": "CDN",
+        "nombre": "CADENA",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "NMR",
+                "nombre": "NUMERICO"
+            },
+            {
+                "id": 2,
+                "codigo": "ALF",
+                "nombre": "ALFABETICO"
+            },
+            {
+                "id": 3,
+                "codigo": "ALN",
+                "nombre": "ALFANUMERICO"
+            }
+        ]
+    },
+    {
+        "codigo": "ACT",
+        "nombre": "ACTIVIDAD",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "CAG",
+                "nombre": "CARGA"
+            },
+            {
+                "id": 2,
+                "codigo": "VLD",
+                "nombre": "VALIDACION"
+            },
+            {
+                "id": 3,
+                "codigo": "ENV",
+                "nombre": "ENVIO"
+            },
+            {
+                "id": 4,
+                "codigo": "RCP",
+                "nombre": "RECEPCION"
+            }
+        ]
+    },
+    {
+        "codigo": "ROL",
+        "nombre": "ROL",
+        "registros": [
+            {
+                "id": 2,
+                "codigo": "AS",
+                "nombre": "SUPER ADMINISTRADOR"
+            },
+            {
+                "id": 3,
+                "codigo": "AU",
+                "nombre": "ADMINISTRADOR DE USUARIOS"
+            },
+            {
+                "id": 4,
+                "codigo": "AS",
+                "nombre": "ADMINISTRADOR DE SEGURIDAD"
+            },
+            {
+                "id": 6,
+                "codigo": "LV",
+                "nombre": "SOLO LECTURA VISOR"
+            }
+        ]
+    },
+    {
+        "codigo": "NMR",
+        "nombre": "NUMERO",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "ENT",
+                "nombre": "ENTERO"
+            },
+            {
+                "id": 2,
+                "codigo": "DEC",
+                "nombre": "DECIMALES"
+            }
+        ]
+    },
+    {
+        "codigo": "DIA",
+        "nombre": "DIA",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "LNS",
+                "nombre": "LUNES"
+            },
+            {
+                "id": 2,
+                "codigo": "MTS",
+                "nombre": "MARTES"
+            },
+            {
+                "id": 3,
+                "codigo": "MCL",
+                "nombre": "MIERCOLES"
+            },
+            {
+                "id": 4,
+                "codigo": "JVS",
+                "nombre": "JUEVES"
+            },
+            {
+                "id": 5,
+                "codigo": "VNS",
+                "nombre": "VIERNES"
+            }
+        ]
+    },
+    {
+        "codigo": "VAL",
+        "nombre": "VALOR",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "NMR",
+                "nombre": "NUMERICO"
+            },
+            {
+                "id": 2,
+                "codigo": "CDN",
+                "nombre": "CADENA"
+            }
+        ]
+    },
+    {
+        "codigo": "LNN",
+        "nombre": "LINEA_NEGOCIO",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "AFR",
+                "nombre": "AFORE"
+            },
+            {
+                "id": 2,
+                "codigo": "SFM",
+                "nombre": "SOFOM"
+            },
+            {
+                "id": 3,
+                "codigo": "PNS",
+                "nombre": "PENSIONES"
+            }
+        ]
+    },
+    {
+        "codigo": "HRS",
+        "nombre": "HORA",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "000",
+                "nombre": "00:00"
+            },
+            {
+                "id": 2,
+                "codigo": "001",
+                "nombre": "00:15"
+            },
+            {
+                "id": 3,
+                "codigo": "003",
+                "nombre": "00:30"
+            },
+            {
+                "id": 4,
+                "codigo": "004",
+                "nombre": "00:45"
+            },
+            {
+                "id": 5,
+                "codigo": "010",
+                "nombre": "01:00"
+            },
+            {
+                "id": 6,
+                "codigo": "011",
+                "nombre": "01:15"
+            },
+            {
+                "id": 7,
+                "codigo": "013",
+                "nombre": "01:30"
+            },
+            {
+                "id": 8,
+                "codigo": "014",
+                "nombre": "01:45"
+            },
+            {
+                "id": 9,
+                "codigo": "200",
+                "nombre": "20:00"
+            },
+            {
+                "id": 10,
+                "codigo": "201",
+                "nombre": "20:15"
+            },
+            {
+                "id": 11,
+                "codigo": "203",
+                "nombre": "20:30"
+            },
+            {
+                "id": 12,
+                "codigo": "204",
+                "nombre": "20:45"
+            },
+            {
+                "id": 13,
+                "codigo": "210",
+                "nombre": "21:00"
+            },
+            {
+                "id": 14,
+                "codigo": "211",
+                "nombre": "21:15"
+            },
+            {
+                "id": 15,
+                "codigo": "213",
+                "nombre": "21:30"
+            },
+            {
+                "id": 16,
+                "codigo": "214",
+                "nombre": "21:45"
+            },
+            {
+                "id": 17,
+                "codigo": "220",
+                "nombre": "22:00"
+            },
+            {
+                "id": 18,
+                "codigo": "221",
+                "nombre": "22:15"
+            },
+            {
+                "id": 19,
+                "codigo": "223",
+                "nombre": "22:30"
+            },
+            {
+                "id": 20,
+                "codigo": "224",
+                "nombre": "22:45"
+            },
+            {
+                "id": 21,
+                "codigo": "230",
+                "nombre": "23:00"
+            },
+            {
+                "id": 22,
+                "codigo": "231",
+                "nombre": "23:15"
+            },
+            {
+                "id": 23,
+                "codigo": "233",
+                "nombre": "23:30"
+            },
+            {
+                "id": 24,
+                "codigo": "234",
+                "nombre": "23:45"
+            }
+        ]
+    },
+    {
+        "codigo": "EJE",
+        "nombre": "EJECUCION",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "ATM",
+                "nombre": "Automatico"
+            },
+            {
+                "id": 2,
+                "codigo": "MNL",
+                "nombre": "Manual"
+            },
+            {
+                "id": 3,
+                "codigo": "HBD",
+                "nombre": "Hibrido"
+            }
+        ]
+    },
+    {
+        "codigo": "STS",
+        "nombre": "STATUS",
+        "registros": [
+            {
+                "id": 1,
+                "codigo": "PLN",
+                "nombre": "Planificada"
+            },
+            {
+                "id": 2,
+                "codigo": "EJC",
+                "nombre": "En ejecución"
+            },
+            {
+                "id": 3,
+                "codigo": "BLQ",
+                "nombre": "Bloqueada"
+            },
+            {
+                "id": 4,
+                "codigo": "CMP",
+                "nombre": "Completada"
+            },
+            {
+                "id": 5,
+                "codigo": "ERR",
+                "nombre": "Error"
+            },
+            {
+                "id": 6,
+                "codigo": "CNC",
+                "nombre": "Cancelada"
+            }
+        ]
+    }
 ]

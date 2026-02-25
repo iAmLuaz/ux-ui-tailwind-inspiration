@@ -25,6 +25,8 @@ const store = {
   columnasCampana: [],
   tareasLinea: [],
   tareasCampana: [],
+  monitorTareasLinea: [],
+  monitorTareasCampana: [],
   horariosTareaLinea: [],
   horariosTareaCampana: []
 }
@@ -40,7 +42,8 @@ const CATALOGOS_META = {
   DIA: 'DIA',
   HRS: 'HORA',
   EJE: 'EJECUCION',
-  ACT: 'ACTIVIDAD'
+  ACT: 'ACTIVIDAD',
+  STS: 'STATUS'
 }
 
 function normalizeCatalogText(value) {
@@ -62,8 +65,138 @@ function normalizeCatalogItem(item) {
   }
 }
 
+function getCatalogGroup(code) {
+  const key = String(code ?? '').toUpperCase()
+  return store.catalogos.find(group => String(group?.codigo ?? '').toUpperCase() === key)
+}
+
+function getCatalogRecordById(code, id) {
+  const targetId = Number(id ?? 0)
+  if (!targetId) return null
+  const group = getCatalogGroup(code)
+  if (!group) return null
+  return (group.registros ?? []).find(record => Number(record?.id ?? 0) === targetId) ?? null
+}
+
+function toIsoDate(value) {
+  if (value === null || value === undefined || value === '') return ''
+  const raw = String(value).trim()
+  if (!raw) return ''
+
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw)
+    if (Number.isFinite(numeric) && numeric > 0) {
+      return new Date(numeric).toISOString()
+    }
+  }
+
+  const parsed = Date.parse(raw)
+  if (Number.isFinite(parsed)) return new Date(parsed).toISOString()
+  return raw
+}
+
+function normalizeMonitorRecord(item, scope = 'linea') {
+  const lineaId = Number(item?.linea?.id ?? item?.idABCCatLineaNegocio ?? 0)
+  const campanaId = Number(item?.linea?.campana?.id ?? item?.idABCCatCampana ?? item?.campana?.id ?? 0)
+  const mapeoId = Number(item?.mapeo?.id ?? item?.idABCConfigMapeo ?? item?.idABCConfigMapeoLinea ?? item?.idABCConfigMapeoCampana ?? 0)
+  const actividadId = Number(item?.actividad?.id ?? item?.actividadId ?? 0)
+  const ejecucionId = Number(item?.ejecucion?.id ?? item?.ejecucionId ?? 0)
+  const diaId = Number(item?.dia?.id ?? item?.horario?.dia?.id ?? item?.diaId ?? 0)
+  const horaId = Number(item?.hora?.id ?? item?.horario?.dia?.hora?.id ?? item?.horaId ?? 0)
+  const estatusId = Number(item?.estatus?.id ?? item?.status?.id ?? item?.estatusId ?? item?.statusId ?? 0)
+
+  const toTimestampString = value => {
+    if (value === null || value === undefined || value === '') return ''
+    const raw = String(value).trim()
+    if (!raw) return ''
+    if (/^\d+$/.test(raw)) return raw
+    const parsed = Date.parse(raw)
+    if (Number.isFinite(parsed)) return String(parsed)
+    return raw
+  }
+
+  const base = {
+    id: Number(item?.id ?? 0),
+    linea: {
+      id: lineaId
+    },
+    mapeo: {
+      id: mapeoId
+    },
+    activo: typeof item?.activo === 'boolean'
+      ? item.activo
+      : typeof item?.bolActivo === 'boolean'
+        ? item.bolActivo
+        : Number(item?.activo ?? item?.bolActivo ?? 1) === 1,
+    actividad: {
+      id: actividadId
+    },
+    ejecucion: {
+      id: ejecucionId
+    },
+    dia: {
+      id: diaId
+    },
+    hora: {
+      id: horaId
+    },
+    estatus: {
+      id: estatusId
+    },
+    fechaInico: toTimestampString(item?.fechaInico ?? item?.fechaInicio ?? item?.fecInicio),
+    fechaFin: toTimestampString(item?.fechaFin ?? item?.fecFin),
+    registros: Number(item?.registros ?? item?.numeroRegistros ?? item?.numRegistros ?? item?.totalRegistros ?? 0),
+    procesados: Number(item?.procesados ?? item?.numeroRegistrosProcesados ?? item?.numRegistrosProcesados ?? item?.registrosProcesados ?? 0),
+    fechaCreacion: toTimestampString(item?.fechaCreacion ?? item?.fecCreacion)
+  }
+
+  if (scope === 'campana') {
+    return {
+      ...base,
+      linea: {
+        id: lineaId,
+        campana: {
+          id: campanaId
+        }
+      }
+    }
+  }
+
+  return base
+}
+
 async function loadCatalogos() {
   const base = 'api/catalogos'
+  try {
+    const concentrated = await readJson(`${base}/ACT.json`)
+    const grouped = Array.isArray(concentrated)
+      ? concentrated
+          .filter(group => group && typeof group === 'object' && Array.isArray(group?.registros))
+          .map(group => {
+            const codigo = normalizeCatalogText(group?.codigo).toUpperCase()
+            return {
+              codigo,
+              nombre: normalizeCatalogText(group?.nombre ?? CATALOGOS_META[codigo] ?? codigo),
+              registros: (group?.registros ?? []).map(normalizeCatalogItem)
+            }
+          })
+          .filter(group => Boolean(group.codigo))
+      : []
+
+    if (grouped.length) {
+      const byCode = new Map(grouped.map(group => [group.codigo, group]))
+      for (const [codigo, nombre] of Object.entries(CATALOGOS_META)) {
+        if (!byCode.has(codigo)) {
+          byCode.set(codigo, { codigo, nombre, registros: [] })
+        }
+      }
+      store.catalogos = Array.from(byCode.values())
+      return
+    }
+  } catch {
+    // fallback a archivos individuales
+  }
+
   const codes = Object.keys(CATALOGOS_META)
   const grouped = []
   for (const code of codes) {
@@ -92,12 +225,16 @@ async function loadCatalogos() {
 async function loadData() {
   const tareasLineaRaw = await readJson('api/tareas/linea.json')
   const tareasCampanaRaw = await readJson('api/tareas/campana.json')
+  const monitorTareasLineaRaw = await readJson('api/tareas-monitor/linea.json')
+  const monitorTareasCampanaRaw = await readJson('api/tareas-monitor/campana.json')
   const horariosLineaRaw = await readJson('api/tareas/horarios-linea.json')
   const horariosCampanaRaw = await readJson('api/tareas/horarios-campana.json')
   const mapeosLineaRaw = await readJson('api/mapeos/linea.json')
   const mapeosCampanaRaw = await readJson('api/mapeos/campana.json')
   const columnasLineaRaw = await readJson('api/columnas/linea.json')
   const columnasCampanaRaw = await readJson('api/columnas/campana.json')
+
+  await loadCatalogos()
 
   store.mapeosLinea = (Array.isArray(mapeosLineaRaw) ? mapeosLineaRaw : []).map(item =>
     normalizeMapeoLineaRecord(item)
@@ -173,6 +310,12 @@ async function loadData() {
     }
   })
 
+  store.monitorTareasLinea = (Array.isArray(monitorTareasLineaRaw) ? monitorTareasLineaRaw : [])
+    .map(item => normalizeMonitorRecord(item, 'linea'))
+
+  store.monitorTareasCampana = (Array.isArray(monitorTareasCampanaRaw) ? monitorTareasCampanaRaw : [])
+    .map(item => normalizeMonitorRecord(item, 'campana'))
+
   const horariosCampanaSeed = Array.isArray(horariosCampanaRaw)
     ? horariosCampanaRaw
     : Array.isArray(tareasCampanaRaw?.horarios)
@@ -191,7 +334,6 @@ async function loadData() {
     )
   })
 
-  await loadCatalogos()
   console.log('[mock-server] data loaded', {
     mapeosLinea: store.mapeosLinea.length,
     mapeosCampana: store.mapeosCampana.length,
@@ -199,6 +341,8 @@ async function loadData() {
     columnasCampana: store.columnasCampana.length,
     tareasLinea: store.tareasLinea.length,
     tareasCampana: store.tareasCampana.length,
+    monitorTareasLinea: store.monitorTareasLinea.length,
+    monitorTareasCampana: store.monitorTareasCampana.length,
     horariosTareaLinea: store.horariosTareaLinea.length,
     horariosTareaCampana: store.horariosTareaCampana.length
   })
@@ -812,6 +956,14 @@ const server = http.createServer(async (req, res) => {
 
       if (pathOnly === '/lineas/campanas/tareas') {
         return send(res, 200, store.tareasCampana)
+      }
+
+      if (pathOnly === '/monitor/tareas/linea') {
+        return send(res, 200, store.monitorTareasLinea)
+      }
+
+      if (pathOnly === '/monitor/tareas/campana') {
+        return send(res, 200, store.monitorTareasCampana)
       }
 
       const lineasMapeoParams = matchPath(pathOnly, '/lineas/:lineaId/mapeos')

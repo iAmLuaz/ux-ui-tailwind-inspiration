@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Eye, Edit3, Search, Plus } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
 import type { ColumnaLineaModel } from '@/models/columnas/linea/columnaLinea.model'
+import { useFirstRowNewGlow } from '@/composables/shared/useFirstRowNewGlow'
 
 interface Option {
   label: string
@@ -56,6 +57,12 @@ const statusOptions = [
   { label: 'Activos', value: true },
   { label: 'Inactivos', value: false }
 ]
+
+const { isRowGlowing } = useFirstRowNewGlow(
+  () => props.columnas,
+  row => `${Number(row.mapeoId ?? 0)}-${Number(row.columnaId ?? 0)}`,
+  { isLoading: () => props.isLoading }
+)
 </script>
 
 <template>
@@ -148,9 +155,9 @@ const statusOptions = [
   
             <template v-else>
               <tr
-                v-for="c in columnas"
+                v-for="(c, index) in columnas"
                 :key="`${c.mapeoId}-${c.columnaId}`"
-                class="hover:bg-blue-50/30 transition-colors text-sm"
+                :class="['hover:bg-blue-50/30 transition-colors text-sm', { 'row-new-record-glow': isRowGlowing(c, index) }]"
                 @dblclick="emit('details', c)"
               >
                 <td class="px-4 py-2.5 text-slate-600">

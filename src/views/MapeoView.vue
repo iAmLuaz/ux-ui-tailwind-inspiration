@@ -20,6 +20,7 @@ import MapeoLineaColumnasModal from '@/components/mapeos/linea/MapeoLineaColumna
 import MapeoCampanaColumnasModal from '@/components/mapeos/campana/MapeoCampanaColumnasModal.vue'
 import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 import { Plus, Layers, Megaphone, LayoutGrid } from 'lucide-vue-next'
+import { compareNewestFirst, matchesTokenizedSearch } from '@/composables/shared/listViewUtils'
 
 const tabs = [
   { key: 'linea', label: 'Líneas de negocio', icon: Layers },
@@ -87,57 +88,21 @@ async function fetchMapeosCampana() {
   }
 }
 
-const normalizeString = (s: unknown) => {
-  if (s === null || s === undefined) return ''
-  const str = String(s)
-  try {
-    return str
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase()
-      .trim()
-  } catch (e) {
-    return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim()
-  }
-}
-
-function matchesSearch(nameValue: string, query: string) {
-  const q = normalizeString(query)
-  if (!q) return true
-
-  const name = normalizeString(nameValue || '')
-  const nameWords = name.split(/\s+/).filter(Boolean)
-  const qTokens = q.split(/\s+/).filter(Boolean)
-
-  if (qTokens.length === 1) {
-    const token = qTokens[0] ?? ''
-    return nameWords.some(w => w.includes(token)) || name.includes(token)
-  }
-  return qTokens.every(token => nameWords.some(w => w.includes(token)))
-}
-
-function toTimestamp(value?: string) {
-  const parsed = value ? Date.parse(value) : Number.NaN
-  return Number.isFinite(parsed) ? parsed : -1
-}
-
 function newestFirstCompare(
   left: { fechaCreacion?: string; idABCConfigMapeoLinea?: number },
   right: { fechaCreacion?: string; idABCConfigMapeoLinea?: number }
 ) {
-  const leftTs = toTimestamp(left.fechaCreacion)
-  const rightTs = toTimestamp(right.fechaCreacion)
-  if (rightTs !== leftTs) return rightTs - leftTs
-  return Number(right.idABCConfigMapeoLinea ?? 0) - Number(left.idABCConfigMapeoLinea ?? 0)
+  return compareNewestFirst(
+    left.fechaCreacion,
+    right.fechaCreacion,
+    Number(left.idABCConfigMapeoLinea ?? 0),
+    Number(right.idABCConfigMapeoLinea ?? 0)
+  )
 }
 
 const filteredMapeosLinea = computed(() => {
   return allMapeosLinea.value.filter(item => {
-    const matchSearch = matchesSearch(item.nombre || '', searchQueryLinea.value || '')
+    const matchSearch = matchesTokenizedSearch(item.nombre || '', searchQueryLinea.value || '')
     const lineaId = Number(item.linea?.id ?? item.idABCCatLineaNegocio ?? 0)
     const matchLinea = selectedFiltersLinea.lineas.length
       ? selectedFiltersLinea.lineas.includes(lineaId)
@@ -151,7 +116,7 @@ const filteredMapeosLinea = computed(() => {
 
 const filteredMapeosCampana = computed(() => {
   return allMapeosCampana.value.filter(item => {
-    const matchSearch = matchesSearch(item.nombre || '', searchQueryCampana.value || '')
+    const matchSearch = matchesTokenizedSearch(item.nombre || '', searchQueryCampana.value || '')
     const lineaId = Number(item.linea?.id ?? item.idABCCatLineaNegocio ?? 0)
     const campanaId = Number(item.linea?.campana?.id ?? item.idABCCatCampana ?? 0)
     const matchLinea = selectedFiltersCampana.lineas.length
@@ -452,6 +417,18 @@ function openColumnasModal(m: MapeoLineaData | MapeoCampanaData) {
   showColumnasModal.value = true
 }
 
+function closeColumnasModal() {
+  showColumnasModal.value = false
+}
+
+async function handleColumnasSaved() {
+  if (columnasTab.value === 'campana') {
+    await fetchMapeosCampana()
+    return
+  }
+  await fetchMapeosLinea()
+}
+
 async function fetchCatalogosBase() {
   try {
     const catalogos = await catalogosService.getCatalogosAgrupados()
@@ -666,7 +643,8 @@ function handleSearchCampana(query: string) {
       :selected-linea-id="lineaIdForModal"
       :selected-linea-nombre="lineaNombreForModal"
       :lineas-disponibles="lineasDisponibles"
-      @close="showColumnasModal = false"
+      @saved="handleColumnasSaved"
+      @close="closeColumnasModal"
     />
 
     <MapeoCampanaColumnasModal
@@ -679,7 +657,8 @@ function handleSearchCampana(query: string) {
       :selected-linea-nombre="lineaNombreForModal"
       :selected-campana-nombre="campanaNombreForModal"
       :lineas-disponibles="lineasDisponibles"
-      @close="showColumnasModal = false"
+      @saved="handleColumnasSaved"
+      @close="closeColumnasModal"
     />
 
     <FormActionConfirmModal

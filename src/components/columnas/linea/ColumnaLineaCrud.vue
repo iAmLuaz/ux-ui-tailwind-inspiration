@@ -23,6 +23,10 @@ const props = defineProps<{
 	selectedLineaNombre?: string | null
 }>()
 
+const emit = defineEmits<{
+	(e: 'saved'): void
+}>()
+
 const {
 	mapeos,
 	rawMapeos,
@@ -153,6 +157,7 @@ async function handleSaved() {
 		fetchAll(props.mapeoId ?? null),
 		fetchMapeos()
 	])
+	emit('saved')
 }
 
 function toggleFilterMenu(column: string) {

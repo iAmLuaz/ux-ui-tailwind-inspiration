@@ -4,6 +4,7 @@ import { Edit3, Search, Eye, Columns } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
 import TableSearch from '@/components/TableSearch.vue'
 import type { MapeoCampanaData } from '@/types/mapeos/campana'
+import { useFirstRowNewGlow } from '@/composables/shared/useFirstRowNewGlow'
 
 interface Option {
   label: string
@@ -73,6 +74,12 @@ const statusOptions = [
   { label: 'Activos', value: true },
   { label: 'Inactivos', value: false }
 ]
+
+const { isRowGlowing } = useFirstRowNewGlow(
+  () => props.filteredMapeos,
+  row => Number((row as any).idABCConfigMapeoCampana ?? row.idABCConfigMapeoLinea ?? (row as any).id ?? 0),
+  { isLoading: () => props.isLoading }
+)
 
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
@@ -178,8 +185,8 @@ const thSmallClass = 'px-4 py-3'
             </td>
           </tr>
 
-          <template v-else v-for="m in props.filteredMapeos" :key="m.idABCConfigMapeoLinea">
-            <tr class="hover:bg-blue-50/30 transition-colors text-sm">
+          <template v-else v-for="(m, index) in props.filteredMapeos" :key="m.idABCConfigMapeoLinea">
+            <tr :class="['hover:bg-blue-50/30 transition-colors text-sm', { 'row-new-record-glow': isRowGlowing(m, index) }]">
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                   {{ props.getLineaLabel(m.linea?.id) }}

@@ -298,7 +298,7 @@ const stageDetails = computed(() => {
       activeCount: stageHorarios.filter(entry => entry.active).length,
       configured
     }
-  }).filter(stage => stage.configured)
+  })
 })
 
 function formatTimestamp(value?: string) {
@@ -363,7 +363,7 @@ function formatTimestamp(value?: string) {
           <div class="grid grid-cols-1 gap-3">
             <div class="bg-slate-50 rounded-lg p-3 border border-slate-200">
               <div class="flex items-center justify-between mb-3">
-                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Tareas y horarios por etapa</p>
+                <p class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Tareas y horarios</p>
                 <span class="text-[10px] font-bold text-slate-500">{{ horarios.length }} horarios</span>
               </div>
 
@@ -371,15 +371,21 @@ function formatTimestamp(value?: string) {
                 <div
                   v-for="stage in stageDetails"
                   :key="stage.key"
-                  class="p-2.5 rounded-lg border border-slate-200 bg-white"
+                  class="p-2.5 rounded-lg border"
+                  :class="stage.configured ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-100/70 opacity-80'"
                 >
                   <div class="flex items-start justify-between gap-2">
                     <div>
-                      <p class="text-sm font-bold text-slate-700">{{ stage.label }}</p>
-                      <p class="text-xs text-slate-500 mt-0.5">TIPO DE EJECUCIÓN: <span class="font-semibold text-slate-700">{{ stage.execution }}</span></p>
+                      <p class="text-sm font-bold" :class="stage.configured ? 'text-slate-700' : 'text-slate-500'">{{ stage.label }}</p>
+                      <p class="text-xs mt-0.5" :class="stage.configured ? 'text-slate-500' : 'text-slate-400'">
+                        TIPO DE EJECUCIÓN:
+                        <span class="font-semibold" :class="stage.configured ? 'text-slate-700' : 'text-slate-500'">
+                          {{ stage.configured ? stage.execution : 'No está configurado' }}
+                        </span>
+                      </p>
                     </div>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                      {{ stage.activeCount }} activos
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" :class="stage.configured ? 'bg-slate-100 text-slate-600' : 'bg-slate-200 text-slate-500'">
+                      {{ stage.configured ? `${stage.activeCount} activos` : 'No configurado' }}
                     </span>
                   </div>
 
@@ -397,7 +403,9 @@ function formatTimestamp(value?: string) {
                       {{ horario.label }}
                     </span>
                   </div>
-                  <p v-else class="mt-2 text-xs text-slate-500">Sin horarios configurados.</p>
+                  <p v-else class="mt-2 text-xs" :class="stage.configured ? 'text-slate-500' : 'text-slate-400'">
+                    {{ stage.configured ? 'Sin horarios configurados.' : 'No está configurado' }}
+                  </p>
                 </div>
               </div>
             </div>

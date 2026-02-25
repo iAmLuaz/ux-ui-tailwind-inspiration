@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Edit3, Search, Eye } from 'lucide-vue-next'
 import FilterDropdown from '@/components/FilterDropdown.vue'
 import TableSearch from '@/components/TableSearch.vue'
+import { useFirstRowNewGlow } from '@/composables/shared/useFirstRowNewGlow'
 
 interface HorarioItem {
   tipoHorario?: {
@@ -146,7 +147,7 @@ const getStageVisual = (t: TareaLineaRow, stageId: 1 | 2 | 3) => {
   const stage = getStageInfo(t, stageId)
   return {
     ...stage,
-    label: stage.configured ? 'Configurada' : 'No configurada',
+    label: stage.configured ? 'Configurada' : 'Sin configurar',
     containerClass: stage.configured
       ? 'bg-emerald-50/80 border-emerald-200 text-emerald-700'
       : 'bg-rose-50/70 border-rose-200 text-rose-700',
@@ -156,6 +157,12 @@ const getStageVisual = (t: TareaLineaRow, stageId: 1 | 2 | 3) => {
 
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
+
+const { isRowGlowing } = useFirstRowNewGlow(
+  () => props.filteredTareas,
+  row => Number(row.idABCConfigTareaLinea ?? 0),
+  { isLoading: () => props.isLoading }
+)
 </script>
 
 <template>
@@ -249,8 +256,8 @@ const thSmallClass = 'px-4 py-3'
             </td>
           </tr>
 
-          <template v-else v-for="t in props.filteredTareas" :key="t.idABCConfigTareaLinea">
-            <tr class="hover:bg-blue-50/30 transition-colors text-sm">
+          <template v-else v-for="(t, index) in props.filteredTareas" :key="t.idABCConfigTareaLinea">
+            <tr :class="['hover:bg-blue-50/30 transition-colors text-sm', { 'row-new-record-glow': isRowGlowing(t, index) }]">
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', t)">
                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                   {{ props.getLineaLabel(t.idABCCatLineaNegocio) }}
