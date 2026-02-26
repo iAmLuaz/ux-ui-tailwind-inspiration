@@ -454,9 +454,9 @@ watch(filteredRows, () => {
                   />
                 </th>
 
-                <th class="text-left px-4 py-3">Inicio</th>
-                <th class="text-left px-4 py-3">Fin</th>
-                <th class="text-right px-4 py-3">Procesados / Total</th>
+                <th class="text-left px-4 py-3">Fecha Inicio</th>
+                <th class="text-left px-4 py-3">Fecha Fin</th>
+                <th class="text-right px-4 py-3">Registros procesados</th>
               </tr>
             </thead>
 
