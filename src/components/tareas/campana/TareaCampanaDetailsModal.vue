@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BaseModalActions from '@/components/shared/modal/BaseModalActions.vue'
+import BaseModalShell from '@/components/shared/modal/BaseModalShell.vue'
 import { type Option as CatalogOption } from '@/composables/tareas/tareaScheduleUtils'
 import { useTareaCampanaDetails } from '@/composables/tareas/campana/useTareaCampanaDetails'
 
@@ -68,25 +70,13 @@ const { formatTimestamp, horarios, stageDetails } = useTareaCampanaDetails(props
 </script>
 
 <template>
-  <div
-    v-if="show"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity"
-    @click.self="emit('close')"
+  <BaseModalShell
+    :show="show"
+    title="Detalle de Tarea"
+    max-width-class="max-w-lg"
+    @close="emit('close')"
   >
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-      <div class="px-4 py-2.5 bg-[#00357F] border-b border-white/10 flex items-center shrink-0">
-        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">Detalle de Tarea</h3>
-        <button
-          type="button"
-          class="ml-auto h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
-          @click="emit('close')"
-        >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-      </div>
-
+    <template #body>
       <div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
         <div v-if="isLoading" class="text-sm text-slate-500">Cargando detalle...</div>
 
@@ -104,7 +94,7 @@ const { formatTimestamp, horarios, stageDetails } = useTareaCampanaDetails(props
           </div>
 
           <div class="bg-slate-50 rounded-lg p-2 border border-slate-200">
-            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Nombre de la ingesta</span>
+            <span class="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Nombre de ingesta</span>
             <p class="mt-1 font-semibold text-slate-700">{{ item.ingesta || '-' }}</p>
           </div>
 
@@ -178,18 +168,15 @@ const { formatTimestamp, horarios, stageDetails } = useTareaCampanaDetails(props
           </div>
         </div>
       </div>
-
-      <div class="shrink-0 flex justify-end gap-3 p-3 border-t border-gray-100 bg-white">
-        <button
-          type="button"
-          class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
-          @click="emit('close')"
-        >
-          Aceptar
-        </button>
-      </div>
-    </div>
-  </div>
+    </template>
+    <template #footer>
+      <BaseModalActions
+        confirm-text="Aceptar"
+        :show-cancel="false"
+        @confirm="emit('close')"
+      />
+    </template>
+  </BaseModalShell>
 </template>
 
 <style scoped>

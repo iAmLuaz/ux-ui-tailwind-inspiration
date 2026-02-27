@@ -3,9 +3,9 @@
     "id": 1,
     "linea": {
       "id": 1,
-      "campana": { "id": 3 }
+      "campana": { "id": 1 }
     },
-    "mapeo": { "id": 18 },
+    "mapeo": { "id": 3 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -26,9 +26,9 @@
     "id": 2,
     "linea": {
       "id": 1,
-      "campana": { "id": 1 }
+      "campana": { "id": 2 }
     },
-    "mapeo": { "id": 18 },
+    "mapeo": { "id": 4 },
     "activo": true,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },
@@ -48,10 +48,10 @@
   {
     "id": 3,
     "linea": {
-      "id": 2,
-      "campana": { "id": 2 }
+      "id": 3,
+      "campana": { "id": 6 }
     },
-    "mapeo": { "id": 20 },
+    "mapeo": { "id": 5 },
     "activo": true,
     "actividad": { "id": 3 },
     "ejecucion": { "id": 1 },
@@ -72,9 +72,9 @@
     "id": 4,
     "linea": {
       "id": 3,
-      "campana": { "id": 4 }
+      "campana": { "id": 1 }
     },
-    "mapeo": { "id": 21 },
+    "mapeo": { "id": 6 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -94,10 +94,10 @@
   {
     "id": 5,
     "linea": {
-      "id": 3,
-      "campana": { "id": 4 }
+      "id": 2,
+      "campana": { "id": 3 }
     },
-    "mapeo": { "id": 21 },
+    "mapeo": { "id": 7 },
     "activo": true,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },
@@ -117,10 +117,10 @@
   {
     "id": 6,
     "linea": {
-      "id": 1,
-      "campana": { "id": 3 }
+      "id": 2,
+      "campana": { "id": 1 }
     },
-    "mapeo": { "id": 19 },
+    "mapeo": { "id": 8 },
     "activo": true,
     "actividad": { "id": 3 },
     "ejecucion": { "id": 1 },

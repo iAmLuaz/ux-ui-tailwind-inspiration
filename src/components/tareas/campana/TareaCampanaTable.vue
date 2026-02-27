@@ -154,7 +154,7 @@ const {
 
             <th :class="thClass + ' text-left relative'">
               <div class="flex items-center gap-2">
-                <span class="font-semibold">Nombre de la ingesta</span>
+                <span class="font-semibold">Nombre de ingesta</span>
                 <button
                   @click.stop="emit('toggleFilter', 'search')"
                   :class="props.openFilter === 'search' ? 'p-2 bg-[#00357F] text-white rounded-md shadow-sm transition-colors' : 'p-2 bg-white text-slate-400 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-[#00357F] transition-colors'"

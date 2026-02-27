@@ -3,7 +3,8 @@ import type { MapeoCampanaData } from '@/types/mapeos/campana'
 import { SelectField } from '@/components/tareas/shared/tareaFormFields'
 import TareaScheduleConfigurator from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
-import { X } from 'lucide-vue-next'
+import BaseModalActions from '@/components/shared/modal/BaseModalActions.vue'
+import BaseModalShell from '@/components/shared/modal/BaseModalShell.vue'
 import { type Option } from '@/composables/tareas/tareaScheduleUtils'
 import type { TareaCampanaFormData } from '@/types/tareas/modalForms'
 import { useTareaCampanaModal } from '@/composables/tareas/campana/useTareaCampanaModal'
@@ -33,7 +34,6 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const {
-  canSave,
   closeActionConfirm,
   confirmAction,
   confirmCancelText,
@@ -61,24 +61,15 @@ const {
 } = useTareaCampanaModal(props, emit)
 </script>
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-    <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh] ">
-      
-      <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
-        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
-          {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
-        </h3>
-        <button
-          type="button"
-          class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
-          :disabled="isLoading || showActionConfirm"
-          @click="requestCancel"
-        >
-          <X class="w-4 h-4" />
-        </button>
-      </div>
-
-      <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">
+  <BaseModalShell
+    :show="show"
+    :title="mode === 'add' ? 'Nuevo Registro' : 'Editar Registro'"
+    max-width-class="max-w-2xl"
+    panel-class="rounded-xl shadow-2xl"
+    @close="requestCancel"
+  >
+    <template #body>
+      <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1 h-full">
         <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
           <div class="space-y-6">
           
@@ -103,11 +94,11 @@ const {
               />
 
               <div class="md:col-span-2">
-                <span class="text-[10px] font-bold text-gray-500 uppercase">Nombre de la ingesta <span class="text-red-500">*</span></span>
+                <span class="text-[10px] font-bold text-gray-500 uppercase">Nombre de ingesta <span class="text-red-500">*</span></span>
                 <div class="mt-1 flex items-center gap-2">
                   <div class="flex-1">
                     <SelectField
-                      label="Nombre de la ingesta"
+                      label="Nombre de ingesta"
                       v-model="formData.ingesta"
                       :options="displayedMapeoOptionsWithCurrent"
                       required
@@ -164,33 +155,19 @@ const {
 
           </div>
         </div>
-
-        <div class="shrink-0 flex items-center justify-end gap-3 p-4 border-t border-gray-100 bg-white">
-          <div class="flex items-center gap-3">
-            <button
-              type="button"
-              class="px-8 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors focus:outline-none focus:ring-4 focus:ring-gray-300/50 disabled:opacity-50 disabled:cursor-not-allowed"
-              @click="requestCancel"
-              :disabled="isLoading || showActionConfirm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="px-8 py-3 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all focus:outline-none focus:ring-4 focus:ring-yellow-300/50 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed flex items-center gap-3"
-              :disabled="isLoading || !canSave || showActionConfirm"
-            >
-              <svg v-if="isLoading" class="animate-spin h-5 w-5 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span>{{ isLoading ? 'Guardando configuración...' : 'Guardar' }}</span>
-            </button>
-          </div>
-        </div>
-
       </form>
-
+    </template>
+    <template #footer>
+      <BaseModalActions
+        confirm-type="submit"
+        :loading="isLoading"
+        :disabled-cancel="Boolean(isLoading || showActionConfirm)"
+        :disabled-confirm="Boolean(isLoading || showActionConfirm)"
+        @cancel="requestCancel"
+        @confirm="handleSave"
+      />
+    </template>
+    <template #overlay>
       <ModalActionConfirmOverlay
         :show="showActionConfirm"
         :title="confirmTitle"
@@ -201,8 +178,8 @@ const {
         @confirm="confirmAction"
         @cancel="closeActionConfirm"
       />
-    </div>
-  </div>
+    </template>
+  </BaseModalShell>
 </template>
 <style scoped>
 .custom-scrollbar::-webkit-scrollbar {

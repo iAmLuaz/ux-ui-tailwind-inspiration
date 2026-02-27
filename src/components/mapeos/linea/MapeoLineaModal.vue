@@ -1,184 +1,56 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
-import { X } from 'lucide-vue-next'
-
-interface Option {
-  label: string
-  value: number
-}
-
-export interface MapeoLineaFormData {
-  idABCCatLineaNegocio?: number | ''
-  nombre: string
-  descripcion: string
-  validar?: boolean
-  enviar?: boolean
-  idUsuario?: number | ''
-}
-
-interface Props {
-  show: boolean
-  mode: 'add' | 'edit'
-  lineasDisponibles: Option[]
-  existingMapeos: { idABCConfigMapeoLinea?: number; nombre?: string }[]
-  initialData?: Record<string, any> | null
-  isLoading?: boolean
-}
+import BaseModalActions from '@/components/shared/modal/BaseModalActions.vue'
+import BaseModalShell from '@/components/shared/modal/BaseModalShell.vue'
+import {
+  useMapeoLineaModal,
+  type MapeoLineaFormData,
+  type UseMapeoLineaModalProps
+} from '@/composables/mapeos/linea/useMapeoLineaModal'
 
 interface Emits {
   (e: 'save', data: MapeoLineaFormData): void
   (e: 'close'): void
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<UseMapeoLineaModalProps>(), {
   isLoading: false
 })
 
 const emit = defineEmits<Emits>()
 
-const formData = ref<MapeoLineaFormData>(initializeFormData())
-const initialFormSnapshot = ref('')
-const showActionConfirm = ref(false)
-const pendingAction = ref<'save' | 'cancel' | null>(null)
-
-const isEditing = computed(() => props.mode === 'edit')
-const normalizeName = (value: string) =>
-  value
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim()
-
-const isDuplicateName = computed(() => {
-  if (isEditing.value) return false
-  const name = normalizeName(formData.value.nombre || '')
-  if (!name) return false
-  return props.existingMapeos.some(item => normalizeName(item.nombre || '') === name)
-})
-const isDirty = computed(() => serializeFormState(formData.value) !== initialFormSnapshot.value)
-const confirmTitle = computed(() => (pendingAction.value === 'save' ? 'Confirmar guardado' : 'Descartar cambios'))
-const confirmMessage = computed(() =>
-  pendingAction.value === 'save'
-    ? '¿Estás seguro de guardar los cambios de este registro?'
-    : 'Se detectaron cambios sin guardar. ¿Deseas cancelar y descartar la información modificada?'
-)
-const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' : 'Aceptar'))
-const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Cancelar' : 'Cancelar'))
-
-watch(
-  () => [props.initialData, props.mode],
-  () => {
-    setInitialFormState()
-  }
-)
-
-watch(
-  () => props.show,
-  (isOpen) => {
-    if (isOpen) {
-      setInitialFormState()
-    }
-  }
-)
-
-const serializeFormState = (value: MapeoLineaFormData) => JSON.stringify(value)
-
-const setInitialFormState = () => {
-  formData.value = initializeFormData()
-  initialFormSnapshot.value = serializeFormState(formData.value)
-}
-
-const restoreInitialInformation = () => {
-  formData.value = initializeFormData()
-}
-
-const closeActionConfirm = () => {
-  showActionConfirm.value = false
-  pendingAction.value = null
-}
-
-const requestSave = () => {
-  if (isDuplicateName.value) return
-
-  if (isEditing.value) {
-    pendingAction.value = 'save'
-    showActionConfirm.value = true
-    return
-  }
-
-  emit('save', formData.value)
-}
-
-const requestCancel = () => {
-  if (isEditing.value && isDirty.value) {
-    pendingAction.value = 'cancel'
-    showActionConfirm.value = true
-    return
-  }
-
-  emit('close')
-}
-
-const confirmAction = () => {
-  if (pendingAction.value === 'save') {
-    emit('save', formData.value)
-  } else if (pendingAction.value === 'cancel') {
-    emit('close')
-  }
-
-  closeActionConfirm()
-}
-
-function initializeFormData(): MapeoLineaFormData {
-  if (props.initialData) {
-    const lineaId = props.initialData.linea?.id ?? props.initialData.idABCCatLineaNegocio ?? ''
-    return {
-      idABCCatLineaNegocio: lineaId,
-      nombre: props.initialData.nombre ?? '',
-      descripcion: props.initialData.descripcion ?? '',
-      validar: props.initialData.validar ?? props.initialData.valida ?? true,
-      enviar: props.initialData.enviar ?? props.initialData.envio ?? true,
-      idUsuario: props.initialData.idUsuario ?? props.initialData.idABCUsuario ?? 1
-    }
-  }
-
-  return {
-    idABCCatLineaNegocio: '',
-    nombre: '',
-    descripcion: '',
-    validar: true,
-    enviar: true,
-    idUsuario: 1
-  }
-}
-
-function handleSave() {
-  requestSave()
-}
+const {
+  formData,
+  touchedFields,
+  isEditing,
+  isDuplicateName,
+  showNombreLengthError,
+  showDescripcionLengthError,
+  nombreLengthError,
+  descripcionLengthError,
+  showActionConfirm,
+  confirmTitle,
+  confirmMessage,
+  confirmText,
+  confirmCancelText,
+  restoreInitialInformation,
+  requestCancel,
+  handleSave,
+  confirmAction,
+  closeActionConfirm
+} = useMapeoLineaModal(props, emit)
 </script>
-
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-      <div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
-        <h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
-          {{ mode === 'add' ? 'Nuevo Registro' : 'Editar Registro' }}
-        </h3>
-        <button
-          type="button"
-          class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
-          :disabled="isLoading || showActionConfirm"
-          @click="requestCancel"
-        >
-          <X class="w-4 h-4" />
-        </button>
-      </div>
-
-      <form @submit.prevent="handleSave" class="flex flex-col min-h-0 flex-1">
-        <div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
+  <BaseModalShell
+    :show="show"
+    :title="mode === 'add' ? 'Nuevo Registro' : 'Editar Registro'"
+    max-width-class="max-w-2xl"
+    @close="requestCancel"
+  >
+    <template #body>
+      <div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
           <div>
             <label for="field-linea" class="block text-[10px] font-bold text-gray-500 uppercase mb-1">
               Linea de negocio <span class="text-red-500 ml-1">*</span>
@@ -202,11 +74,15 @@ function handleSave() {
               v-model="formData.nombre"
               placeholder="Escribe aqui..."
               type="text"
+              minlength="3"
+              maxlength="30"
               required
               class="w-full px-4 py-2.5 border rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 bg-gray-50"
-              :class="isDuplicateName ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-300'"
+              :class="(isDuplicateName || showNombreLengthError) ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-300'"
+              @blur="touchedFields.nombre = true"
             />
             <p v-if="isDuplicateName" class="text-xs text-red-500 mt-1">Ya existe un mapeo con este nombre.</p>
+            <p v-else-if="showNombreLengthError" class="text-xs text-red-500 mt-1">{{ nombreLengthError }}</p>
           </div>
 
           <div>
@@ -217,10 +93,15 @@ function handleSave() {
               id="field-descripcion"
               v-model="formData.descripcion"
               placeholder="Escribe aqui..."
+              minlength="3"
+              maxlength="100"
               class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 text-sm focus:ring-2 focus:ring-[#00357F] focus:border-[#00357F] transition-shadow outline-none placeholder-gray-400 resize-none"
+              :class="showDescripcionLengthError ? 'border-red-400 focus:ring-red-200 focus:border-red-400' : 'border-gray-300'"
               required
               rows="3"
+              @blur="touchedFields.descripcion = true"
             />
+            <p v-if="showDescripcionLengthError" class="text-xs text-red-500 mt-1">{{ descripcionLengthError }}</p>
           </div>
 
           <div class="flex gap-4 items-center">
@@ -250,37 +131,21 @@ function handleSave() {
               <span class="pointer-events-none absolute right-0 -top-9 whitespace-nowrap rounded-md bg-[#00357F] px-2 py-1 text-[11px] font-semibold text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100">Restaurar información</span>
             </button>
           </div>
-
-          </div>
         </div>
+      </div>
+    </template>
 
-        <div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
-          <div></div>
+    <template #footer>
+      <BaseModalActions
+        :loading="isLoading"
+        :disabled-cancel="Boolean(isLoading || showActionConfirm)"
+        :disabled-confirm="Boolean(isLoading || showActionConfirm)"
+        @cancel="requestCancel"
+        @confirm="handleSave"
+      />
+    </template>
 
-          <div class="flex items-center gap-3">
-            <button
-              type="button"
-              class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
-              @click="requestCancel"
-              :disabled="isLoading || showActionConfirm"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-              :disabled="isLoading || isDuplicateName || showActionConfirm"
-            >
-              <svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isLoading ? 'Guardando...' : 'Guardar' }}
-            </button>
-          </div>
-        </div>
-      </form>
-
+    <template #overlay>
       <ModalActionConfirmOverlay
         :show="showActionConfirm"
         :title="confirmTitle"
@@ -291,8 +156,8 @@ function handleSave() {
         @confirm="confirmAction"
         @cancel="closeActionConfirm"
       />
-    </div>
-  </div>
+    </template>
+  </BaseModalShell>
 </template>
 
 <style scoped>

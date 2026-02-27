@@ -4,7 +4,8 @@ import { catalogosService } from '@/services/catalogos/catalogosService'
 import { columnaService } from '@/services/columnas/columnaService'
 import SearchableSelect from '@/components/forms/SearchableSelect.vue'
 import ModalActionConfirmOverlay from '@/components/shared/ModalActionConfirmOverlay.vue'
-import { X } from 'lucide-vue-next'
+import BaseModalActions from '@/components/shared/modal/BaseModalActions.vue'
+import BaseModalShell from '@/components/shared/modal/BaseModalShell.vue'
 import type { ColumnaLineaModel } from '@/models/columnas/linea/columnaLinea.model'
 
 interface Option {
@@ -53,6 +54,13 @@ const form = ref<any>({
 const initialFormSnapshot = ref('')
 const showActionConfirm = ref(false)
 const pendingAction = ref<'save' | 'cancel' | null>(null)
+const attemptedSave = ref(false)
+const touchedNumericFields = ref({
+	cadenaMinimo: false,
+	cadenaMaximo: false,
+	numeroEnteros: false,
+	numeroDecimales: false
+})
 
 const valOptions = ref<Option[]>([])
 const cdnOptions = ref<Option[]>([])
@@ -92,9 +100,12 @@ const confirmText = computed(() => (pendingAction.value === 'save' ? 'Guardar' :
 const confirmCancelText = computed(() => (pendingAction.value === 'save' ? 'Cancelar' : 'Cancelar'))
 
 const selectedVal = computed(() => {
-	const id = form.value.valor.tipoSel
+	const id = Number(form.value.valor.tipoSel ?? 0)
+	if (!id) return null
 	return valItems.value.find((i: any) => i.id === id) ?? null
 })
+const selectedValorTipoId = computed(() => Number(form.value.valor.tipoSel ?? 0) || 0)
+const selectedNumeroTipoId = computed(() => Number(form.value.valor.numero.tipoId ?? 0) || 0)
 
 const isCadena = computed(() => {
 	const s = selectedVal.value
@@ -109,6 +120,87 @@ const isNumero = computed(() => {
 	const code = String(s.codigo || s.nombre || '').toUpperCase()
 	return code.includes('NMR') || code.includes('NUMER')
 })
+
+const normalizeNumericValue = (value: unknown): number | null => {
+	if (value === null || value === undefined || value === '') return null
+	const numericValue = Number(value)
+	return Number.isFinite(numericValue) ? numericValue : null
+}
+
+const cadenaMinimoValue = computed(() => normalizeNumericValue(form.value.valor.cadena.minimo))
+const cadenaMaximoValue = computed(() => normalizeNumericValue(form.value.valor.cadena.maximo))
+const numeroEnterosValue = computed(() => normalizeNumericValue(form.value.valor.numero.enteros))
+const numeroDecimalesValue = computed(() => normalizeNumericValue(form.value.valor.numero.decimales))
+
+const cadenaMinimoError = computed(() => {
+	if (!isCadena.value) return ''
+	if (cadenaMinimoValue.value === null) return 'El mínimo es obligatorio.'
+	if (!Number.isInteger(cadenaMinimoValue.value) || cadenaMinimoValue.value < 1 || cadenaMinimoValue.value > 4000) {
+		return 'El mínimo debe ser un entero entre 1 y 4000.'
+	}
+	return ''
+})
+
+const cadenaMaximoError = computed(() => {
+	if (!isCadena.value) return ''
+	if (cadenaMaximoValue.value === null) return 'El máximo es obligatorio.'
+	if (!Number.isInteger(cadenaMaximoValue.value) || cadenaMaximoValue.value < 1 || cadenaMaximoValue.value > 4000) {
+		return 'El máximo debe ser un entero entre 1 y 4000.'
+	}
+	if (
+		cadenaMinimoValue.value !== null
+		&& Number.isInteger(cadenaMinimoValue.value)
+		&& cadenaMaximoValue.value < cadenaMinimoValue.value
+	) {
+		return 'El máximo debe ser mayor o igual al mínimo.'
+	}
+	return ''
+})
+
+const numeroEnterosError = computed(() => {
+	if (!isNumero.value) return ''
+	if (numeroEnterosValue.value === null) return 'Los enteros son obligatorios.'
+	if (!Number.isInteger(numeroEnterosValue.value) || numeroEnterosValue.value < 1 || numeroEnterosValue.value > 4000) {
+		return 'Los enteros deben estar entre 1 y 4000.'
+	}
+	return ''
+})
+
+const numeroDecimalesError = computed(() => {
+	if (!isNumero.value || selectedNumeroTipoId.value !== 2) return ''
+	if (numeroDecimalesValue.value === null) return 'Los decimales son obligatorios.'
+	if (!Number.isInteger(numeroDecimalesValue.value) || numeroDecimalesValue.value < 0 || numeroDecimalesValue.value > 4) {
+		return 'Los decimales deben estar entre 0 y 4.'
+	}
+	return ''
+})
+
+const columnaRequiredError = computed(() => Number(form.value.idABCCatColumna ?? 0) > 0 ? '' : 'Selecciona una columna.')
+const tipoValorRequiredError = computed(() => selectedValorTipoId.value > 0 ? '' : 'Selecciona un tipo de valor.')
+const subtipoCadenaRequiredError = computed(() => {
+	if (!isCadena.value) return ''
+	return Number(form.value.valor.cadena.tipoId ?? 0) > 0 ? '' : 'Selecciona un subtipo de cadena.'
+})
+const subtipoNumeroRequiredError = computed(() => {
+	if (!isNumero.value) return ''
+	return selectedNumeroTipoId.value > 0 ? '' : 'Selecciona un subtipo de número.'
+})
+
+const hasNumericValidationError = computed(() => Boolean(
+	columnaRequiredError.value
+	|| tipoValorRequiredError.value
+	|| subtipoCadenaRequiredError.value
+	|| subtipoNumeroRequiredError.value
+	|| 
+	cadenaMinimoError.value
+	|| cadenaMaximoError.value
+	|| numeroEnterosError.value
+	|| numeroDecimalesError.value
+))
+const showCadenaMinimoError = computed(() => touchedNumericFields.value.cadenaMinimo && Boolean(cadenaMinimoError.value))
+const showCadenaMaximoError = computed(() => touchedNumericFields.value.cadenaMaximo && Boolean(cadenaMaximoError.value))
+const showNumeroEnterosError = computed(() => touchedNumericFields.value.numeroEnteros && Boolean(numeroEnterosError.value))
+const showNumeroDecimalesError = computed(() => touchedNumericFields.value.numeroDecimales && Boolean(numeroDecimalesError.value))
 
 // const mapeoNombre = computed(() => {
 // 	if (props.selectedMapeoNombre) return props.selectedMapeoNombre
@@ -162,6 +254,7 @@ const availableColumnas = computed(() => {
 })
 
 function resetForm() {
+	attemptedSave.value = false
 	form.value = {
 		idABCConfigMapeoLinea: props.selectedMapeoId ?? 0,
 		lineaId: props.selectedLineaId ?? null,
@@ -181,6 +274,7 @@ const serializeFormState = (value: any) => JSON.stringify(value)
 
 const restoreInitialInformation = () => {
 	if (!props.initialData) return
+	attemptedSave.value = false
 
 	form.value.idABCConfigMapeoLinea = props.initialData.mapeoId
 	form.value.lineaId = props.selectedLineaId ?? form.value.lineaId
@@ -219,6 +313,17 @@ const requestSave = async () => {
 		return
 	}
 
+	attemptedSave.value = true
+	if (hasNumericValidationError.value) {
+		touchedNumericFields.value = {
+			cadenaMinimo: isCadena.value,
+			cadenaMaximo: isCadena.value,
+			numeroEnteros: isNumero.value,
+			numeroDecimales: isNumero.value && selectedNumeroTipoId.value === 2
+		}
+		return
+	}
+
 	await save()
 }
 
@@ -234,7 +339,24 @@ const requestCancel = () => {
 
 const confirmAction = async () => {
 	if (pendingAction.value === 'save') {
-		await save()
+		attemptedSave.value = true
+		if (hasNumericValidationError.value) {
+			touchedNumericFields.value = {
+				cadenaMinimo: isCadena.value,
+				cadenaMaximo: isCadena.value,
+				numeroEnteros: isNumero.value,
+				numeroDecimales: isNumero.value && selectedNumeroTipoId.value === 2
+			}
+			closeActionConfirm()
+			return
+		}
+
+		try {
+			await save()
+		} finally {
+			closeActionConfirm()
+		}
+		return
 	} else if (pendingAction.value === 'cancel') {
 		emit('close')
 	}
@@ -278,6 +400,7 @@ watch(
 		if (mode === 'add') {
 			resetForm()
 			initialFormSnapshot.value = serializeFormState(form.value)
+			attemptedSave.value = false
 			return
 		}
 
@@ -311,6 +434,7 @@ watch(
 		}
 
 		initialFormSnapshot.value = serializeFormState(form.value)
+		attemptedSave.value = false
 	},
 	{ immediate: true }
 )
@@ -328,19 +452,36 @@ watch(
 	}
 )
 
+watch(
+	() => form.value.valor.tipoSel,
+	() => {
+		touchedNumericFields.value = {
+			cadenaMinimo: false,
+			cadenaMaximo: false,
+			numeroEnteros: false,
+			numeroDecimales: false
+		}
+	}
+)
+
 async function save() {
+	const tipoValorId = selectedValorTipoId.value || null
+	const subtipoCadenaId = Number(form.value.valor.cadena.tipoId ?? 0) || null
+	const subtipoNumeroId = selectedNumeroTipoId.value || null
 	
 	const valorPayload: any = {
-		tipo: { id: form.value.valor.tipoSel ?? form.value.valor.cadena.tipoId ?? form.value.valor.numero.tipoId ?? null },
+		tipo: { id: tipoValorId },
 		cadena: {
-			tipo: { id: form.value.valor.cadena.tipoId ?? null },
-			minimo: form.value.valor.cadena.minimo ?? null,
-			maximo: form.value.valor.cadena.maximo ?? null
+			tipo: { id: subtipoCadenaId },
+			minimo: tipoValorId === 2 ? (form.value.valor.cadena.minimo ?? null) : null,
+			maximo: tipoValorId === 2 ? (form.value.valor.cadena.maximo ?? null) : null
 		},
 		numero: {
-			tipo: { id: form.value.valor.numero.tipoId ?? null },
-			enteros: form.value.valor.numero.enteros ?? null,
-			decimales: form.value.valor.numero.decimales ?? null
+			tipo: { id: subtipoNumeroId },
+			enteros: tipoValorId === 1 ? (form.value.valor.numero.enteros ?? null) : null,
+			decimales: tipoValorId === 1 && selectedNumeroTipoId.value === 2
+				? (form.value.valor.numero.decimales ?? null)
+				: null
 		}
 	}
 
@@ -351,7 +492,8 @@ async function save() {
 			regex: form.value.regex || null,
 			valor: valorPayload
 		},
-		idUsuario: (props.initialData as any)?.idUsuario ?? 1
+		idUsuario: (props.initialData as any)?.idUsuario ?? 1,
+		idABCUsuario: (props.initialData as any)?.idUsuario ?? 1
 	}
 
 	if (props.mode === 'add') {
@@ -367,25 +509,15 @@ async function save() {
 </script>
 
 <template>
-	<div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity">
-		<div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all scale-100 flex flex-col max-h-[90vh]">
-			<div class="px-5 py-3 bg-[#00357F] border-b border-white/10 flex justify-between items-center shrink-0">
-				<h3 class="text-base font-semibold text-white/95 flex items-center gap-2 tracking-wide">
-					<!-- Configurar columna en {{ mapeoNombre }} -->
-					Agregar columna
-				</h3>
-				<button
-					type="button"
-					class="h-8 w-8 inline-flex items-center justify-center rounded-md text-white/90 hover:bg-white/15 transition-colors"
-					:disabled="isLoading || showActionConfirm"
-					@click="requestCancel"
-				>
-					<X class="w-4 h-4" />
-				</button>
-			</div>
-
-			<form @submit.prevent="requestSave" class="flex flex-col min-h-0 flex-1">
-				<div class="p-6 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
+	<BaseModalShell
+		:show="show"
+		title="Agregar columna"
+		max-width-class="max-w-2xl"
+		@close="requestCancel"
+	>
+		<template #body>
+			<form @submit.prevent="requestSave" class="flex flex-col min-h-0 flex-1 h-full">
+				<div class="p-4 overflow-y-auto custom-scrollbar bg-slate-50 flex-1 min-h-0">
 					<div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 space-y-5">
 
 					<div v-if="lineas && lineas.length">
@@ -418,6 +550,7 @@ async function save() {
 								:disabled="isEditing"
 								placeholder="Seleccione una opción"
 							/>
+							<p v-if="attemptedSave && columnaRequiredError" class="text-xs text-red-500 mt-1">{{ columnaRequiredError }}</p>
 						</div>
 					</div>
 
@@ -441,6 +574,7 @@ async function save() {
 										:options="valOptions"
 										placeholder="Seleccione una opción"
 									/>
+									<p v-if="attemptedSave && tipoValorRequiredError" class="text-xs text-red-500 mt-1">{{ tipoValorRequiredError }}</p>
 								</div>
 								<div>
 									<div v-if="isCadena">
@@ -450,6 +584,7 @@ async function save() {
 											:options="cdnOptions"
 											placeholder="Seleccione una opción"
 										/>
+										<p v-if="attemptedSave && subtipoCadenaRequiredError" class="text-xs text-red-500 mt-1">{{ subtipoCadenaRequiredError }}</p>
 									</div>
 									<div v-else-if="isNumero">
 										<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subtipo número</label>
@@ -458,6 +593,7 @@ async function save() {
 											:options="nmrOptions"
 											placeholder="Seleccione una opción"
 										/>
+										<p v-if="attemptedSave && subtipoNumeroRequiredError" class="text-xs text-red-500 mt-1">{{ subtipoNumeroRequiredError }}</p>
 									</div>
 									<div v-else>
 										<label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Subtipo </label>
@@ -470,27 +606,31 @@ async function save() {
 						</div>
 					</div>
 
-					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 2">
+					<div class="grid grid-cols-2 gap-4" v-if="selectedValorTipoId === 2">
 						<div>
 							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mínimo (cadena)</label>
-							<input type="number" maxlength="1" size="1" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" min="1" max="4000" step="1" maxlength="4" size="4" placeholder="Ej. 1" v-model.number="form.valor.cadena.minimo" class="w-full px-4 py-2.5 bg-gray-50 border rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" :class="showCadenaMinimoError ? 'border-red-400 focus:ring-red-200' : 'border-gray-300'" @blur="touchedNumericFields.cadenaMinimo = true" />
+							<p v-if="showCadenaMinimoError" class="text-xs text-red-500 mt-1">{{ cadenaMinimoError }}</p>
 						</div>
 
 						<div>
 							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Máximo (cadena)</label>
-							<input type="number" maxlength="4" size="4" placeholder="Ej. 10" v-model.number="form.valor.cadena.maximo" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" min="1" max="4000" step="1" maxlength="4" size="4" placeholder="Ej. 10" v-model.number="form.valor.cadena.maximo" class="w-full px-4 py-2.5 bg-gray-50 border rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" :class="showCadenaMaximoError ? 'border-red-400 focus:ring-red-200' : 'border-gray-300'" @blur="touchedNumericFields.cadenaMaximo = true" />
+							<p v-if="showCadenaMaximoError" class="text-xs text-red-500 mt-1">{{ cadenaMaximoError }}</p>
 						</div>
 					</div>
 
-					<div class="grid grid-cols-2 gap-4" v-if="form.valor.tipoSel === 1">
+					<div class="grid grid-cols-2 gap-4" v-if="selectedValorTipoId === 1">
 						<div>
 							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Enteros (número)</label>
-							<input type="number" placeholder="Ej. 3" v-model.number="form.valor.numero.enteros" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" min="1" max="4000" step="1" placeholder="Ej. 3" v-model.number="form.valor.numero.enteros" class="w-full px-4 py-2.5 bg-gray-50 border rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" :class="showNumeroEnterosError ? 'border-red-400 focus:ring-red-200' : 'border-gray-300'" @blur="touchedNumericFields.numeroEnteros = true" />
+							<p v-if="showNumeroEnterosError" class="text-xs text-red-500 mt-1">{{ numeroEnterosError }}</p>
 						</div>
 
-						<div v-if="form.valor.numero.tipoId === 2">
+						<div v-if="selectedNumeroTipoId === 2">
 							<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Decimales (número)</label>
-							<input type="number" placeholder="Ej. 2" v-model.number="form.valor.numero.decimales" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" />
+							<input type="number" min="0" max="4" step="1" placeholder="Ej. 2" v-model.number="form.valor.numero.decimales" class="w-full px-4 py-2.5 bg-gray-50 border rounded-lg text-sm focus:ring-2 focus:ring-[#00357F]" :class="showNumeroDecimalesError ? 'border-red-400 focus:ring-red-200' : 'border-gray-300'" @blur="touchedNumericFields.numeroDecimales = true" />
+							<p v-if="showNumeroDecimalesError" class="text-xs text-red-500 mt-1">{{ numeroDecimalesError }}</p>
 						</div>
 					</div>
 
@@ -524,47 +664,35 @@ async function save() {
 
 					</div>
 				</div>
-
-				<div class="shrink-0 flex items-center justify-between gap-3 p-4 border-t border-gray-100 bg-white">
-					<div>
-						<button
-							v-if="mode === 'add'"
-							type="button"
-							title="Restaurar todo"
-							aria-label="Restaurar todo"
-							class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-							:disabled="isLoading || showActionConfirm"
-							@click="resetForm"
-						>
-							<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
-							</svg>
-						</button>
-					</div>
-					<div class="flex items-center gap-3">
-						<button
-							type="button"
-							class="px-5 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer"
-							@click="requestCancel"
-							:disabled="isLoading || showActionConfirm"
-						>
-							Cancelar
-						</button>
-						<button
-							type="submit"
-							class="px-5 py-2.5 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-							:disabled="isLoading || showActionConfirm"
-						>
-							<svg v-if="isLoading" class="animate-spin h-4 w-4 text-[#00357F]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-							</svg>
-							{{ isLoading ? 'Guardando...' : 'Guardar' }}
-						</button>
-					</div>
-				</div>
 			</form>
-
+		</template>
+		<template #footer>
+			<BaseModalActions
+				confirm-type="submit"
+				:loading="isLoading"
+				:disabled-cancel="Boolean(isLoading || showActionConfirm)"
+				:disabled-confirm="Boolean(isLoading || showActionConfirm)"
+				@cancel="requestCancel"
+				@confirm="requestSave"
+			>
+				<template #left>
+					<button
+						v-if="mode === 'add'"
+						type="button"
+						title="Restaurar todo"
+						aria-label="Restaurar todo"
+						class="h-[42px] w-[42px] inline-flex items-center justify-center rounded-lg text-slate-500 bg-white border border-slate-200 hover:text-[#00357F] hover:border-[#00357F]/30 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+						:disabled="isLoading || showActionConfirm"
+						@click="resetForm"
+					>
+						<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M19 9a7 7 0 00-12-3M5 15a7 7 0 0012 3" />
+						</svg>
+					</button>
+				</template>
+			</BaseModalActions>
+		</template>
+		<template #overlay>
 			<ModalActionConfirmOverlay
 				:show="showActionConfirm"
 				:title="confirmTitle"
@@ -575,8 +703,8 @@ async function save() {
 				@confirm="confirmAction"
 				@cancel="closeActionConfirm"
 			/>
-		</div>
-	</div>
+		</template>
+	</BaseModalShell>
 </template>
 
 <style scoped>

@@ -13,7 +13,7 @@ import {
 import type {
   TareaScheduleModel,
   TareaToggleSlotPayload
-} from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
+} from '@/composables/tareas/useTareaScheduleConfigurator'
 
 export interface UseTareaLineaModalProps {
   mode: 'add' | 'edit'
@@ -239,13 +239,13 @@ export function useTareaLineaModal(
   }
 
   const requestSave = () => {
-    if (!canSave.value) return
-
     if (isEditing.value) {
       pendingAction.value = 'save'
       showActionConfirm.value = true
       return
     }
+
+    if (!canSave.value) return
 
     emit('save', formData.value)
   }
@@ -262,6 +262,10 @@ export function useTareaLineaModal(
 
   const confirmAction = () => {
     if (pendingAction.value === 'save') {
+      if (!canSave.value) {
+        closeActionConfirm()
+        return
+      }
       emit('save', formData.value)
     } else if (pendingAction.value === 'cancel') {
       emit('close')

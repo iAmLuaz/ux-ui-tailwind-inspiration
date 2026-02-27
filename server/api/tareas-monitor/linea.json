@@ -2,7 +2,7 @@
   {
     "id": 1,
     "linea": { "id": 1 },
-    "mapeo": { "id": 24 },
+    "mapeo": { "id": 8 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -17,8 +17,8 @@
   },
   {
     "id": 2,
-    "linea": { "id": 3 },
-    "mapeo": { "id": 23 },
+    "linea": { "id": 1 },
+    "mapeo": { "id": 9 },
     "activo": true,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },
@@ -34,7 +34,7 @@
   {
     "id": 3,
     "linea": { "id": 1 },
-    "mapeo": { "id": 22 },
+    "mapeo": { "id": 11 },
     "activo": true,
     "actividad": { "id": 3 },
     "ejecucion": { "id": 1 },
@@ -50,7 +50,7 @@
   {
     "id": 4,
     "linea": { "id": 1 },
-    "mapeo": { "id": 25 },
+    "mapeo": { "id": 12 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -65,8 +65,8 @@
   },
   {
     "id": 5,
-    "linea": { "id": 3 },
-    "mapeo": { "id": 23 },
+    "linea": { "id": 2 },
+    "mapeo": { "id": 13 },
     "activo": true,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },
@@ -81,8 +81,8 @@
   },
   {
     "id": 6,
-    "linea": { "id": 3 },
-    "mapeo": { "id": 23 },
+    "linea": { "id": 2 },
+    "mapeo": { "id": 14 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -98,7 +98,7 @@
   {
     "id": 7,
     "linea": { "id": 1 },
-    "mapeo": { "id": 22 },
+    "mapeo": { "id": 15 },
     "activo": true,
     "actividad": { "id": 3 },
     "ejecucion": { "id": 1 },
@@ -113,8 +113,8 @@
   },
   {
     "id": 8,
-    "linea": { "id": 3 },
-    "mapeo": { "id": 23 },
+    "linea": { "id": 2 },
+    "mapeo": { "id": 16 },
     "activo": false,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },
@@ -130,7 +130,7 @@
   {
     "id": 9,
     "linea": { "id": 1 },
-    "mapeo": { "id": 24 },
+    "mapeo": { "id": 10 },
     "activo": true,
     "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
@@ -146,7 +146,7 @@
   {
     "id": 10,
     "linea": { "id": 1 },
-    "mapeo": { "id": 25 },
+    "mapeo": { "id": 15 },
     "activo": true,
     "actividad": { "id": 2 },
     "ejecucion": { "id": 2 },

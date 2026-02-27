@@ -295,7 +295,7 @@ defineExpose({ openAdd })
 			:show="showStatusConfirmModal"
 			:title="statusConfirmTitle"
 			:message="statusConfirmMessage"
-			confirm-text="Aceptar"
+			confirm-text="Guardar"
 			cancel-text="Cancelar"
 			:is-loading="loading"
 			@confirm="confirmStatusToggle"

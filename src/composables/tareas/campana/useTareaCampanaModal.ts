@@ -13,7 +13,7 @@ import {
 import type {
   TareaScheduleModel,
   TareaToggleSlotPayload
-} from '@/components/tareas/shared/TareaScheduleConfigurator.vue'
+} from '@/composables/tareas/useTareaScheduleConfigurator'
 
 export interface UseTareaCampanaModalProps {
   show: boolean
@@ -264,13 +264,13 @@ export function useTareaCampanaModal(
   }
 
   const requestSave = () => {
-    if (!canSave.value) return
-
     if (isEditing.value) {
       pendingAction.value = 'save'
       showActionConfirm.value = true
       return
     }
+
+    if (!canSave.value) return
 
     emit('save', formData.value)
   }
@@ -287,6 +287,10 @@ export function useTareaCampanaModal(
 
   const confirmAction = () => {
     if (pendingAction.value === 'save') {
+      if (!canSave.value) {
+        closeActionConfirm()
+        return
+      }
       emit('save', formData.value)
     } else if (pendingAction.value === 'cancel') {
       emit('close')

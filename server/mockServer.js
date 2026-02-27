@@ -168,7 +168,7 @@ function normalizeMonitorRecord(item, scope = 'linea') {
 async function loadCatalogos() {
   const base = 'api/catalogos'
   try {
-    const concentrated = await readJson(`${base}/ACT.json`)
+    const concentrated = await readJson(`${base}/catalogos.json`)
     const grouped = Array.isArray(concentrated)
       ? concentrated
           .filter(group => group && typeof group === 'object' && Array.isArray(group?.registros))
@@ -1433,6 +1433,30 @@ const server = http.createServer(async (req, res) => {
         const current = findTareaCampana(id)
         if (!current) return send(res, 404, { message: 'Not found' })
         current.bolActivo = pathOnly.endsWith('/activar')
+        current.fechaUltimaModificacion = now()
+        return send(res, 200, current)
+      }
+
+      if (pathOnly === '/monitor/tareas/linea/activar' || pathOnly === '/monitor/tareas/linea/desactivar') {
+        const body = await parseBody(req)
+        const id = Number(body?.tarea?.id ?? body?.id)
+        const current = store.monitorTareasLinea.find(item => Number(item?.id ?? 0) === id)
+        if (!current) return send(res, 404, { message: 'Not found' })
+        const nextActivo = pathOnly.endsWith('/activar')
+        current.activo = nextActivo
+        current.bolActivo = nextActivo
+        current.fechaUltimaModificacion = now()
+        return send(res, 200, current)
+      }
+
+      if (pathOnly === '/monitor/tareas/campana/activar' || pathOnly === '/monitor/tareas/campana/desactivar') {
+        const body = await parseBody(req)
+        const id = Number(body?.tarea?.id ?? body?.id)
+        const current = store.monitorTareasCampana.find(item => Number(item?.id ?? 0) === id)
+        if (!current) return send(res, 404, { message: 'Not found' })
+        const nextActivo = pathOnly.endsWith('/activar')
+        current.activo = nextActivo
+        current.bolActivo = nextActivo
         current.fechaUltimaModificacion = now()
         return send(res, 200, current)
       }

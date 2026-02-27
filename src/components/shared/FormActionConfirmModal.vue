@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import BaseModalShell from '@/components/shared/modal/BaseModalShell.vue'
+import BaseModalActions from '@/components/shared/modal/BaseModalActions.vue'
+
 interface Props {
   show: boolean
   title: string
@@ -10,7 +13,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  confirmText: 'Confirmar',
+  confirmText: 'Aceptar',
   cancelText: 'Cancelar',
   isLoading: false,
   variant: 'overlay'
@@ -25,66 +28,32 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="show"
-    :class="[
-      variant === 'overlay'
-        ? 'fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm'
-        : 'w-full'
-    ]"
+    :class="[variant === 'overlay' ? '' : 'w-full']"
   >
-    <div
-      :class="[
-        'w-full rounded-xl bg-white border overflow-hidden',
-        variant === 'overlay'
-          ? 'max-w-md shadow-2xl border-gray-100'
-          : 'max-w-full shadow-sm border-gray-100 bg-white'
-      ]"
+    <BaseModalShell
+      :show="show"
+      :title="title"
+      :z-index-class="variant === 'overlay' ? 'z-[70]' : ''"
+      :overlay-class="variant === 'overlay' ? 'bg-black/50 backdrop-blur-sm' : 'bg-transparent p-0'"
+      :max-width-class="variant === 'overlay' ? 'max-w-md' : 'max-w-lg'"
+      :panel-class="variant === 'overlay' ? 'rounded-xl shadow-2xl border border-gray-100' : 'rounded-xl shadow-sm border border-gray-100'"
+      body-class="px-5 py-4"
+      footer-class="px-5 py-4 border-t border-gray-100 bg-white"
+      :show-close-button="false"
+      :close-on-backdrop="false"
     >
-      <div
-        :class="[
-          'px-5 py-3 border-b',
-          variant === 'overlay'
-            ? 'bg-[#00357F] border-white/10'
-            : 'bg-[#00357F] border-white/10'
-        ]"
-      >
-        <h4
-          :class="[
-            'text-base font-semibold tracking-wide',
-            variant === 'overlay' ? 'text-white/95' : 'text-white/95'
-          ]"
-        >
-          {{ title }}
-        </h4>
-      </div>
-
-      <div class="px-5 py-4">
+      <template #body>
         <p :class="['text-sm leading-relaxed', variant === 'overlay' ? 'text-gray-600' : 'text-gray-600']">{{ message }}</p>
-      </div>
-
-      <div
-        :class="[
-          'px-5 py-4 border-t flex justify-end gap-3',
-          variant === 'overlay' ? 'border-gray-100 bg-white' : 'border-gray-100 bg-white'
-        ]"
-      >
-        <button
-          type="button"
-          class="px-4 py-2 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isLoading"
-          @click="emit('cancel')"
-        >
-          {{ cancelText }}
-        </button>
-
-        <button
-          type="button"
-          class="px-4 py-2 text-sm font-bold text-[#00357F] bg-[#FFD100] hover:bg-yellow-400 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
-          :disabled="isLoading"
-          @click="emit('confirm')"
-        >
-          {{ confirmText }}
-        </button>
-      </div>
-    </div>
+      </template>
+      <template #footer>
+        <BaseModalActions
+          :cancel-text="cancelText"
+          :confirm-text="confirmText"
+          :loading="isLoading"
+          @cancel="emit('cancel')"
+          @confirm="emit('confirm')"
+        />
+      </template>
+    </BaseModalShell>
   </div>
 </template>

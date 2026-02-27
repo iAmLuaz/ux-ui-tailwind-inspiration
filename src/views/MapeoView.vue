@@ -665,7 +665,7 @@ function handleSearchCampana(query: string) {
       :show="showStatusConfirmModal"
       :title="statusConfirmTitle"
       :message="statusConfirmMessage"
-      confirm-text="Aceptar"
+      confirm-text="Guardar"
       cancel-text="Cancelar"
       :is-loading="statusConfirmLoading"
       @confirm="confirmStatusToggle"

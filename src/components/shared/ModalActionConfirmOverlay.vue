@@ -11,7 +11,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  confirmText: 'Confirmar',
+  confirmText: 'Aceptar',
   cancelText: 'Cancelar',
   isLoading: false
 })
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 <template>
   <div v-if="show" class="absolute inset-0 z-30 isolate flex items-center justify-center p-4 pointer-events-none">
     <div class="absolute inset-0 z-0 bg-slate-950/45 backdrop-blur-[2px]"></div>
-    <div class="relative z-10 w-full max-w-md pointer-events-auto">
+    <div class="relative z-10 w-full max-w-lg pointer-events-auto">
       <FormActionConfirmModal
         :show="show"
         variant="inline"

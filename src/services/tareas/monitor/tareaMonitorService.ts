@@ -9,6 +9,10 @@ import type {
 interface ApiClient {
   getTareasMonitorLinea(): Promise<TareaMonitorLineaData[] | TareaMonitorLineaApiPayload[]>
   getTareasMonitorCampana(): Promise<TareaMonitorCampanaData[] | TareaMonitorCampanaApiPayload[]>
+  patchActivarTareaMonitorLinea(payload: any): Promise<any>
+  patchDesactivarTareaMonitorLinea(payload: any): Promise<any>
+  patchActivarTareaMonitorCampana(payload: any): Promise<any>
+  patchDesactivarTareaMonitorCampana(payload: any): Promise<any>
 }
 
 const apiClient = api as ApiClient
@@ -97,5 +101,21 @@ export const tareaMonitorService = {
   async getCampana() {
     const raw = await apiClient.getTareasMonitorCampana()
     return extractArrayResponse<any>(raw).map(normalizeCampanaRow)
+  },
+
+  async patchDictaminarLinea(id: number, bolActivo: boolean, idUsuario = 1) {
+    const payload = { tarea: { id, idUsuario } }
+    const raw = bolActivo
+      ? await apiClient.patchActivarTareaMonitorLinea(payload)
+      : await apiClient.patchDesactivarTareaMonitorLinea(payload)
+    return normalizeLineaRow(raw)
+  },
+
+  async patchDictaminarCampana(id: number, bolActivo: boolean, idUsuario = 1) {
+    const payload = { tarea: { id, idUsuario } }
+    const raw = bolActivo
+      ? await apiClient.patchActivarTareaMonitorCampana(payload)
+      : await apiClient.patchDesactivarTareaMonitorCampana(payload)
+    return normalizeCampanaRow(raw)
   }
 }

@@ -361,6 +361,14 @@ export const api = {
   // Monitor de tareas (solo lectura)
   getTareasMonitorLinea: () => http.get('/monitor/tareas/linea'),
   getTareasMonitorCampana: () => http.get('/monitor/tareas/campana'),
+  patchActivarTareaMonitorLinea: (payload: any) =>
+    http.patch('/monitor/tareas/linea/activar', payload),
+  patchDesactivarTareaMonitorLinea: (payload: any) =>
+    http.patch('/monitor/tareas/linea/desactivar', payload),
+  patchActivarTareaMonitorCampana: (payload: any) =>
+    http.patch('/monitor/tareas/campana/activar', payload),
+  patchDesactivarTareaMonitorCampana: (payload: any) =>
+    http.patch('/monitor/tareas/campana/desactivar', payload),
 
   // Columna mapeo (línea)
   getColumnasLinea: () => http.get('/lineas/mapeos/0/columnas'),

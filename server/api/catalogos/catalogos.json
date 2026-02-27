@@ -60,189 +60,189 @@
         "nombre": "COLUMNA",
         "registros": [
             {
-                "id": 38,
+                "id": 1,
                 "codigo": "NOM",
                 "nombre": "NOMBRE"
             },
             {
-                "id": 39,
+                "id": 2,
                 "codigo": "DAU",
                 "nombre": "DESCUENTO SEGURO DE AUTO "
             },
             {
-                "id": 40,
+                "id": 3,
                 "codigo": "APM",
                 "nombre": "APELLIDO MATERNO"
             },
             {
-                "id": 41,
+                "id": 4,
                 "codigo": "CID",
                 "nombre": "COSTUMER ID"
             },
             {
-                "id": 42,
+                "id": 5,
                 "codigo": "COR",
                 "nombre": "CORREO"
             },
             {
-                "id": 43,
+                "id": 6,
                 "codigo": "TEL",
                 "nombre": "TELEFONO"
             },
             {
-                "id": 44,
+                "id": 7,
                 "codigo": "EDA",
                 "nombre": "EDAD"
             },
             {
-                "id": 45,
+                "id": 8,
                 "codigo": "EMA",
-                "nombre": "EMAIL_ADDRESS_ "
+                "nombre": "EMAIL_ADDRESS_  "
             },
             {
-                "id": 46,
+                "id": 9,
                 "codigo": "MOM",
-                "nombre": "MOBILE_NUMBER_ "
+                "nombre": "MOBILE_NUMBER_  "
             },
             {
-                "id": 47,
+                "id": 10,
                 "codigo": "MOC",
-                "nombre": "MOBILE_COUNTRY_ "
+                "nombre": "MOBILE_COUNTRY_  "
             },
             {
-                "id": 48,
+                "id": 11,
                 "codigo": "AFO",
-                "nombre": "ID_AFORE "
+                "nombre": "ID_AFORE  "
             },
             {
-                "id": 49,
+                "id": 12,
                 "codigo": "DEA",
-                "nombre": "DESCRIPCION_DE_AFORE "
+                "nombre": "DESCRIPCION_DE_AFORE  "
             },
             {
-                "id": 50,
+                "id": 13,
                 "codigo": "LDN",
-                "nombre": "LINEA_DE_NEGOCIO "
+                "nombre": "LINEA_DE_NEGOCIO  "
             },
             {
-                "id": 51,
+                "id": 14,
                 "codigo": "NDC",
-                "nombre": "NUMERO_DE_CUENTA "
+                "nombre": "NUMERO_DE_CUENTA  "
             },
             {
-                "id": 52,
+                "id": 15,
                 "codigo": "NSS",
-                "nombre": "NSS "
+                "nombre": "NSS  "
             },
             {
-                "id": 53,
+                "id": 16,
                 "codigo": "CUR",
-                "nombre": "CURP "
+                "nombre": "CURP  "
             },
             {
-                "id": 54,
+                "id": 17,
                 "codigo": "RFC",
-                "nombre": "RFC "
+                "nombre": "RFC  "
             },
             {
-                "id": 55,
+                "id": 18,
                 "codigo": "SIF",
-                "nombre": "SIEFORE "
+                "nombre": "SIEFORE  "
             },
             {
-                "id": 56,
+                "id": 19,
                 "codigo": "DOB",
-                "nombre": "DATE_OF_BIRTH "
+                "nombre": "DATE_OF_BIRTH  "
             },
             {
-                "id": 57,
+                "id": 20,
                 "codigo": "SEG",
-                "nombre": "SEGMENTO "
+                "nombre": "SEGMENTO  "
             },
             {
-                "id": 58,
+                "id": 21,
                 "codigo": "REG",
-                "nombre": "REGIMEN "
+                "nombre": "REGIMEN  "
             },
             {
-                "id": 59,
+                "id": 22,
                 "codigo": "PS1",
-                "nombre": "POSTAL_STREET_1_ "
+                "nombre": "POSTAL_STREET_1_  "
             },
             {
-                "id": 60,
+                "id": 23,
                 "codigo": "PS2",
-                "nombre": "POSTAL_STREET_2_ "
+                "nombre": "POSTAL_STREET_2_  "
             },
             {
-                "id": 61,
+                "id": 24,
                 "codigo": "CIT",
-                "nombre": "CITY_ "
+                "nombre": "CITY_  "
             },
             {
-                "id": 62,
+                "id": 25,
                 "codigo": "STE",
-                "nombre": "STATE_ "
+                "nombre": "STATE_  "
             },
             {
-                "id": 63,
+                "id": 26,
                 "codigo": "POC",
-                "nombre": "POSTAL_CODE_ "
+                "nombre": "POSTAL_CODE_  "
             },
             {
-                "id": 64,
+                "id": 27,
                 "codigo": "IDC",
-                "nombre": "ID_CLIENTE_AHORRADOR "
+                "nombre": "ID_CLIENTE_AHORRADOR  "
             },
             {
-                "id": 65,
+                "id": 28,
                 "codigo": "POL",
-                "nombre": "POLIZA "
+                "nombre": "POLIZA  "
             },
             {
-                "id": 66,
+                "id": 29,
                 "codigo": "IDP",
-                "nombre": "ID_PRESTAMO_PENSIONADO "
+                "nombre": "ID_PRESTAMO_PENSIONADO  "
             },
             {
-                "id": 67,
+                "id": 30,
                 "codigo": "IDS",
-                "nombre": "ID_SUSCEPTIBLE_PRESTAMO "
+                "nombre": "ID_SUSCEPTIBLE_PRESTAMO  "
             },
             {
-                "id": 68,
+                "id": 31,
                 "codigo": "TIP",
-                "nombre": "TIPO_PENSION "
+                "nombre": "TIPO_PENSION  "
             },
             {
-                "id": 69,
+                "id": 32,
                 "codigo": "GRP",
-                "nombre": "GRUPO_PAGO "
+                "nombre": "GRUPO_PAGO  "
             },
             {
-                "id": 70,
+                "id": 33,
                 "codigo": "IDB",
-                "nombre": "ID_BAJA_CAMBIO "
+                "nombre": "ID_BAJA_CAMBIO  "
             },
             {
-                "id": 71,
+                "id": 34,
                 "codigo": "FBC",
-                "nombre": "FECHA_BAJA_CAMBIO "
+                "nombre": "FECHA_BAJA_CAMBIO  "
             },
             {
-                "id": 72,
+                "id": 35,
                 "codigo": "REI",
-                "nombre": "REGIMEN_IMSS "
+                "nombre": "REGIMEN_IMSS  "
             },
             {
-                "id": 73,
+                "id": 36,
                 "codigo": "SEA",
-                "nombre": "SEGMENTO_AFO "
+                "nombre": "SEGMENTO_AFO  "
             },
             {
-                "id": 74,
+                "id": 37,
                 "codigo": "GEN",
-                "nombre": "GENERO "
+                "nombre": "GENERO  "
             }
         ]
     },

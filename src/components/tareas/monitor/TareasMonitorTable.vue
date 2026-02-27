@@ -37,6 +37,7 @@ const props = defineProps<{
   canPrevPage: boolean
   canNextPage: boolean
   isRowGlowing: (row: TareaMonitorData, index: number) => boolean
+  isStatusToggleLocked: (row: TareaMonitorData) => boolean
   getLineaLabel: (row: TareaMonitorData) => string
   getCampanaLabel: (row: TareaMonitorData) => string
   getActividadLabel: (row: TareaMonitorData) => string
@@ -57,6 +58,7 @@ const emit = defineEmits<{
   (e: 'search', value: string): void
   (e: 'prev-page'): void
   (e: 'next-page'): void
+  (e: 'toggle-status', row: TareaMonitorData): void
 }>()
 
 const modelLineas = computed({
@@ -127,15 +129,15 @@ const modelDictaminar = computed({
 
             <th class="text-left px-4 py-3 relative">
               <div class="flex items-center gap-2">
-                <span class="font-semibold">Nombre de mapeo</span>
+                <span class="font-semibold">Nombre de ingesta</span>
                 <button
                   type="button"
                   @click.stop="emit('toggle-filter', 'search')"
                   :class="openFilter === 'search'
                     ? 'p-2 bg-[#00357F] text-white rounded-md shadow-sm transition-colors'
                     : 'p-2 bg-white text-slate-400 border border-slate-200 rounded-md hover:bg-slate-50 hover:text-[#00357F] transition-colors'"
-                  aria-label="Buscar en mapeo"
-                  title="Buscar en mapeo"
+                  aria-label="Buscar en la ingesta"
+                  title="Buscar en la ingesta"
                 >
                   <Search class="w-4 h-4" :class="openFilter === 'search' ? 'text-white' : 'text-[#00357F]'" />
                 </button>
@@ -187,9 +189,9 @@ const modelDictaminar = computed({
               />
             </th>
 
-            <th class="text-left px-4 py-3">Inicio</th>
-            <th class="text-left px-4 py-3">Fin</th>
-            <th class="text-right px-4 py-3">Procesados / Total</th>
+            <th class="text-left px-4 py-3">Fecha de inicio</th>
+            <th class="text-left px-4 py-3">Fecha de fin</th>
+            <th class="text-right px-4 py-3">Registros procesados</th>
           </tr>
         </thead>
 
@@ -209,9 +211,32 @@ const modelDictaminar = computed({
               </span>
             </td>
             <td class="px-4 py-2.5">
-              <span class="font-semibold" :class="row.bolActivo ? 'text-[#00357F]' : 'text-slate-500'">
-                {{ row.bolActivo ? 'Activo' : 'Inactivo' }}
-              </span>
+              <label
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full border transition-all duration-200 cursor-pointer group select-none"
+                :class="row.bolActivo
+                  ? 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                  : 'bg-slate-50 border-slate-200 hover:border-slate-300'"
+              >
+                <input
+                  type="checkbox"
+                  :checked="row.bolActivo"
+                  :disabled="isStatusToggleLocked(row)"
+                  @change="emit('toggle-status', row)"
+                  class="sr-only peer"
+                >
+
+                <span
+                  class="h-2 w-2 rounded-full transition-colors duration-200 shadow-sm"
+                  :class="row.bolActivo ? 'bg-[#00357F]' : 'bg-[#AD0A0A]'"
+                ></span>
+
+                <span
+                  class="text-xs font-semibold transition-colors duration-200"
+                  :class="row.bolActivo ? 'text-[#00357F]' : 'text-slate-500'"
+                >
+                  {{ row.bolActivo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </label>
             </td>
             <td class="px-4 py-2.5 text-slate-600 min-w-[140px]">
               <div class="inline-flex flex-col rounded-lg border border-blue-100 bg-blue-50/70 px-2.5 py-1.5 leading-tight">

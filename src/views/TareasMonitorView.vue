@@ -2,6 +2,7 @@
 import TareasMonitorHeader from '@/components/tareas/monitor/TareasMonitorHeader.vue'
 import TareasMonitorSummaryCards from '@/components/tareas/monitor/TareasMonitorSummaryCards.vue'
 import TareasMonitorTable from '@/components/tareas/monitor/TareasMonitorTable.vue'
+import FormActionConfirmModal from '@/components/shared/FormActionConfirmModal.vue'
 import { useTareasMonitorViewModel } from '@/composables/tareas/monitor/useTareasMonitorViewModel'
 import { formatDateLabel, formatNumber, formatTimeLabel } from '@/utils/tareas/monitor/tareasMonitorFormat.utils'
 
@@ -26,16 +27,24 @@ const {
   handleTabChange,
   isLoading,
   isRowGlowing,
+  isStatusToggleLocked,
   lineasOptions,
   nextPage,
   openFilter,
   paginatedRows,
   prevPage,
+  requestStatusToggle,
   selectedActividades,
   selectedCampanas,
   selectedDictaminar,
   selectedEstatus,
   selectedLineas,
+  showStatusConfirmModal,
+  statusConfirmLoading,
+  statusConfirmMessage,
+  statusConfirmTitle,
+  confirmStatusToggle,
+  closeStatusConfirmModal,
   tabs,
   toggleFilter,
   totalPages,
@@ -79,6 +88,7 @@ const {
         :can-prev-page="canPrevPage"
         :can-next-page="canNextPage"
         :is-row-glowing="isRowGlowing"
+        :is-status-toggle-locked="isStatusToggleLocked"
         :get-linea-label="getLineaLabel"
         :get-campana-label="getCampanaLabel"
         :get-actividad-label="getActividadLabel"
@@ -96,6 +106,18 @@ const {
         @search="handleSearch"
         @prev-page="prevPage"
         @next-page="nextPage"
+        @toggle-status="requestStatusToggle"
+      />
+
+      <FormActionConfirmModal
+        :show="showStatusConfirmModal"
+        :title="statusConfirmTitle"
+        :message="statusConfirmMessage"
+        confirm-text="Guardar"
+        cancel-text="Cancelar"
+        :is-loading="statusConfirmLoading"
+        @confirm="confirmStatusToggle"
+        @cancel="closeStatusConfirmModal"
       />
     </div>
   </div>

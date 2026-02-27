@@ -65,6 +65,29 @@ export function useTareasMonitorViewModel() {
   const selectedActividades = ref<number[]>([])
   const selectedEstatus = ref<number[]>([])
   const selectedDictaminar = ref<boolean[]>([true, false])
+  const statusToggleLocks = ref(new Set<string>())
+  const showStatusConfirmModal = ref(false)
+  const pendingStatusItem = ref<TareaMonitorData | null>(null)
+
+  const statusConfirmLoading = computed(() => {
+    if (!pendingStatusItem.value) return false
+    const key = getStatusLockKey(pendingStatusItem.value)
+    return statusToggleLocks.value.has(key)
+  })
+
+  const statusConfirmTitle = computed(() => {
+    if (!pendingStatusItem.value) return 'Confirmar cambio de estatus'
+    return pendingStatusItem.value.bolActivo
+      ? 'Confirmar inactivación'
+      : 'Confirmar activación'
+  })
+
+  const statusConfirmMessage = computed(() => {
+    if (!pendingStatusItem.value) return '¿Deseas continuar con este cambio de estatus?'
+    const actionText = pendingStatusItem.value.bolActivo ? 'inactivar' : 'activar'
+    const nombre = pendingStatusItem.value.nombreMapeo || `registro ${pendingStatusItem.value.id}`
+    return `¿Estás seguro de ${actionText} el registro ${nombre}?`
+  })
 
   const filteredRows = computed<TareaMonitorData[]>(() => {
     return currentRows.value.filter(row => {
@@ -158,6 +181,61 @@ export function useTareasMonitorViewModel() {
     const id = Number(row?.estatus?.id ?? 0)
     const code = statusCodeById.value.get(id) ?? String(row?.estatus?.codigo ?? '').toUpperCase()
     return getStatusClassByCode(code)
+  }
+
+  function isCampanaRow(row: TareaMonitorData): row is TareaMonitorCampanaData {
+    return typeof (row as TareaMonitorCampanaData).idABCCatCampana === 'number'
+  }
+
+  function getStatusLockKey(row: TareaMonitorData) {
+    return `${isCampanaRow(row) ? 'campana' : 'linea'}:${Number(row.id)}`
+  }
+
+  function isStatusToggleLocked(row: TareaMonitorData) {
+    return statusToggleLocks.value.has(getStatusLockKey(row))
+  }
+
+  async function toggleDictaminar(row: TareaMonitorData) {
+    const lockKey = getStatusLockKey(row)
+    if (statusToggleLocks.value.has(lockKey)) return
+
+    statusToggleLocks.value.add(lockKey)
+    const nextActivo = !Boolean(row.bolActivo)
+    try {
+      if (isCampanaRow(row)) {
+        await tareaMonitorService.patchDictaminarCampana(Number(row.id), nextActivo, 1)
+        tareasMonitorCampana.value = tareasMonitorCampana.value.map(item =>
+          Number(item.id) === Number(row.id)
+            ? { ...item, bolActivo: nextActivo }
+            : item
+        )
+      } else {
+        await tareaMonitorService.patchDictaminarLinea(Number(row.id), nextActivo, 1)
+        tareasMonitorLinea.value = tareasMonitorLinea.value.map(item =>
+          Number(item.id) === Number(row.id)
+            ? { ...item, bolActivo: nextActivo }
+            : item
+        )
+      }
+    } finally {
+      statusToggleLocks.value.delete(lockKey)
+    }
+  }
+
+  function requestStatusToggle(row: TareaMonitorData) {
+    pendingStatusItem.value = row
+    showStatusConfirmModal.value = true
+  }
+
+  function closeStatusConfirmModal() {
+    showStatusConfirmModal.value = false
+    pendingStatusItem.value = null
+  }
+
+  async function confirmStatusToggle() {
+    if (!pendingStatusItem.value) return
+    await toggleDictaminar(pendingStatusItem.value)
+    closeStatusConfirmModal()
   }
 
   function toggleFilter(key: string) {
@@ -287,7 +365,15 @@ export function useTareasMonitorViewModel() {
     selectedDictaminar,
     selectedEstatus,
     selectedLineas,
+    showStatusConfirmModal,
+    statusConfirmLoading,
+    statusConfirmMessage,
+    statusConfirmTitle,
+    isStatusToggleLocked,
     tabs,
+    requestStatusToggle,
+    confirmStatusToggle,
+    closeStatusConfirmModal,
     toggleFilter,
     totalPages,
     totals,
