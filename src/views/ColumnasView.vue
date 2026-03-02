@@ -28,8 +28,10 @@ function handleAdd() {
 			@add="handleAdd"
 		/>
 
-		<ColumnaLineaCrud ref="lineaRef" v-show="activeTab === 'linea'" />
-		<ColumnaCampanaCrud ref="campanaRef" v-show="activeTab === 'campana'" />
+		<Transition name="tab-fade" mode="out-in" appear>
+			<ColumnaLineaCrud ref="lineaRef" v-if="activeTab === 'linea'" key="columnas-linea" />
+			<ColumnaCampanaCrud ref="campanaRef" v-else key="columnas-campana" />
+		</Transition>
     </div>
   </div>
 </template>

@@ -72,6 +72,19 @@ const { isRowGlowing } = useFirstRowNewGlow(
 
 const thClass = 'px-4 py-3'
 const thSmallClass = 'px-4 py-3'
+
+function getMapeoStageVisual(configured: boolean) {
+  return {
+    configured,
+    label: configured ? 'Activo' : 'Inactivo',
+    containerClass: configured
+      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-700'
+      : 'bg-rose-50/70 border-rose-200 text-rose-700',
+    iconWrapClass: configured
+      ? 'bg-emerald-100 text-emerald-700'
+      : 'bg-rose-100 text-rose-700'
+  }
+}
 </script>
 
 <template>
@@ -79,12 +92,12 @@ const thSmallClass = 'px-4 py-3'
     <div class="overflow-y-auto overflow-x-auto flex-1" style="height: 100%; display: flex; justify-content: space-between; flex-flow: column nowrap;">
       <table class="w-full text-left border-collapse table-fixed">
         <colgroup>
-          <col class="w-[22%]" />
-          <col class="w-[28%]" />
+          <col class="w-[20%]" />
+          <col class="w-[24%]" />
+          <col class="w-[11%]" />
           <col class="w-[12%]" />
-          <col class="w-[8%]" />
-          <col class="w-[8%]" />
-          <col class="w-[10%]" />
+          <col class="w-[12%]" />
+          <col class="w-[9%]" />
           <col class="w-[12%]" />
         </colgroup>
         <thead>
@@ -180,25 +193,39 @@ const thSmallClass = 'px-4 py-3'
               </td>
 
               <td class="px-4 py-2.5 text-center">
-                <div class="flex justify-center">
-                  <input
-                    type="checkbox"
-                    :checked="(m as any).validar ?? false"
-                    disabled
-                    class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
-                  />
-                </div>
+                <template v-for="stage in [getMapeoStageVisual(Boolean((m as any).validar ?? false))]" :key="`validar-${m.idABCConfigMapeoLinea}`">
+                  <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[11px] font-semibold" :class="stage.containerClass">
+                    <span class="h-5 w-5 rounded-full inline-flex items-center justify-center" :class="stage.iconWrapClass">
+                      <svg v-if="stage.configured" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <svg v-else class="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="10" cy="10" r="6.5"></circle>
+                        <path d="M10 6.7V10.3"></path>
+                        <circle cx="10" cy="13.3" r="0.8" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                    </span>
+                    <span>{{ stage.label }}</span>
+                  </div>
+                </template>
               </td>
 
               <td class="px-4 py-2.5 text-center">
-                <div class="flex justify-center">
-                  <input
-                    type="checkbox"
-                    :checked="(m as any).enviar ?? (m as any).envio ?? false"
-                    disabled
-                    class="h-4 w-4 rounded border-slate-300 text-[#00357F] bg-slate-100"
-                  />
-                </div>
+                <template v-for="stage in [getMapeoStageVisual(Boolean((m as any).enviar ?? (m as any).envio ?? false))]" :key="`enviar-${m.idABCConfigMapeoLinea}`">
+                  <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg border text-[11px] font-semibold" :class="stage.containerClass">
+                    <span class="h-5 w-5 rounded-full inline-flex items-center justify-center" :class="stage.iconWrapClass">
+                      <svg v-if="stage.configured" class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M16.704 5.29a1 1 0 010 1.414l-7.25 7.25a1 1 0 01-1.414 0l-3-3a1 1 0 111.414-1.414l2.293 2.293 6.543-6.543a1 1 0 011.414 0z" clip-rule="evenodd" />
+                      </svg>
+                      <svg v-else class="w-3 h-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <circle cx="10" cy="10" r="6.5"></circle>
+                        <path d="M10 6.7V10.3"></path>
+                        <circle cx="10" cy="13.3" r="0.8" fill="currentColor" stroke="none"></circle>
+                      </svg>
+                    </span>
+                    <span>{{ stage.label }}</span>
+                  </div>
+                </template>
               </td>
 
               <td class="px-4 py-2.5" @dblclick="emit('viewDetails', m)">

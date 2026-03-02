@@ -27,6 +27,20 @@ export const tabs = [
 export type TabKey = typeof tabs[number]['key']
 
 export function useTareasMonitorViewModel() {
+  const actividadOrderById: Record<number, number> = {
+    1: 1,
+    2: 2,
+    3: 3
+  }
+
+  const actividadOrderByCode: Record<string, number> = {
+    CARGA: 1,
+    VALIDACION: 2,
+    'VALIDACIÓN': 2,
+    ENVIO: 3,
+    'ENVÍO': 3
+  }
+
   const activeTab = ref<TabKey>('linea')
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -90,7 +104,8 @@ export function useTareasMonitorViewModel() {
   })
 
   const filteredRows = computed<TareaMonitorData[]>(() => {
-    return currentRows.value.filter(row => {
+    return currentRows.value
+      .filter(row => {
       const statusId = Number(row?.estatus?.id ?? 0)
       const actividadId = Number(row?.actividad?.id ?? 0)
       const campanaId = Number((row as TareaMonitorCampanaData)?.idABCCatCampana ?? 0)
@@ -113,7 +128,33 @@ export function useTareasMonitorViewModel() {
         : true
 
       return matchSearch && matchLinea && matchCampana && matchActividad && matchEstatus && matchDictaminar
-    })
+      })
+      .slice()
+      .sort((a, b) => {
+        const lineaA = Number(a.idABCCatLineaNegocio ?? 0)
+        const lineaB = Number(b.idABCCatLineaNegocio ?? 0)
+        if (lineaA !== lineaB) return lineaA - lineaB
+
+        if (activeTab.value === 'campana') {
+          const campanaA = Number((a as TareaMonitorCampanaData).idABCCatCampana ?? 0)
+          const campanaB = Number((b as TareaMonitorCampanaData).idABCCatCampana ?? 0)
+          if (campanaA !== campanaB) return campanaA - campanaB
+        }
+
+        const mapeoA = Number(a.idABCConfigMapeo ?? 0)
+        const mapeoB = Number(b.idABCConfigMapeo ?? 0)
+        if (mapeoA !== mapeoB) return mapeoA - mapeoB
+
+        const actividadA = Number(a?.actividad?.id ?? 0)
+        const actividadB = Number(b?.actividad?.id ?? 0)
+        const actividadCodeA = String(a?.actividad?.codigo ?? '').toUpperCase()
+        const actividadCodeB = String(b?.actividad?.codigo ?? '').toUpperCase()
+        const actividadSortA = actividadOrderById[actividadA] ?? actividadOrderByCode[actividadCodeA] ?? 999
+        const actividadSortB = actividadOrderById[actividadB] ?? actividadOrderByCode[actividadCodeB] ?? 999
+
+        if (actividadSortA !== actividadSortB) return actividadSortA - actividadSortB
+        return Number(a.id ?? 0) - Number(b.id ?? 0)
+      })
   })
 
   const totalPages = computed(() =>

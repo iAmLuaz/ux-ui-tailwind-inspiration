@@ -1,5 +1,28 @@
 [
   {
+    "id": 8,
+    "linea": {
+      "id": 1,
+      "campana": { "id": 1 }
+    },
+    "mapeo": { "id": 3 },
+    "activo": true,
+    "actividad": { "id": 2 },
+    "ejecucion": { "id": 2 },
+    "horario": {
+      "dia": {
+        "id": 1,
+        "hora": { "id": 8 }
+      }
+    },
+    "estatus": { "id": 2 },
+    "fechaInico": "1768827000000",
+    "fechaFin": "",
+    "registros": 21000,
+    "procesados": 18320,
+    "fechaCreacion": "1768827000000"
+  },
+  {
     "id": 1,
     "linea": {
       "id": 1,
@@ -15,12 +38,35 @@
         "hora": { "id": 1 }
       }
     },
-    "estatus": { "id": 2 },
+    "estatus": { "id": 4 },
     "fechaInico": "1768826400000",
+    "fechaFin": "1768826800000",
+    "registros": 21000,
+    "procesados": 21000,
+    "fechaCreacion": "1768826400000"
+  },
+  {
+    "id": 7,
+    "linea": {
+      "id": 1,
+      "campana": { "id": 1 }
+    },
+    "mapeo": { "id": 3 },
+    "activo": true,
+    "actividad": { "id": 3 },
+    "ejecucion": { "id": 1 },
+    "horario": {
+      "dia": {
+        "id": 1,
+        "hora": { "id": 7 }
+      }
+    },
+    "estatus": { "id": 1 },
+    "fechaInico": "1768828200000",
     "fechaFin": "",
     "registros": 21000,
-    "procesados": 15320,
-    "fechaCreacion": "1768826400000"
+    "procesados": 0,
+    "fechaCreacion": "1768828200000"
   },
   {
     "id": 2,
@@ -30,7 +76,7 @@
     },
     "mapeo": { "id": 4 },
     "activo": true,
-    "actividad": { "id": 2 },
+    "actividad": { "id": 1 },
     "ejecucion": { "id": 2 },
     "horario": {
       "dia": {
@@ -38,11 +84,11 @@
         "hora": { "id": 2 }
       }
     },
-    "estatus": { "id": 1 },
+    "estatus": { "id": 2 },
     "fechaInico": "1768830000000",
     "fechaFin": "",
     "registros": 33000,
-    "procesados": 16400,
+    "procesados": 14200,
     "fechaCreacion": "1768830000000"
   },
   {
@@ -53,7 +99,7 @@
     },
     "mapeo": { "id": 5 },
     "activo": true,
-    "actividad": { "id": 3 },
+    "actividad": { "id": 1 },
     "ejecucion": { "id": 1 },
     "horario": {
       "dia": {
@@ -61,11 +107,11 @@
         "hora": { "id": 3 }
       }
     },
-    "estatus": { "id": 3 },
+    "estatus": { "id": 4 },
     "fechaInico": "1768738800000",
     "fechaFin": "1768739520000",
     "registros": 5000,
-    "procesados": 1200,
+    "procesados": 5000,
     "fechaCreacion": "1768738800000"
   },
   {
@@ -99,7 +145,7 @@
     },
     "mapeo": { "id": 7 },
     "activo": true,
-    "actividad": { "id": 2 },
+    "actividad": { "id": 1 },
     "ejecucion": { "id": 2 },
     "horario": {
       "dia": {
@@ -130,11 +176,57 @@
         "hora": { "id": 3 }
       }
     },
+    "estatus": { "id": 1 },
+    "fechaInico": "1768742200000",
+    "fechaFin": "",
+    "registros": 43000,
+    "procesados": 0,
+    "fechaCreacion": "1768742200000"
+  },
+  {
+    "id": 10,
+    "linea": {
+      "id": 2,
+      "campana": { "id": 1 }
+    },
+    "mapeo": { "id": 8 },
+    "activo": true,
+    "actividad": { "id": 2 },
+    "ejecucion": { "id": 2 },
+    "horario": {
+      "dia": {
+        "id": 3,
+        "hora": { "id": 10 }
+      }
+    },
+    "estatus": { "id": 2 },
+    "fechaInico": "1768740400000",
+    "fechaFin": "",
+    "registros": 43000,
+    "procesados": 32900,
+    "fechaCreacion": "1768740400000"
+  },
+  {
+    "id": 9,
+    "linea": {
+      "id": 2,
+      "campana": { "id": 1 }
+    },
+    "mapeo": { "id": 8 },
+    "activo": true,
+    "actividad": { "id": 1 },
+    "ejecucion": { "id": 1 },
+    "horario": {
+      "dia": {
+        "id": 3,
+        "hora": { "id": 9 }
+      }
+    },
     "estatus": { "id": 4 },
-    "fechaInico": "1768741200000",
-    "fechaFin": "1768743720000",
+    "fechaInico": "1768739800000",
+    "fechaFin": "1768740300000",
     "registros": 43000,
     "procesados": 43000,
-    "fechaCreacion": "1768741200000"
+    "fechaCreacion": "1768739800000"
   }
 ]

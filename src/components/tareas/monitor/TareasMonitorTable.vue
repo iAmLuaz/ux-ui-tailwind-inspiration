@@ -85,6 +85,77 @@ const modelDictaminar = computed({
   get: () => props.selectedDictaminar,
   set: (value: boolean[]) => emit('update:selectedDictaminar', value)
 })
+
+function getProcessedRatio(row: TareaMonitorData) {
+  const total = Number(row.numeroRegistros ?? 0)
+  const procesados = Number(row.numeroRegistrosProcesados ?? 0)
+  if (!Number.isFinite(total) || total <= 0) return 0
+  if (!Number.isFinite(procesados) || procesados <= 0) return 0
+  return Math.min(1, Math.max(0, procesados / total))
+}
+
+function getProcessedBadgeClass(row: TareaMonitorData) {
+  const ratio = getProcessedRatio(row)
+  if (ratio >= 1) return 'border-emerald-100 bg-emerald-50/60 text-emerald-700'
+  if (ratio >= 0.7) return 'border-blue-100 bg-blue-50/55 text-[#00357F]'
+  if (ratio > 0) return 'border-amber-100 bg-amber-50/55 text-amber-700'
+  return 'border-slate-100 bg-slate-50/50 text-slate-600'
+}
+
+function getProcessedTrackClass(row: TareaMonitorData) {
+  const ratio = getProcessedRatio(row)
+  if (ratio >= 1) return 'bg-emerald-300'
+  if (ratio >= 0.7) return 'bg-blue-300'
+  if (ratio > 0) return 'bg-amber-300'
+  return 'bg-slate-300'
+}
+
+function getGroupKey(row: TareaMonitorData) {
+  const campanaSegment = props.activeTab === 'campana'
+    ? Number((row as { idABCCatCampana?: number }).idABCCatCampana ?? 0)
+    : 0
+
+  return [
+    Number(row.idABCCatLineaNegocio ?? 0),
+    campanaSegment,
+    Number(row.idABCConfigMapeo ?? 0),
+    String(row.nombreMapeo ?? '').trim().toLowerCase()
+  ].join('|')
+}
+
+const rowGroupMeta = computed(() => {
+  const counts = new Map<string, number>()
+  const firstIndexByGroup = new Map<string, number>()
+  const lastIndexByGroup = new Map<string, number>()
+  const groupOrderByKey = new Map<string, number>()
+  let currentGroupOrder = 0
+
+  props.paginatedRows.forEach((row, index) => {
+    const key = getGroupKey(row)
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+    if (!firstIndexByGroup.has(key)) firstIndexByGroup.set(key, index)
+    lastIndexByGroup.set(key, index)
+    if (!groupOrderByKey.has(key)) {
+      groupOrderByKey.set(key, currentGroupOrder)
+      currentGroupOrder += 1
+    }
+  })
+
+  return props.paginatedRows.map((row, index) => {
+    const key = getGroupKey(row)
+    const firstIndex = firstIndexByGroup.get(key)
+    const lastIndex = lastIndexByGroup.get(key)
+    const isFirst = firstIndex === index
+    const isLast = lastIndex === index
+    const groupOrder = Number(groupOrderByKey.get(key) ?? 0)
+    return {
+      isFirst,
+      isLast,
+      rowspan: isFirst ? Number(counts.get(key) ?? 1) : 0,
+      isEvenGroup: groupOrder % 2 === 0
+    }
+  })
+})
 </script>
 
 <template>
@@ -195,15 +266,39 @@ const modelDictaminar = computed({
           </tr>
         </thead>
 
-        <tbody class="divide-y divide-slate-100">
+        <tbody>
           <tr
             v-for="(row, index) in paginatedRows"
             :key="`${activeTab}-${row.id}`"
-            :class="['hover:bg-blue-50/30 transition-colors', { 'row-new-record-glow': isRowGlowing(row, index) }]"
+            :class="[
+              rowGroupMeta[index]?.isEvenGroup ? 'bg-white' : 'bg-slate-50/40',
+              rowGroupMeta[index]?.isFirst ? 'border-t-2 border-slate-200' : '',
+              rowGroupMeta[index]?.isLast ? 'border-b-2 border-slate-200' : '',
+              'hover:bg-blue-50/30 transition-colors',
+              { 'row-new-record-glow': isRowGlowing(row, index) }
+            ]"
           >
-            <td class="px-4 py-2.5 text-slate-700">{{ getLineaLabel(row) }}</td>
-            <td v-if="activeTab === 'campana'" class="px-4 py-2.5 text-slate-700">{{ getCampanaLabel(row) }}</td>
-            <td class="px-4 py-2.5 font-medium text-slate-800">{{ row.nombreMapeo || '-' }}</td>
+            <td
+              v-if="rowGroupMeta[index]?.isFirst"
+              :rowspan="rowGroupMeta[index]?.rowspan"
+              class="px-4 py-2.5 text-slate-700 align-top bg-slate-100/80 font-semibold"
+            >
+              {{ getLineaLabel(row) }}
+            </td>
+            <td
+              v-if="activeTab === 'campana' && rowGroupMeta[index]?.isFirst"
+              :rowspan="rowGroupMeta[index]?.rowspan"
+              class="px-4 py-2.5 text-slate-700 align-top bg-slate-100/80 font-semibold"
+            >
+              {{ getCampanaLabel(row) }}
+            </td>
+            <td
+              v-if="rowGroupMeta[index]?.isFirst"
+              :rowspan="rowGroupMeta[index]?.rowspan"
+              class="px-4 py-2.5 font-semibold text-slate-800 align-top bg-blue-50/60"
+            >
+              {{ row.nombreMapeo || '-' }}
+            </td>
             <td class="px-4 py-2.5 text-slate-700">{{ getActividadLabel(row) }}</td>
             <td class="px-4 py-2.5">
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold" :class="getStatusClass(row)">
@@ -251,9 +346,18 @@ const modelDictaminar = computed({
               </div>
             </td>
             <td class="px-4 py-2.5 text-right tabular-nums">
-              <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm font-semibold text-slate-800">
-                {{ formatNumber(row.numeroRegistrosProcesados) }} / {{ formatNumber(row.numeroRegistros) }}
-              </span>
+              <div class="inline-flex min-w-[170px] flex-col items-end gap-1.5 rounded-lg border px-2.5 py-1.5" :class="getProcessedBadgeClass(row)">
+                <span class="text-sm font-semibold">
+                  {{ formatNumber(row.numeroRegistrosProcesados) }} / {{ formatNumber(row.numeroRegistros) }}
+                </span>
+                <div class="h-1.5 w-full rounded-full bg-white/55">
+                  <div
+                    class="h-1.5 rounded-full transition-all duration-300"
+                    :class="getProcessedTrackClass(row)"
+                    :style="{ width: `${Math.round(getProcessedRatio(row) * 100)}%` }"
+                  ></div>
+                </div>
+              </div>
             </td>
           </tr>
 
